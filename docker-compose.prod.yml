@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: akku_ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    networks:
+      - akku_network
+
+  backend:
+    image: ${DOCKERHUB_USERNAME}/akku-backend:${IMAGE_TAG:-latest}
+    container_name: akku_backend
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      - DEBUG=False
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,pvsairamsaketh.in,.pvsairamsaketh.in,*
+    volumes:
+      - backend_chroma:/app/data/chroma
+      - backend_media:/app/media
+    networks:
+      - akku_network
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/akku-frontend:${IMAGE_TAG:-latest}
+    container_name: akku_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Port 8085 on host ensures NO conflict with existing projects on port 80/443
+      - "${APP_PORT:-8085}:80"
+    networks:
+      - akku_network
+
+volumes:
+  ollama_models:
+    name: akku_ollama_models
+  backend_chroma:
+    name: akku_backend_chroma
+  backend_media:
+    name: akku_backend_media
+
+networks:
+  akku_network:
+    name: akku_network
+    driver: bridge

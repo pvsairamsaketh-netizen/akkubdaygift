@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: akku_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME:-pvsairamsaketh}/akku-backend:${IMAGE_TAG:-latest}
+    container_name: akku_backend
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      - DEBUG=False
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,pvsairamsaketh.in,.pvsairamsaketh.in
+    volumes:
+      - backend_chroma:/app/data/chroma
+      - backend_media:/app/media
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: ${DOCKERHUB_USERNAME:-pvsairamsaketh}/akku-frontend:${IMAGE_TAG:-latest}
+    container_name: akku_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Port 8085 on host ensures NO conflict with existing projects on port 80/443
+      - "${APP_PORT:-8085}:80"
+
+volumes:
+  ollama_models:
+    name: akku_ollama_models
+  backend_chroma:
+    name: akku_backend_chroma
+  backend_media:
+    name: akku_backend_media

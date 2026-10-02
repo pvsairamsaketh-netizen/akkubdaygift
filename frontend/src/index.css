@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Great+Vibes&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased text-stone-800 bg-[#fefaf8];
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  .font-script {
+    font-family: 'Great Vibes', cursive;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #fbcfe8;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f472b6;
+}
+
+/* Romantic Animations & Transitions */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+@keyframes floatHeart {
+  0% {
+    transform: translateY(100vh) scale(0.6) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(50vh) scale(1) rotate(15deg);
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-10vh) scale(1.1) rotate(-15deg);
+    opacity: 0;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(244, 114, 182, 0.35), 0 0 30px rgba(251, 113, 133, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(244, 114, 182, 0.6), 0 0 45px rgba(251, 113, 133, 0.35);
+  }
+}
+
+@keyframes shimmerWave {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gentleWaveform {
+  0%, 100% { height: 6px; }
+  50% { height: 26px; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float-gentle {
+  animation: floatGentle 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmerWave 2s infinite;
+}
+
+/* 3D Card Flip Preserves */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Cinematic & Romantic Micro-animations */
+@keyframes shakeGentle {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-9px) rotate(-1.5deg); }
+  30% { transform: translateX(9px) rotate(1.5deg); }
+  45% { transform: translateX(-6px) rotate(-0.8deg); }
+  60% { transform: translateX(6px) rotate(0.8deg); }
+  75% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
+@keyframes unlockSpring {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35) rotate(-12deg); }
+  65% { transform: scale(0.92) rotate(6deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes cinematicHeartExpand {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+    filter: blur(8px);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+    filter: blur(0px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+    filter: blur(16px);
+  }
+}
+
+@keyframes warmBreathe {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.1);
+  }
+}
+
+.animate-shake {
+  animation: shakeGentle 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.animate-unlock-spring {
+  animation: unlockSpring 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-cinematic-reveal {
+  animation: cinematicHeartExpand 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-warm-breathe {
+  animation: warmBreathe 6s ease-in-out infinite;
+}
+
+/* Floating Heart Particle Container */
+.floating-heart-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: floatHeart 12s linear infinite;
+  will-change: transform, opacity;
+}
+
+/* Accessibility: Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .floating-heart-particle {
+    display: none !important;
+  }
+}

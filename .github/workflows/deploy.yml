@@ -1,0 +1,210 @@
+name: CI/CD Pipeline - Build, Test & Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ============================================================================
+  # 1. CI (Continuous Integration): Lint, Build & Run Unit Tests
+  # ============================================================================
+  ci:
+    name: Continuous Integration (Test & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Backend Test Pipeline
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install System Dependencies for Audio/TTS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng libespeak-ng-dev build-essential
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Backend Unit Tests with Pytest
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings
+          SECRET_KEY: test-secret-key-for-ci
+          DEBUG: "True"
+        run: |
+          cd backend
+          pytest -v
+
+      # Frontend Build Pipeline
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build Frontend Application
+        run: |
+          cd frontend
+          npm run build
+
+  # ============================================================================
+  # 2. CD (Continuous Deployment): Docker Hub Build & Deploy to AWS EC2
+  # ============================================================================
+  cd:
+    name: Continuous Deployment (Docker Hub & AWS EC2)
+    needs: [ ci ]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and push Backend Image
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/akku-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/akku-backend:${{ github.sha }}
+
+      # Build and push Frontend Image
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/akku-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/akku-frontend:${{ github.sha }}
+
+      # Copy docker-compose.prod.yml to EC2 & Trigger Deployment
+      - name: Deploy to AWS EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            echo "🚀 Starting automated deployment on AWS EC2..."
+            
+            # Create deployment folder if it doesn't exist
+            mkdir -p ~/akku-deployment
+            cd ~/akku-deployment
+
+            # Create production environment configuration
+            cat << 'EOF' > .env
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            IMAGE_TAG=${{ github.sha }}
+            APP_PORT=8085
+            EOF
+
+            # Download or write docker-compose.prod.yml
+            cat << 'EOF' > docker-compose.prod.yml
+            version: '3.8'
+
+            services:
+              ollama:
+                image: ollama/ollama:latest
+                container_name: akku_ollama
+                restart: unless-stopped
+                volumes:
+                  - ollama_models:/root/.ollama
+                networks:
+                  - akku_network
+
+              backend:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/akku-backend:${{ github.sha }}
+                container_name: akku_backend
+                restart: unless-stopped
+                depends_on:
+                  - ollama
+                environment:
+                  - DEBUG=False
+                  - OLLAMA_BASE_URL=http://ollama:11434
+                  - OLLAMA_MODEL=qwen2.5:3b
+                  - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,pvsairamsaketh.in,.pvsairamsaketh.in,*
+                volumes:
+                  - backend_chroma:/app/data/chroma
+                  - backend_media:/app/media
+                networks:
+                  - akku_network
+
+              frontend:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/akku-frontend:${{ github.sha }}
+                container_name: akku_frontend
+                restart: unless-stopped
+                depends_on:
+                  - backend
+                ports:
+                  - "8085:80"
+                networks:
+                  - akku_network
+
+            volumes:
+              ollama_models:
+                name: akku_ollama_models
+              backend_chroma:
+                name: akku_backend_chroma
+              backend_media:
+                name: akku_backend_media
+
+            networks:
+              akku_network:
+                name: akku_network
+                driver: bridge
+            EOF
+
+            # Pull latest images from Docker Hub
+            echo "📥 Pulling latest Docker images..."
+            docker compose -f docker-compose.prod.yml pull
+
+            # Start or restart containers safely
+            echo "🔄 Launching updated containers..."
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Pull Ollama LLM model if not cached
+            echo "🧠 Verifying Ollama model (qwen2.5:3b)..."
+            docker exec akku_ollama ollama pull qwen2.5:3b || true
+
+            # Automated Health Check
+            echo "🏥 Running deployment health check..."
+            for i in {1..20}; do
+              if curl -s -f http://localhost:8085/api/health/ > /dev/null; then
+                echo "✅ Deployment SUCCESSFUL! Health check passed."
+                exit 0
+              fi
+              echo "Waiting for backend service to become ready ($i/20)..."
+              sleep 4
+            done
+
+            echo "❌ Health check timed out! Dumping container logs for diagnosis:"
+            docker compose -f docker-compose.prod.yml logs --tail=60
+            exit 1
