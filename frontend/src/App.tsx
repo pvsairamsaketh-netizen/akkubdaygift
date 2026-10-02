@@ -12,11 +12,27 @@ import { MemoriesPage } from './pages/MemoriesPage';
 import { PdfLibraryPage } from './pages/PdfLibraryPage';
 import { VoiceSettingsPage } from './pages/VoiceSettingsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { AcademicsPage } from './pages/AcademicsPage';
 import { api } from './services/api';
 import type { BirthdayConfig } from './types/memories';
 
+const getInitialTab = (): NavTab => {
+  try {
+    const hash = window.location.hash.toLowerCase().replace('#', '');
+    const path = window.location.pathname.toLowerCase();
+    if (hash === 'academics' || path.startsWith('/academics')) return 'academics';
+    if (hash === 'chat' || path.startsWith('/chat')) return 'chat';
+    if (hash === 'birthday' || path.startsWith('/birthday')) return 'birthday';
+    if (hash === 'memories' || path.startsWith('/memories')) return 'memories';
+    if (hash === 'library' || path.startsWith('/library')) return 'library';
+    if (hash === 'voice' || path.startsWith('/voice')) return 'voice';
+    if (hash === 'settings' || path.startsWith('/settings')) return 'settings';
+  } catch {}
+  return 'home';
+};
+
 export function App() {
-  const [activeTab, setActiveTab] = useState<NavTab>('home');
+  const [activeTab, setActiveTab] = useState<NavTab>(getInitialTab);
   const [reduceMotion, setReduceMotion] = useState<boolean>(false);
   const [floatingHeartsEnabled, setFloatingHeartsEnabled] = useState<boolean>(true);
   
@@ -38,6 +54,19 @@ export function App() {
       if (res) setBirthdayConfig(res);
     }).catch(err => console.error("Could not fetch birthday config:", err));
   }, []);
+
+  // Synchronize hash with activeTab for refresh & direct navigation
+  useEffect(() => {
+    try {
+      if (activeTab === 'home') {
+        if (window.location.hash) {
+          history.replaceState(null, '', window.location.pathname);
+        }
+      } else {
+        history.replaceState(null, '', `#${activeTab}`);
+      }
+    } catch {}
+  }, [activeTab]);
 
   const handleUnlockSuccess = () => {
     try {
@@ -135,6 +164,10 @@ export function App() {
 
             {activeTab === 'voice' && (
               <VoiceSettingsPage />
+            )}
+
+            {activeTab === 'academics' && (
+              <AcademicsPage />
             )}
 
             {activeTab === 'settings' && (

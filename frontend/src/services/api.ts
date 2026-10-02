@@ -353,5 +353,112 @@ export const api = {
     });
     if (!res.ok) throw new Error("Failed to update birthday configuration");
     return res.json();
+  },
+
+  // Academics - Data Engineering Academy API
+  academics: {
+    async executeSQL(query: string, expected_sql?: string) {
+      const res = await fetch(`${API_BASE}/academics/sql/execute/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ query, expected_sql, user_id: getUserId() })
+      });
+      return res.json();
+    },
+
+    async getSQLSchema() {
+      const res = await fetch(`${API_BASE}/academics/sql/schema/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to fetch SQL schema");
+      return res.json();
+    },
+
+    async resetSQLDatabase() {
+      const res = await fetch(`${API_BASE}/academics/sql/reset/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' })
+      });
+      return res.json();
+    },
+
+    async getSQLHistory() {
+      const res = await fetch(`${API_BASE}/academics/sql/history/`, {
+        headers: getAuthHeaders()
+      });
+      return res.json();
+    },
+
+    async runCode(code: string, stdin_input: string = '', test_cases?: any[], timeout_seconds: number = 5.0) {
+      const res = await fetch(`${API_BASE}/academics/code/run/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ code, stdin_input, test_cases, timeout_seconds, user_id: getUserId() })
+      });
+      return res.json();
+    },
+
+    async getNotes(params?: { category?: string; day_number?: number; search?: string }) {
+      const queryParams = new URLSearchParams();
+      if (params?.category) queryParams.set('category', params.category);
+      if (params?.day_number !== undefined) queryParams.set('day_number', String(params.day_number));
+      if (params?.search) queryParams.set('search', params.search);
+
+      const res = await fetch(`${API_BASE}/academics/notes/?${queryParams.toString()}`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to fetch notes");
+      return res.json();
+    },
+
+    async createNote(note: any) {
+      const res = await fetch(`${API_BASE}/academics/notes/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ...note, user_id: getUserId() })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create note");
+      }
+      return res.json();
+    },
+
+    async updateNote(noteId: string, note: any) {
+      const res = await fetch(`${API_BASE}/academics/notes/${noteId}/`, {
+        method: 'PATCH',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ...note, user_id: getUserId() })
+      });
+      if (!res.ok) throw new Error("Failed to update note");
+      return res.json();
+    },
+
+    async deleteNote(noteId: string) {
+      const res = await fetch(`${API_BASE}/academics/notes/${noteId}/`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to delete note");
+      return res.json();
+    },
+
+    async getProgress() {
+      const res = await fetch(`${API_BASE}/academics/progress/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to fetch academic progress");
+      return res.json();
+    },
+
+    async updateProgress(data: any) {
+      const res = await fetch(`${API_BASE}/academics/progress/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ...data, user_id: getUserId() })
+      });
+      if (!res.ok) throw new Error("Failed to update academic progress");
+      return res.json();
+    }
   }
 };

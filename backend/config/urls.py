@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/', include('chat.urls')),
     path('api/voice/', include('voice.urls')),
     path('api/', include('memories.urls')),
+    path('api/academics/', include('academics.urls')),
 ]
 
 if settings.DEBUG:

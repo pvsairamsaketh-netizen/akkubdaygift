@@ -33,6 +33,8 @@ env/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+*.db
+backend/data/*.db
 media/temp_audio/*
 !media/temp_audio/.gitkeep
 media/tts_audio/*

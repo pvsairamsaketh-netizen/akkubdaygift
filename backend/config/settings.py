@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'chat.apps.ChatConfig',
     'voice.apps.VoiceConfig',
     'memories.apps.MemoriesConfig',
+    'academics.apps.AcademicsConfig',
 ]
 
 MIDDLEWARE = [
@@ -121,6 +122,12 @@ CORS_ALLOWED_ORIGINS = [
     ).split(',') if origin.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
+from corsheaders.defaults import default_headers
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-user-id',
+    'X-User-ID',
+    'x-user-id'.lower(),
+]
 
 # --- Saki & Akku AI Assistant & RAG Settings ---
 

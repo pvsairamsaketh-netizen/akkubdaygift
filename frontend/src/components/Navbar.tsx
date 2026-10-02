@@ -10,11 +10,12 @@ import {
   Menu,
   X,
   Lock,
-  Sparkles
+  Sparkles,
+  GraduationCap
 } from 'lucide-react';
 import { RomanticAudioPlayer } from './RomanticAudioPlayer';
 
-export type NavTab = 'home' | 'chat' | 'birthday' | 'memories' | 'library' | 'voice' | 'settings';
+export type NavTab = 'home' | 'chat' | 'birthday' | 'memories' | 'library' | 'voice' | 'academics' | 'settings';
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -53,6 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'memories', label: 'Memories', icon: <BookmarkCheck className="w-3.5 h-3.5 text-rose-500" /> },
     { id: 'library', label: 'PDF Library', icon: <FileText className="w-3.5 h-3.5 text-rose-500" /> },
     { id: 'voice', label: 'Voice', icon: <Mic className="w-3.5 h-3.5 text-rose-500" /> },
+    { id: 'academics', label: 'Academics', icon: <GraduationCap className="w-3.5 h-3.5 text-amber-500" />, badge: 'DE 100D' },
     { id: 'settings', label: 'Settings', icon: <Sliders className="w-3.5 h-3.5 text-rose-500" /> },
   ];
 

@@ -6,8 +6,6 @@ interface FloatingHeartsProps {
 }
 
 export const FloatingHearts: React.FC<FloatingHeartsProps> = ({ count = 18, enabled = true }) => {
-  if (!enabled) return null;
-
   const hearts = useMemo(() => {
     return Array.from({ length: count }).map((_, i) => ({
       id: i,
@@ -19,6 +17,8 @@ export const FloatingHearts: React.FC<FloatingHeartsProps> = ({ count = 18, enab
       symbol: ['❤️', '💖', '✨', '🌸', '💕'][Math.floor(Math.random() * 5)]
     }));
   }, [count]);
+
+  if (!enabled) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
