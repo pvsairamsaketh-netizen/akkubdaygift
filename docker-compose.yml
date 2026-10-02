@@ -23,7 +23,7 @@ services:
       - DEBUG=False
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=qwen2.5:3b
-      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,pvsairamsaketh.in,.pvsairamsaketh.in
+      - ALLOWED_HOSTS=*
     volumes:
       - backend_chroma:/app/data/chroma
       - backend_media:/app/media
