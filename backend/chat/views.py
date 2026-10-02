@@ -46,12 +46,31 @@ class ConversationDetailView(APIView):
         conv.delete()
         return Response({"message": "Conversation deleted successfully."})
 
+def get_user_id(request) -> str:
+    """
+    Extracts user_id from headers, query params, or body, defaulting to 'default_user'.
+    Guarantees user-level memory isolation.
+    """
+    user = getattr(request, 'user', None)
+    if user and getattr(user, 'is_authenticated', False):
+        return str(user.id or user.username)
+    user_id = (
+        request.headers.get('X-User-ID') or
+        request.headers.get('X-User-Id') or
+        (request.query_params.get('user_id') if hasattr(request, 'query_params') else None)
+    )
+    if not user_id and hasattr(request, 'data') and isinstance(request.data, dict):
+        user_id = request.data.get('user_id')
+    return (str(user_id).strip() if user_id else "default_user")
+
+
 class ChatView(APIView):
     def post(self, request):
         question = request.data.get('question')
         if not question or not question.strip():
             return Response({"error": "Question is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        user_id = get_user_id(request)
         conversation_id = request.data.get('conversation_id')
         top_k = request.data.get('top_k')
         min_relevance = request.data.get('min_relevance')
@@ -60,6 +79,7 @@ class ChatView(APIView):
         result = rag_service.answer_question(
             question=question,
             conversation_id=conversation_id,
+            user_id=user_id,
             top_k=int(top_k) if top_k else None,
             min_relevance=float(min_relevance) if min_relevance else None
         )
@@ -71,6 +91,7 @@ class ChatStreamView(APIView):
         if not question or not question.strip():
             return Response({"error": "Question is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        user_id = get_user_id(request)
         conversation_id = request.data.get('conversation_id')
         top_k = request.data.get('top_k')
         min_relevance = request.data.get('min_relevance')
@@ -82,6 +103,7 @@ class ChatStreamView(APIView):
                 for event in rag_service.answer_question_stream(
                     question=question,
                     conversation_id=conversation_id,
+                    user_id=user_id,
                     top_k=int(top_k) if top_k else None,
                     min_relevance=float(min_relevance) if min_relevance else None
                 ):

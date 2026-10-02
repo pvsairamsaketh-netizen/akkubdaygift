@@ -36,34 +36,67 @@ class MemoryVectorStore:
         return cls._instance
 
     def upsert_memory(self, memory_id: str, text: str, metadata: Dict[str, Any], embedding: List[float]) -> None:
+        """
+        Stores or updates a memory embedding in ChromaDB with complete metadata:
+        memory_id, user_id, category, subject, date, original_text, source.
+        """
+        clean_metadata = {
+            "memory_id": str(metadata.get("memory_id", memory_id)),
+            "user_id": str(metadata.get("user_id", "default_user")),
+            "category": str(metadata.get("category", "personal_preferences")),
+            "subject": str(metadata.get("subject", "") or ""),
+            "date": str(metadata.get("date", "") or ""),
+            "original_text": str(metadata.get("original_text", text) or text),
+            "source": str(metadata.get("source", "text")),
+        }
         self.collection.upsert(
             ids=[str(memory_id)],
             embeddings=[embedding],
             documents=[text],
-            metadatas=[metadata]
+            metadatas=[clean_metadata]
         )
-        logger.info(f"Upserted memory '{memory_id}' into ChromaDB collection '{self.collection_name}'")
+        logger.info(f"Memory Record (ID: {memory_id}, User: {clean_metadata['user_id']}) → Embedding Generated → ChromaDB Stored")
 
     def search_memories(
         self,
         query_embedding: List[float],
         top_k: int = 5,
         min_relevance: float = 0.25,
+        user_id: Optional[str] = None,
         category: Optional[str] = None
     ) -> List[Dict[str, Any]]:
+        """
+        Searches ChromaDB for memories with strict user-level isolation and cosine similarity filtering.
+        """
         total = self.collection.count()
         if total == 0:
             return []
 
         actual_k = min(top_k, total)
-        where_filter = {"category": category} if category else None
 
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=actual_k,
-            where=where_filter,
-            include=["documents", "metadatas", "distances"]
-        )
+        conditions = []
+        if user_id:
+            conditions.append({"user_id": str(user_id)})
+        if category:
+            conditions.append({"category": str(category)})
+
+        if len(conditions) == 1:
+            where_filter = conditions[0]
+        elif len(conditions) > 1:
+            where_filter = {"$and": conditions}
+        else:
+            where_filter = None
+
+        try:
+            results = self.collection.query(
+                query_embeddings=[query_embedding],
+                n_results=actual_k,
+                where=where_filter,
+                include=["documents", "metadatas", "distances"]
+            )
+        except Exception as e:
+            logger.error(f"Error querying ChromaDB collection '{self.collection_name}': {e}")
+            return []
 
         if not results or not results["ids"] or not results["ids"][0]:
             return []
@@ -91,9 +124,16 @@ class MemoryVectorStore:
     def delete_memory(self, memory_id: str) -> None:
         try:
             self.collection.delete(ids=[str(memory_id)])
-            logger.info(f"Deleted memory '{memory_id}' from ChromaDB.")
+            logger.info(f"Memory Deleted (ID: {memory_id}) → ChromaDB Deleted")
         except Exception as e:
             logger.warning(f"Could not delete memory {memory_id} from Chroma: {e}")
+
+    def delete_user_memories(self, user_id: str) -> None:
+        try:
+            self.collection.delete(where={"user_id": str(user_id)})
+            logger.info(f"All memories for user '{user_id}' → ChromaDB Deleted")
+        except Exception as e:
+            logger.warning(f"Could not delete memories for user {user_id} from Chroma: {e}")
 
     def clear(self) -> None:
         try:
@@ -104,6 +144,7 @@ class MemoryVectorStore:
             name=self.collection_name,
             metadata={"description": "Akku Personal Memories Vector Store", "hnsw:space": "cosine"}
         )
+        logger.info("ChromaDB memories collection cleared and recreated.")
 
     def count(self) -> int:
         return self.collection.count()

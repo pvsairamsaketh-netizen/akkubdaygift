@@ -4,16 +4,35 @@ import type { VoiceStatus, VoiceChatResponse } from '../types/voice';
 const isLocalDev = typeof window !== 'undefined' && (window.location.port === '5173' || window.location.hostname === 'localhost' && window.location.port !== '80');
 const API_BASE = import.meta.env.VITE_API_URL || (isLocalDev ? 'http://localhost:8000/api' : '/api');
 
+export function getUserId(): string {
+  try {
+    return localStorage.getItem('akku_user_id') || 'default_user';
+  } catch {
+    return 'default_user';
+  }
+}
+
+export function getAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  return {
+    'X-User-ID': getUserId(),
+    ...extraHeaders
+  };
+}
+
 export const api = {
   // Health
   async getHealth() {
-    const res = await fetch(`${API_BASE}/health/`);
+    const res = await fetch(`${API_BASE}/health/`, {
+      headers: getAuthHeaders()
+    });
     return res.json();
   },
 
   // Conversations
   async getConversations(): Promise<ConversationSummary[]> {
-    const res = await fetch(`${API_BASE}/conversations/`);
+    const res = await fetch(`${API_BASE}/conversations/`, {
+      headers: getAuthHeaders()
+    });
     if (!res.ok) throw new Error("Failed to load conversations");
     return res.json();
   },
@@ -21,7 +40,7 @@ export const api = {
   async createConversation(title?: string): Promise<ConversationSummary> {
     const res = await fetch(`${API_BASE}/conversations/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ title: title || "New Relationship Memory" })
     });
     if (!res.ok) throw new Error("Failed to create conversation");
@@ -29,7 +48,9 @@ export const api = {
   },
 
   async getConversation(id: string): Promise<ConversationDetail> {
-    const res = await fetch(`${API_BASE}/conversations/${id}/`);
+    const res = await fetch(`${API_BASE}/conversations/${id}/`, {
+      headers: getAuthHeaders()
+    });
     if (!res.ok) throw new Error("Failed to load conversation messages");
     return res.json();
   },
@@ -37,7 +58,7 @@ export const api = {
   async renameConversation(id: string, title: string): Promise<ConversationSummary> {
     const res = await fetch(`${API_BASE}/conversations/${id}/`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ title })
     });
     if (!res.ok) throw new Error("Failed to rename conversation");
@@ -46,7 +67,8 @@ export const api = {
 
   async deleteConversation(id: string): Promise<void> {
     const res = await fetch(`${API_BASE}/conversations/${id}/`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error("Failed to delete conversation");
   },
@@ -60,8 +82,8 @@ export const api = {
   ) {
     const res = await fetch(`${API_BASE}/chat/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, conversation_id, top_k, min_relevance })
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ question, conversation_id, top_k, min_relevance, user_id: getUserId() })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -82,8 +104,8 @@ export const api = {
   ) {
     const res = await fetch(`${API_BASE}/chat/stream/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, conversation_id })
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ question, conversation_id, user_id: getUserId() })
     });
 
     if (!res.ok) {
@@ -236,16 +258,18 @@ export const api = {
     const query = new URLSearchParams();
     if (params?.category) query.append('category', params.category);
     if (params?.search) query.append('search', params.search);
-    const res = await fetch(`${API_BASE}/memories/?${query.toString()}`);
+    const res = await fetch(`${API_BASE}/memories/?${query.toString()}`, {
+      headers: getAuthHeaders()
+    });
     if (!res.ok) throw new Error("Failed to fetch memories");
     return res.json();
   },
 
-  async createMemory(data: { memory_text: string; category?: string; subject?: string }) {
+  async createMemory(data: { memory_text: string; category?: string; subject?: string; event_date?: string }) {
     const res = await fetch(`${API_BASE}/memories/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ ...data, user_id: getUserId() })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -254,11 +278,11 @@ export const api = {
     return res.json();
   },
 
-  async updateMemory(id: string, data: { memory_text?: string; category?: string; subject?: string }) {
+  async updateMemory(id: string, data: { memory_text?: string; category?: string; subject?: string; event_date?: string }) {
     const res = await fetch(`${API_BASE}/memories/${id}/`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ ...data, user_id: getUserId() })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -269,7 +293,8 @@ export const api = {
 
   async deleteMemory(id: string) {
     const res = await fetch(`${API_BASE}/memories/${id}/`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -280,7 +305,9 @@ export const api = {
 
   async clearAllMemories() {
     const res = await fetch(`${API_BASE}/memories/clear/`, {
-      method: 'POST'
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ user_id: getUserId() })
     });
     if (!res.ok) throw new Error("Failed to clear memories");
     return res.json();

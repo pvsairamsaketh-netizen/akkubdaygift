@@ -19,6 +19,7 @@ class PersonalMemory(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_id = models.CharField(max_length=100, default='default_user', db_index=True, help_text="User ID for isolation")
     memory_text = models.TextField(help_text="The extracted fact or memory statement about Akku")
     original_input = models.TextField(blank=True, null=True, help_text="The original message spoken or typed by Saketh")
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='personal_preferences')

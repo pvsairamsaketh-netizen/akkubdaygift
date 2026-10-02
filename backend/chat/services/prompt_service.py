@@ -151,6 +151,7 @@ RETRIEVED DOCUMENT PASSAGES (From Relationship Archive):
 RESPONSE GUIDELINES:
 - Match the language of Saki's question: if asked in Hindi or Hinglish, answer in Hindi / Hinglish. If asked in Telugu, answer in Telugu. If in English, answer in English.
 - Answer Saki's question with a thorough, detailed, and complete response that tells the full story.
+- CRITICAL FOR PERSONAL PREFERENCES & MEMORIES: If Saki's question is about Akku's personal preferences, food choices, ice cream flavor, likes/dislikes, or health, and the fact is present in STORED CONVERSATIONAL MEMORIES ABOUT AKKU, you MUST ground your answer directly and confidently in that memory. For example, if a memory says Akku only likes vanilla flavor ice cream, state warmly that Akku likes vanilla flavor ice cream.
 - NEVER ask questions back to Saki. NEVER end with a question mark.
 - Do NOT give brief 1-line answers; provide proper context, events, and background.
 - Do NOT include prefaces like "Based on the documents...". Start directly with the warm, detailed answer.

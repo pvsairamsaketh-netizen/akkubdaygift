@@ -47,9 +47,10 @@ class MemoryExtractor:
         (r'\bwe\s+had\s+([^.\n]+)\s+together', 'shared_experiences', 'Shared Moment'),
     ]
 
-    def extract_memories_from_text(self, text: str, source: str = "text") -> List[PersonalMemory]:
+    def extract_memories_from_text(self, text: str, source: str = "text", user_id: str = "default_user") -> List[PersonalMemory]:
         """
-        Extracts relevant facts about Akku from user input and saves them to SQLite + ChromaDB.
+        Extracts relevant facts about Akku from user input and saves them to SQLite + ChromaDB
+        associated with the specific user_id.
         """
         if not text or len(text.strip()) < 5:
             return []
@@ -93,8 +94,9 @@ class MemoryExtractor:
 
         saved_memories = []
         for fact in extracted_facts:
-            # Check for contradiction / update on same subject (e.g. favorite color)
+            # Check for contradiction / update on same subject for THIS user
             existing = PersonalMemory.objects.filter(
+                user_id=user_id,
                 is_active=True,
                 category=fact["category"],
                 subject=fact["subject"]
@@ -102,6 +104,7 @@ class MemoryExtractor:
 
             # Create new memory
             mem = PersonalMemory.objects.create(
+                user_id=user_id,
                 memory_text=fact["memory_text"],
                 original_input=fact["original_input"],
                 category=fact["category"],
@@ -120,20 +123,27 @@ class MemoryExtractor:
                 logger.info(f"Memory {existing.id} superseded by new memory {mem.id}")
 
             # Embed and save to ChromaDB
-            emb = self.embedding_service.embed_query(mem.memory_text)
-            meta = {
-                "memory_id": str(mem.id),
-                "category": mem.category,
-                "subject": str(mem.subject or ""),
-                "source": mem.source,
-                "created_at": mem.conversation_timestamp.isoformat()
-            }
-            self.vector_store.upsert_memory(
-                memory_id=str(mem.id),
-                text=mem.memory_text,
-                metadata=meta,
-                embedding=emb
-            )
+            try:
+                emb = self.embedding_service.embed_query(mem.memory_text)
+                meta = {
+                    "memory_id": str(mem.id),
+                    "user_id": str(mem.user_id),
+                    "category": mem.category,
+                    "subject": str(mem.subject or ""),
+                    "date": mem.conversation_timestamp.strftime("%Y-%m-%d"),
+                    "original_text": mem.memory_text,
+                    "source": mem.source,
+                }
+                self.vector_store.upsert_memory(
+                    memory_id=str(mem.id),
+                    text=mem.memory_text,
+                    metadata=meta,
+                    embedding=emb
+                )
+                logger.info(f"Memory Created (ID: {mem.id}, User: {mem.user_id}) → Embedding Generated → ChromaDB Stored")
+            except Exception as e:
+                logger.error(f"Error vectorizing memory {mem.id}: {e}", exc_info=True)
+
             saved_memories.append(mem)
 
         return saved_memories

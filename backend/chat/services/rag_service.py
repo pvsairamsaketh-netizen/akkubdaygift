@@ -36,8 +36,15 @@ class RAGService:
         self.memory_extractor = MemoryExtractor()
         self.memory_retriever = MemoryRetriever()
 
-    def _normalize_key(self, question: str) -> str:
-        return " ".join(question.lower().strip().split())
+    @classmethod
+    def clear_cache(cls):
+        """Clears the query response cache when memories or documents are modified."""
+        cls._answer_cache.clear()
+        logger.info("Cleared RAGService answer cache")
+
+    def _cache_key(self, user_id: str, question: str) -> str:
+        norm = " ".join(question.lower().strip().split())
+        return f"{user_id}:{norm}"
 
     @staticmethod
     def _clean_trailing_questions(text: str) -> str:
@@ -56,16 +63,17 @@ class RAGService:
         self,
         question: str,
         conversation_id: Optional[str] = None,
+        user_id: str = "default_user",
         source: str = "text",
         top_k: Optional[int] = None,
         min_relevance: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Synchronously answers a question using low-latency RAG pipeline.
-        Caches repeated queries and computes query embedding exactly once.
+        Caches repeated queries per user and computes query embedding exactly once.
         """
         start_time = time.time()
-        norm_key = self._normalize_key(question)
+        cache_key = self._cache_key(user_id, question)
 
         # 1. Get or create conversation
         conversation = self.conversation_service.get_or_create_conversation(conversation_id)
@@ -79,8 +87,8 @@ class RAGService:
         )
 
         # 3. Check instant response cache if no prior conversation turn in this session
-        if not history and norm_key in self._answer_cache:
-            cached = self._answer_cache[norm_key]
+        if not history and cache_key in self._answer_cache:
+            cached = self._answer_cache[cache_key]
             cached_latency = round(time.time() - start_time, 2)
             asst_msg = self.conversation_service.add_message(
                 conversation=conversation,
@@ -107,26 +115,28 @@ class RAGService:
                 "model": self.llm_service.model_name
             }
 
-        # 4. Extract personal memories from user statement (lightweight regex)
+        # 4. Extract personal memories from user statement (scoped to this user_id)
         new_memories = []
         try:
-            new_memories = self.memory_extractor.extract_memories_from_text(question, source=source)
+            new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
             if new_memories:
-                logger.info(f"Captured {len(new_memories)} new memory details")
+                logger.info(f"Captured {len(new_memories)} new memory details for user '{user_id}'")
         except Exception as e:
             logger.warning(f"Memory extraction non-fatal error: {e}")
 
         # 5. Compute query embedding ONCE for both memory and document retrieval
         query_embedding = self.retrieval_service.embedding_service.embed_query(question)
 
-        # 6. Retrieve stored personal memories (top 1-2 only)
+        # 6. Retrieve stored personal memories strictly belonging ONLY to current user
         retrieved_memories = self.memory_retriever.retrieve_memories(
             query=question,
-            top_k=2,
+            top_k=min(top_k or 3, 5),
+            min_relevance=min_relevance or 0.25,
+            user_id=user_id,
             query_embedding=query_embedding
         )
 
-        # 7. Retrieve minimum relevant chunks (TOP_K = 1 to 2, max 3)
+        # 7. Retrieve relevant chunks from PDF archive (TOP_K = 1 to 2, max 3)
         effective_top_k = min(top_k or 2, 3)
         chunks = self.retrieval_service.retrieve(
             question=question,
@@ -136,7 +146,7 @@ class RAGService:
             query_embedding=query_embedding
         )
 
-        # 8. Build prompt messages with minimal context
+        # 8. Build prompt messages with minimal context and memory grounding
         messages = self.prompt_service.build_prompt(
             question=question,
             retrieved_chunks=chunks,
@@ -188,9 +198,9 @@ class RAGService:
             "model": self.llm_service.model_name
         }
 
-        # Cache successful answer for instant response
+        # Cache successful answer for instant response (scoped to user)
         if answer and not answer.startswith("I'm having a little trouble"):
-            self._answer_cache[norm_key] = {
+            self._answer_cache[cache_key] = {
                 "answer": answer,
                 "citations": citations,
                 "personal_memories": retrieved_memories
@@ -202,14 +212,16 @@ class RAGService:
         self,
         question: str,
         conversation_id: Optional[str] = None,
+        user_id: str = "default_user",
         source: str = "text",
         top_k: Optional[int] = None,
         min_relevance: Optional[float] = None
     ) -> Generator[Dict[str, Any], None, None]:
         """
-        Server-Sent Events streaming with automatic memory extraction.
+        Server-Sent Events streaming with automatic memory extraction and user-scoped retrieval.
         """
         start_time = time.time()
+        cache_key = self._cache_key(user_id, question)
 
         conversation = self.conversation_service.get_or_create_conversation(conversation_id)
         history = self.conversation_service.get_history(conversation)
@@ -220,20 +232,22 @@ class RAGService:
             content=question
         )
 
-        # Extract memories (lightweight regex)
+        # Extract memories (scoped to this user_id)
         new_memories = []
         try:
-            new_memories = self.memory_extractor.extract_memories_from_text(question, source=source)
+            new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
         except Exception:
             pass
 
         # Single embedding pass for both memories and document passages
         query_embedding = self.retrieval_service.embedding_service.embed_query(question)
 
-        # Retrieve personal memories & document passages (top 1-2 only)
+        # Retrieve personal memories strictly belonging ONLY to current user
         retrieved_memories = self.memory_retriever.retrieve_memories(
             query=question,
-            top_k=2,
+            top_k=min(top_k or 3, 5),
+            min_relevance=min_relevance or 0.25,
+            user_id=user_id,
             query_embedding=query_embedding
         )
         effective_top_k = min(top_k or 2, 3)
@@ -293,9 +307,8 @@ class RAGService:
             metadata=metadata
         )
 
-        norm_key = self._normalize_key(question)
         if complete_text and not complete_text.startswith("I'm having a little trouble"):
-            self._answer_cache[norm_key] = {
+            self._answer_cache[cache_key] = {
                 "answer": complete_text,
                 "citations": citations,
                 "personal_memories": retrieved_memories

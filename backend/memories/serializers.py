@@ -7,7 +7,7 @@ class PersonalMemorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonalMemory
         fields = [
-            'id', 'memory_text', 'original_input', 'category', 'subject',
+            'id', 'user_id', 'memory_text', 'original_input', 'category', 'subject',
             'source', 'confidence', 'event_date', 'conversation_timestamp',
             'timestamp_formatted', 'is_active', 'metadata'
         ]
