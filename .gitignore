@@ -72,3 +72,7 @@ frontend/node_modules/
 .vscode/
 *.swp
 *.swo
+
+# Keys & Certificates
+*.pem
+*.key
