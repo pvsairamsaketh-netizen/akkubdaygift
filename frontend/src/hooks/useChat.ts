@@ -33,7 +33,7 @@ export function useChat(activeConversationId: string | null) {
     autoSpeak: boolean = false,
     onSpeechReady?: (audioUrl: string) => void
   ) => {
-    if (!question.trim()) return;
+    if (!question.trim() || loading) return;
 
     // Create optimistic user message
     const tempUserMsg: Message = {

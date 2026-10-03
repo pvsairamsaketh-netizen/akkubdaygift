@@ -16,3 +16,5 @@ kokoro>=0.8.0
 pytest>=8.0.0
 pytest-django>=4.9.0
 gunicorn>=22.0.0
+langchain-core>=0.3.0
+langgraph>=0.2.0

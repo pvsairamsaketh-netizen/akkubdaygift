@@ -103,7 +103,9 @@ class PersonalMemoryListView(APIView):
         # 3. Invalidate chatbot response cache
         try:
             from chat.services.rag_service import RAGService
+            from chat.services.rag_graph import RAGGraphService
             RAGService.clear_cache()
+            RAGGraphService.clear_cache()
         except Exception as e:
             logger.warning(f"Could not clear RAG answer cache: {e}")
 
@@ -170,7 +172,9 @@ class PersonalMemoryDetailView(APIView):
         # Invalidate answer cache
         try:
             from chat.services.rag_service import RAGService
+            from chat.services.rag_graph import RAGGraphService
             RAGService.clear_cache()
+            RAGGraphService.clear_cache()
         except Exception as e:
             logger.warning(f"Could not clear RAG answer cache: {e}")
 
@@ -199,7 +203,9 @@ class PersonalMemoryDetailView(APIView):
         # Invalidate answer cache
         try:
             from chat.services.rag_service import RAGService
+            from chat.services.rag_graph import RAGGraphService
             RAGService.clear_cache()
+            RAGGraphService.clear_cache()
         except Exception as e:
             logger.warning(f"Could not clear RAG answer cache: {e}")
 

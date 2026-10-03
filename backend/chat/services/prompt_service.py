@@ -103,17 +103,31 @@ CRITICAL ANSWERING RULES:
         # Standard English or other languages
         return "[Language Directive: Answer Saki with a thorough, loving, and complete response in his language. Do NOT ask any follow-up question. Do NOT end with a question mark.]"
 
+    FAST_SYSTEM_INSTRUCTIONS = """You are Akku AI, speaking directly with Saki. You are a warm, loving AI companion created by Saki as a personalized birthday gift for Akku.
+RULES:
+1. Answer Saki's question directly, warmly, and concisely (2-4 natural sentences) grounded strictly in the stored memories.
+2. If a fact or preference (e.g. favorite ice cream flavor, birthday, favorite food) is present in the stored memories, state it warmly and directly.
+3. If no matching memory is found, respond naturally: "I don't have that memory saved yet ❤️"
+4. NEVER ask questions back to Saki. NEVER end with a question mark.
+5. End with a loving reflection or emoji (❤️/✨/😊).
+6. Match Saki's language (Hindi, Hinglish, English, Telugu, Tamil)."""
+
     def build_prompt(
         self,
         question: str,
         retrieved_chunks: List[Dict[str, Any]],
         conversation_history: List[Dict[str, str]],
-        personal_memories: Optional[List[Dict[str, Any]]] = None
+        personal_memories: Optional[List[Dict[str, Any]]] = None,
+        question_type: Optional[str] = None
     ) -> List[Dict[str, str]]:
         """
-        Builds messages for Ollama with System prompt, Stored Memories,
-        Retrieved Document Context, and Conversation History.
+        Builds optimized messages for Ollama with System prompt, Stored Memories,
+        Retrieved Document Context, and Bounded Conversation History.
+        Supports fast prompt path for low latency (< 150 tokens) on simple queries.
         """
+        if question_type is None:
+            question_type = "simple" if (personal_memories and not retrieved_chunks) else "complex"
+
         # 1. Format Stored Personal Memories
         memory_parts = []
         if personal_memories:
@@ -124,7 +138,26 @@ CRITICAL ANSWERING RULES:
         else:
             memories_text = "No specific personal memory notes retrieved for this question."
 
-        # 2. Format Retrieved Document Passages
+        # 2. Fast Path for Simple Factual Queries (< 150 prompt tokens)
+        if question_type == "simple":
+            system_content = f"""{self.FAST_SYSTEM_INSTRUCTIONS}
+
+STORED CONVERSATIONAL MEMORIES ABOUT AKKU:
+{memories_text}"""
+            messages = [{"role": "system", "content": system_content}]
+
+            # Bounded history: at most last 2 turns
+            for msg in conversation_history[-2:]:
+                role = msg.get("role")
+                content = msg.get("content")
+                if role in ("user", "assistant") and content:
+                    messages.append({"role": role, "content": content})
+
+            lang_directive = self.detect_language_instruction(question)
+            messages.append({"role": "user", "content": f"{lang_directive}\n{question.strip()}"})
+            return messages
+
+        # 3. Standard Path for Complex Narrative Queries
         context_parts = []
         if retrieved_chunks:
             for idx, chunk in enumerate(retrieved_chunks):
@@ -139,7 +172,6 @@ CRITICAL ANSWERING RULES:
         else:
             context_text = "No direct passages found in relationship documents."
 
-        # 3. Construct System Content
         system_content = f"""{self.SYSTEM_INSTRUCTIONS}
 
 STORED CONVERSATIONAL MEMORIES ABOUT AKKU:
@@ -149,30 +181,21 @@ RETRIEVED DOCUMENT PASSAGES (From Relationship Archive):
 {context_text}
 
 RESPONSE GUIDELINES:
-- Match the language of Saki's question: if asked in Hindi or Hinglish, answer in Hindi / Hinglish. If asked in Telugu, answer in Telugu. If in English, answer in English.
+- Match the language of Saki's question: if asked in Hindi or Hinglish, answer in Hindi / Hinglish. If in English, answer in English.
 - Answer Saki's question with a thorough, detailed, and complete response that tells the full story.
-- CRITICAL FOR PERSONAL PREFERENCES & MEMORIES: If Saki's question is about Akku's personal preferences, food choices, ice cream flavor, likes/dislikes, or health, and the fact is present in STORED CONVERSATIONAL MEMORIES ABOUT AKKU, you MUST ground your answer directly and confidently in that memory. For example, if a memory says Akku only likes vanilla flavor ice cream, state warmly that Akku likes vanilla flavor ice cream.
 - NEVER ask questions back to Saki. NEVER end with a question mark.
-- Do NOT give brief 1-line answers; provide proper context, events, and background.
-- Do NOT include prefaces like "Based on the documents...". Start directly with the warm, detailed answer.
 - Prioritize real stored facts and memories.
-- Keep the language natural, romantic, and affectionate.
-- Do NOT include bracketed page citations or raw database metadata."""
+- Keep the language natural, romantic, and affectionate."""
 
-        messages = [
-            {"role": "system", "content": system_content}
-        ]
+        messages = [{"role": "system", "content": system_content}]
 
-        # 4. Add bounded recent conversation history
-        for msg in conversation_history[-6:]:
+        # Add bounded recent conversation history (max 4 turns)
+        for msg in conversation_history[-4:]:
             role = msg.get("role")
             content = msg.get("content")
             if role in ("user", "assistant") and content:
                 messages.append({"role": role, "content": content})
 
-        # 5. Add user question with explicit targeted language directive
         lang_directive = self.detect_language_instruction(question)
-        user_content = f"{lang_directive}\n{question.strip()}"
-        messages.append({"role": "user", "content": user_content})
-
+        messages.append({"role": "user", "content": f"{lang_directive}\n{question.strip()}"})
         return messages

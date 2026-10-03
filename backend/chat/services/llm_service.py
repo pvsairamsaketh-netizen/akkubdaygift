@@ -27,10 +27,11 @@ class LLMService:
         self.temperature = temperature if temperature is not None else getattr(settings, 'OLLAMA_TEMPERATURE', 0.4)
         self.top_p = getattr(settings, 'OLLAMA_TOP_P', 0.9)
         self.repeat_penalty = getattr(settings, 'OLLAMA_REPEAT_PENALTY', 1.15)
-        self.num_ctx = num_ctx or getattr(settings, 'OLLAMA_NUM_CTX', 4096)
-        self.max_tokens = max_tokens or getattr(settings, 'OLLAMA_MAX_TOKENS', 512)
-        self.keep_alive = keep_alive or getattr(settings, 'OLLAMA_KEEP_ALIVE', '5m')
+        self.num_ctx = num_ctx or getattr(settings, 'OLLAMA_NUM_CTX', 1536)
+        self.max_tokens = max_tokens or getattr(settings, 'OLLAMA_MAX_TOKENS', 256)
+        self.keep_alive = keep_alive or getattr(settings, 'OLLAMA_KEEP_ALIVE', '10m')
         self.session = requests.Session()
+        self._available_models_cache: Optional[List[str]] = None
 
     def is_available(self) -> bool:
         """Checks if Ollama server is running and accessible."""
@@ -41,31 +42,60 @@ class LLMService:
             return False
 
     def list_models(self) -> List[str]:
-        """Returns list of downloaded Ollama models."""
+        """Returns list of downloaded Ollama models with caching."""
+        if self._available_models_cache is not None:
+            return self._available_models_cache
         try:
-            resp = self.session.get(f"{self.base_url}/api/tags", timeout=3.0)
+            resp = self.session.get(f"{self.base_url}/api/tags", timeout=2.0)
             if resp.status_code == 200:
                 data = resp.json()
-                return [m.get("name") for m in data.get("models", [])]
+                models = [m.get("name") for m in data.get("models", [])]
+                self._available_models_cache = models
+                return models
         except Exception as e:
             logger.warning(f"Could not fetch Ollama models: {e}")
-        return []
+        return [self.model_name]
 
-    def generate(self, messages: List[Dict[str, str]]) -> str:
+    def get_optimal_model(self, question_type: str = "simple") -> str:
+        """
+        Dynamically routes model based on question complexity:
+        - simple factual questions -> fast low-latency model (e.g. qwen2.5:1.5b)
+        - complex narrative questions -> standard model (e.g. qwen2.5:3b)
+        """
+        models = self.list_models()
+        if question_type == "simple":
+            for fast_candidate in ["qwen2.5:1.5b", "qwen2.5:0.5b"]:
+                if any(fast_candidate in m for m in models):
+                    return fast_candidate
+        return self.model_name
+
+    def generate(
+        self,
+        messages: List[Dict[str, str]],
+        model_name: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        num_ctx: Optional[int] = None,
+        temperature: Optional[float] = None
+    ) -> str:
         """
         Synchronously generates complete response from Ollama /api/chat.
         """
+        chosen_model = model_name or self.model_name
+        ctx = num_ctx or self.num_ctx
+        predict = max_tokens or self.max_tokens
+        temp = temperature if temperature is not None else self.temperature
+
         payload = {
-            "model": self.model_name,
+            "model": chosen_model,
             "messages": messages,
             "stream": False,
             "options": {
-                "temperature": self.temperature,
+                "temperature": temp,
                 "top_p": self.top_p,
                 "repeat_penalty": self.repeat_penalty,
-                "repeat_last_n": 64,
-                "num_ctx": self.num_ctx,
-                "num_predict": self.max_tokens
+                "repeat_last_n": 48,
+                "num_ctx": ctx,
+                "num_predict": predict
             },
             "keep_alive": self.keep_alive
         }
@@ -74,7 +104,7 @@ class LLMService:
             resp = self.session.post(
                 f"{self.base_url}/api/chat",
                 json=payload,
-                timeout=90.0
+                timeout=60.0
             )
             if resp.status_code != 200:
                 error_msg = f"Ollama returned HTTP {resp.status_code}: {resp.text}"
@@ -94,22 +124,34 @@ class LLMService:
             logger.error(f"Error during LLM generation: {e}")
             raise
 
-    def generate_stream(self, messages: List[Dict[str, str]]) -> Generator[str, None, None]:
+    def generate_stream(
+        self,
+        messages: List[Dict[str, str]],
+        model_name: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        num_ctx: Optional[int] = None,
+        temperature: Optional[float] = None
+    ) -> Generator[str, None, None]:
         """
         Streams response tokens incrementally from Ollama /api/chat.
         Yields token strings.
         """
+        chosen_model = model_name or self.model_name
+        ctx = num_ctx or self.num_ctx
+        predict = max_tokens or self.max_tokens
+        temp = temperature if temperature is not None else self.temperature
+
         payload = {
-            "model": self.model_name,
+            "model": chosen_model,
             "messages": messages,
             "stream": True,
             "options": {
-                "temperature": self.temperature,
+                "temperature": temp,
                 "top_p": self.top_p,
                 "repeat_penalty": self.repeat_penalty,
-                "repeat_last_n": 64,
-                "num_ctx": self.num_ctx,
-                "num_predict": self.max_tokens
+                "repeat_last_n": 48,
+                "num_ctx": ctx,
+                "num_predict": predict
             },
             "keep_alive": self.keep_alive
         }
@@ -119,7 +161,7 @@ class LLMService:
                 f"{self.base_url}/api/chat",
                 json=payload,
                 stream=True,
-                timeout=(5.0, 90.0)
+                timeout=(5.0, 60.0)
             ) as response:
                 if response.status_code != 200:
                     yield f"Error: Ollama server returned status {response.status_code}"

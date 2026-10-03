@@ -5,8 +5,11 @@ from rest_framework import status
 from django.http import StreamingHttpResponse
 from chat.models import Conversation
 from chat.serializers import ConversationSerializer, ConversationSummarySerializer
-from chat.services.rag_service import RAGService
+from chat.services.rag_graph import RAGGraphService
 from chat.services.retrieval_service import RetrievalService
+
+# Initialize reusable singleton instance on startup (zero per-request reconnection overhead)
+rag_graph_service = RAGGraphService()
 
 class ConversationListCreateView(APIView):
     def get(self, request):
@@ -75,8 +78,7 @@ class ChatView(APIView):
         top_k = request.data.get('top_k')
         min_relevance = request.data.get('min_relevance')
 
-        rag_service = RAGService()
-        result = rag_service.answer_question(
+        result = rag_graph_service.answer_question(
             question=question,
             conversation_id=conversation_id,
             user_id=user_id,
@@ -96,11 +98,9 @@ class ChatStreamView(APIView):
         top_k = request.data.get('top_k')
         min_relevance = request.data.get('min_relevance')
 
-        rag_service = RAGService()
-
         def event_stream():
             try:
-                for event in rag_service.answer_question_stream(
+                for event in rag_graph_service.answer_question_stream(
                     question=question,
                     conversation_id=conversation_id,
                     user_id=user_id,

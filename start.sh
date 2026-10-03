@@ -78,13 +78,15 @@ else
     fi
 fi
 
-# Ensure qwen2.5:3b model is pulled
-if curl -s http://localhost:11434/api/tags | grep -q "qwen2.5:3b"; then
-    echo -e "  ${GREEN}✓ Model 'qwen2.5:3b' is loaded and ready.${RESET}"
-else
-    echo -e "  Pulling 'qwen2.5:3b' model into Ollama..."
-    ollama pull qwen2.5:3b
-fi
+# Ensure low-latency model qwen2.5:1.5b and qwen2.5:3b are available
+for model in "qwen2.5:1.5b" "qwen2.5:3b"; do
+    if curl -s http://localhost:11434/api/tags | grep -q "$model"; then
+        echo -e "  ${GREEN}✓ Model '$model' is loaded and ready.${RESET}"
+    else
+        echo -e "  Pulling '$model' into Ollama for ultra-low latency..."
+        ollama pull "$model"
+    fi
+done
 
 # ------------------------------------------------------------------------------
 # 2. Start Django Backend Server (Port 8000)
