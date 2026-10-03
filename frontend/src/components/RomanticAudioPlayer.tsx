@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX, Music, Play, Pause } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause, Disc3 } from 'lucide-react';
 import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 interface RomanticAudioPlayerProps {
@@ -10,103 +10,125 @@ export const RomanticAudioPlayer: React.FC<RomanticAudioPlayerProps> = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const { triggerMemoryPhoto } = useMemoryPhotos();
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const intervalRef = useRef<any>(null);
-
-  // Soft romantic chord progression notes (Hz)
-  // Cmaj7 -> Am9 -> Fmaj7 -> G6
-  const chordNotes = [
-    [261.63, 329.63, 392.00, 493.88], // C E G B
-    [220.00, 261.63, 329.63, 440.00], // A C E A
-    [174.61, 261.63, 329.63, 349.23], // F C E F
-    [196.00, 246.94, 293.66, 392.00]  // G B D G
-  ];
-
-  const playChord = (chordIndex: number) => {
-    if (!audioCtxRef.current || isMuted) return;
-    const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
-
-    const chord = chordNotes[chordIndex % chordNotes.length];
-    chord.forEach((freq, noteIdx) => {
-      try {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const filter = ctx.createBiquadFilter();
-
-        osc.type = noteIdx % 2 === 0 ? 'sine' : 'triangle';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(600, ctx.currentTime);
-
-        const now = ctx.currentTime + noteIdx * 0.15; // gentle arpeggio
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.exponentialRampToValueAtTime(0.04, now + 0.4);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.8);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now);
-        osc.stop(now + 4.0);
-      } catch (err) {
-        // audio node error handling
-      }
-    });
-  };
-
-  const togglePlay = () => {
-    if (isPlaying) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-      setIsPlaying(false);
-    } else {
-      triggerMemoryPhoto('melody');
-      if (!audioCtxRef.current) {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        audioCtxRef.current = new AudioCtx();
-      }
-      if (audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume();
-      }
-      setIsPlaying(true);
-      let chordIndex = 0;
-      playChord(chordIndex);
-      intervalRef.current = setInterval(() => {
-        chordIndex++;
-        playChord(chordIndex);
-      }, 4200);
-    }
-  };
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    const audio = new Audio();
+    // Provide both mp3 and m4a source paths
+    audio.src = '/audio/Alaakaa-loova.mp3';
+    audio.loop = true;
+    audio.volume = 0.75;
+    audioRef.current = audio;
+
+    const handleEnded = () => setIsPlaying(false);
+    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => setIsPlaying(true);
+    const handleError = () => {
+      // Fallback to m4a if mp3 fails
+      if (audioRef.current && audioRef.current.src.endsWith('.mp3')) {
+        audioRef.current.src = '/audio/Alaakaa-loova.m4a';
+        audioRef.current.load();
+      }
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('error', handleError);
+
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('error', handleError);
+      audio.pause();
+      audioRef.current = null;
     };
   }, []);
 
+  const togglePlay = async () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      try {
+        triggerMemoryPhoto('melody');
+        await audioRef.current.play();
+        setIsPlaying(true);
+      } catch (err) {
+        console.warn('[RomanticAudioPlayer] Autoplay prevented or playback error:', err);
+      }
+    }
+  };
+
+  const toggleMute = () => {
+    if (!audioRef.current) return;
+    const nextMuted = !isMuted;
+    audioRef.current.muted = nextMuted;
+    setIsMuted(nextMuted);
+  };
+
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50/80 backdrop-blur border border-rose-200/60 shadow-sm text-xs text-rose-900 transition-all hover:bg-rose-100/70">
-      <Music className={`w-3.5 h-3.5 text-rose-500 ${isPlaying ? 'animate-bounce' : ''}`} />
-      <span className="font-medium hidden sm:inline">Melody</span>
+    <div 
+      className="group relative flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-gradient-to-r from-rose-50/90 via-pink-50/90 to-rose-50/90 backdrop-blur-md border border-rose-200/80 shadow-xs text-xs text-rose-900 transition-all hover:bg-rose-100/80 hover:shadow-sm"
+      title="Alaakaa Loova — Our Romantic Song ❤️"
+    >
+      {/* Spinning vinyl disk icon when playing */}
+      <div className="relative flex items-center justify-center">
+        <Disc3 className={`w-4 h-4 text-rose-600 transition-transform ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+        {isPlaying && (
+          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+        )}
+      </div>
+
+      {/* Track info & mini sound wave equalizer */}
+      <div className="flex flex-col">
+        <div className="flex items-center gap-1.5">
+          <span className="font-semibold text-rose-950 tracking-tight hidden sm:inline">
+            Alaakaa Loova
+          </span>
+          <span className="font-medium text-rose-800 sm:hidden">
+            Song
+          </span>
+          {isPlaying && (
+            <div className="flex items-end gap-0.5 h-3 ml-0.5">
+              <span className="w-0.5 bg-rose-500 rounded-full animate-pulse" style={{ height: '60%' }} />
+              <span className="w-0.5 bg-rose-600 rounded-full animate-pulse" style={{ height: '100%', animationDelay: '0.2s' }} />
+              <span className="w-0.5 bg-pink-500 rounded-full animate-pulse" style={{ height: '40%', animationDelay: '0.4s' }} />
+              <span className="w-0.5 bg-rose-500 rounded-full animate-pulse" style={{ height: '80%', animationDelay: '0.1s' }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Play/Pause Button */}
       <button
         onClick={togglePlay}
-        className="p-1 rounded-full hover:bg-rose-200/60 text-rose-700 transition-colors"
-        title={isPlaying ? "Pause background melody" : "Play romantic melody"}
+        className="p-1 rounded-full hover:bg-rose-200/70 text-rose-700 hover:text-rose-900 transition-all active:scale-90 cursor-pointer"
+        title={isPlaying ? "Pause 'Alaakaa Loova'" : "Play 'Alaakaa Loova'"}
+        aria-label={isPlaying ? "Pause Alaakaa Loova" : "Play Alaakaa Loova"}
       >
-        {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+        {isPlaying ? (
+          <Pause className="w-3.5 h-3.5 fill-current" />
+        ) : (
+          <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+        )}
       </button>
+
+      {/* Mute/Unmute Button */}
       <button
-        onClick={() => setIsMuted(!isMuted)}
-        className="p-1 rounded-full hover:bg-rose-200/60 text-rose-700 transition-colors"
-        title={isMuted ? "Unmute" : "Mute"}
+        onClick={toggleMute}
+        className="p-1 rounded-full hover:bg-rose-200/70 text-rose-700 hover:text-rose-900 transition-all active:scale-90 cursor-pointer"
+        title={isMuted ? "Unmute song" : "Mute song"}
+        aria-label={isMuted ? "Unmute song" : "Mute song"}
       >
-        {isMuted ? <VolumeX className="w-3.5 h-3.5 text-stone-400" /> : <Volume2 className="w-3.5 h-3.5" />}
+        {isMuted ? (
+          <VolumeX className="w-3.5 h-3.5 text-stone-400" />
+        ) : (
+          <Volume2 className="w-3.5 h-3.5 text-rose-600" />
+        )}
       </button>
     </div>
   );
