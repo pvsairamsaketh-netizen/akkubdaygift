@@ -14,8 +14,10 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { PersonalMemory } from '../types/memories';
+import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 export const MemoriesPage: React.FC = () => {
+  const { triggerMemoryPhoto } = useMemoryPhotos();
   const [memories, setMemories] = useState<PersonalMemory[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -81,6 +83,7 @@ export const MemoriesPage: React.FC = () => {
       setNewText('');
       setNewSubject('');
       setIsAddModalOpen(false);
+      triggerMemoryPhoto('remember');
       showToast("Memory saved successfully into Akku's permanent memory! ❤️", "success");
       await fetchMemories();
     } catch (err: any) {
@@ -101,6 +104,7 @@ export const MemoriesPage: React.FC = () => {
         subject: newSubject.trim() || undefined
       });
       setEditingMemory(null);
+      triggerMemoryPhoto('memory');
       showToast("Memory updated successfully! ✨", "success");
       await fetchMemories();
     } catch (err: any) {
@@ -125,6 +129,7 @@ export const MemoriesPage: React.FC = () => {
     if (!confirm("Caution: Are you sure you want to delete ALL saved memories? This action is permanent.")) return;
     try {
       await api.clearAllMemories();
+      showToast("All memories cleared.", "success");
       fetchMemories();
     } catch (err) {
       alert("Failed to clear memories.");
@@ -132,6 +137,7 @@ export const MemoriesPage: React.FC = () => {
   };
 
   const openEditModal = (mem: PersonalMemory) => {
+    triggerMemoryPhoto('memory');
     setEditingMemory(mem);
     setNewText(mem.memory_text);
     setNewCategory(mem.category);

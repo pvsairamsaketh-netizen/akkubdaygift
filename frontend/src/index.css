@@ -210,6 +210,79 @@
   will-change: transform, opacity;
 }
 
+/* Photo Reveal Romantic Animations */
+@keyframes photoRevealEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.88) rotate(-2.5deg);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: blur(0px);
+  }
+}
+
+@keyframes photoFloatSubtle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(0.8deg);
+  }
+}
+
+@keyframes photoRevealExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.95) rotate(1.5deg);
+    filter: blur(3px);
+  }
+}
+
+@keyframes floatHeartSmall {
+  0% {
+    transform: translateY(0px) scale(0.8) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-35px) scale(1.1) rotate(15deg);
+    opacity: 0;
+  }
+}
+
+.animate-photo-reveal-enter {
+  animation: photoRevealEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-photo-float-subtle {
+  animation: photoFloatSubtle 3.2s ease-in-out infinite;
+}
+
+.animate-photo-reveal-exit {
+  animation: photoRevealExit 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-float-heart-small {
+  animation: floatHeartSmall 2.4s ease-out infinite;
+}
+
+.animate-float-heart-small-delay {
+  animation: floatHeartSmall 2.8s ease-out 0.8s infinite;
+}
+
 /* Accessibility: Reduced Motion Override */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
@@ -221,4 +294,11 @@
   .floating-heart-particle {
     display: none !important;
   }
+  .animate-photo-reveal-enter,
+  .animate-photo-float-subtle,
+  .animate-photo-reveal-exit {
+    animation: none !important;
+    transform: none !important;
+  }
 }
+

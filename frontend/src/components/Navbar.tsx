@@ -14,6 +14,7 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { RomanticAudioPlayer } from './RomanticAudioPlayer';
+import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 export type NavTab = 'home' | 'chat' | 'birthday' | 'memories' | 'library' | 'voice' | 'academics' | 'settings';
 
@@ -38,8 +39,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   birthdayConfig: _birthdayConfig 
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { triggerMemoryPhoto } = useMemoryPhotos();
 
   const handleSurpriseClick = () => {
+    triggerMemoryPhoto('surprise');
     if (onOpenSurprise) {
       onOpenSurprise();
     } else if (onOpenEnvelope) {

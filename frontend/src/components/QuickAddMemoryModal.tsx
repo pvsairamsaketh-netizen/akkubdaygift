@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BookmarkCheck, Sparkles, X, Check } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
+import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 interface QuickAddMemoryModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ export const QuickAddMemoryModal: React.FC<QuickAddMemoryModalProps> = ({
   onClose,
   onMemoryAdded
 }) => {
+  const { triggerMemoryPhoto } = useMemoryPhotos();
   const [memoryText, setMemoryText] = useState('');
   const [category, setCategory] = useState('personal_preferences');
   const [subject, setSubject] = useState('');
@@ -40,6 +42,9 @@ export const QuickAddMemoryModal: React.FC<QuickAddMemoryModalProps> = ({
         category,
         subject: subject.trim() || undefined
       });
+
+      // Romantic photo reveal on saving memory
+      triggerMemoryPhoto('remember');
 
       confetti({
         particleCount: 50,

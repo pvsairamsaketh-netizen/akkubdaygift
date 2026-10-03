@@ -14,12 +14,14 @@ import { useChat } from '../hooks/useChat';
 import { useVoice } from '../hooks/useVoice';
 import { api } from '../services/api';
 import { QuickAddMemoryModal } from '../components/QuickAddMemoryModal';
+import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 export const ChatPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isQuickMemoryOpen, setIsQuickMemoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { triggerMemoryPhoto } = useMemoryPhotos();
 
   const {
     conversations,
@@ -70,6 +72,11 @@ export const ChatPage: React.FC = () => {
   }, [messages, chatLoading]);
 
   const handleSendMessage = async (text: string) => {
+    if (!text || !text.trim() || chatLoading) return;
+
+    // Trigger photo immediately before starting async LLM streaming
+    triggerMemoryPhoto('chat');
+
     if (!activeId) {
       const newConv = await createNewConversation();
       // useChat will react to activeId change and we can send message
@@ -87,8 +94,14 @@ export const ChatPage: React.FC = () => {
       <ConversationSidebar
         conversations={conversations}
         activeId={activeId}
-        onSelect={(id) => setActiveId(id)}
-        onNew={() => createNewConversation()}
+        onSelect={(id) => {
+          triggerMemoryPhoto('memory');
+          setActiveId(id);
+        }}
+        onNew={() => {
+          triggerMemoryPhoto('memory');
+          createNewConversation();
+        }}
         onRename={renameConversation}
         onDelete={deleteConversation}
         isOpen={sidebarOpen}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import type { Citation } from '../types/chat';
+import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 interface SourceCitationProps {
   citations: Citation[];
@@ -8,16 +9,24 @@ interface SourceCitationProps {
 
 export const SourceCitation: React.FC<SourceCitationProps> = ({ citations }) => {
   const [expanded, setExpanded] = useState(false);
+  const { triggerMemoryPhoto } = useMemoryPhotos();
 
   // Maximum 1-2 citations directly supporting the answer
   const relevantCitations = (citations || []).slice(0, 2);
 
   if (relevantCitations.length === 0) return null;
 
+  const handleToggle = () => {
+    if (!expanded) {
+      triggerMemoryPhoto('memory');
+    }
+    setExpanded(!expanded);
+  };
+
   return (
     <div className="mt-2.5 pt-2 border-t border-rose-100/60 text-xs">
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={handleToggle}
         className="inline-flex items-center gap-1.5 text-stone-500 hover:text-rose-700 font-medium cursor-pointer transition-colors text-[11px]"
       >
         <BookOpen className="w-3 h-3 text-rose-400" />

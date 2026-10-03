@@ -15,6 +15,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { AcademicsPage } from './pages/AcademicsPage';
 import { api } from './services/api';
 import type { BirthdayConfig } from './types/memories';
+import { MemoryPhotoProvider } from './context/MemoryPhotoContext';
+import { FloatingMemoryPhoto } from './components/FloatingMemoryPhoto';
 
 const getInitialTab = (): NavTab => {
   try {
@@ -91,111 +93,117 @@ export function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-[#fff7f8] via-[#fefaf8] to-[#fff3f5] text-stone-800 flex flex-col font-sans relative overflow-x-hidden ${reduceMotion ? 'motion-reduce' : ''}`}>
-      {/* 1. LOCKED EXPERIENCE (Shown initially until 2022 is entered) */}
-      {!isUnlocked && !isCinematicRevealing && (
-        <LockedExperience
-          onUnlockSuccess={handleUnlockSuccess}
+    <MemoryPhotoProvider>
+      <div className={`min-h-screen bg-gradient-to-br from-[#fff7f8] via-[#fefaf8] to-[#fff3f5] text-stone-800 flex flex-col font-sans relative overflow-x-hidden ${reduceMotion ? 'motion-reduce' : ''}`}>
+        {/* 1. LOCKED EXPERIENCE (Shown initially until 2022 is entered) */}
+        {!isUnlocked && !isCinematicRevealing && (
+          <LockedExperience
+            onUnlockSuccess={handleUnlockSuccess}
+            recipientName={birthdayConfig?.recipient_name || 'Akku'}
+            creatorName={birthdayConfig?.creator_name || 'Saki'}
+          />
+        )}
+
+        {/* Cinematic Heart Expansion Reveal Transition */}
+        <CinematicRevealOverlay
+          isActive={isCinematicRevealing}
+          onComplete={handleCinematicComplete}
           recipientName={birthdayConfig?.recipient_name || 'Akku'}
           creatorName={birthdayConfig?.creator_name || 'Saki'}
         />
-      )}
 
-      {/* Cinematic Heart Expansion Reveal Transition */}
-      <CinematicRevealOverlay
-        isActive={isCinematicRevealing}
-        onComplete={handleCinematicComplete}
-        recipientName={birthdayConfig?.recipient_name || 'Akku'}
-        creatorName={birthdayConfig?.creator_name || 'Saki'}
-      />
+        {/* 2. POST-UNLOCK BIRTHDAY EXPERIENCE (Revealed only after correct password 2022) */}
+        {isUnlocked && (
+          <div className="flex-1 flex flex-col animate-fade-in">
+            {/* Ambient Floating Hearts & 3D Rose Petals */}
+            <FloatingHearts count={18} enabled={floatingHeartsEnabled && !reduceMotion} />
+            <RealisticRosePetals enabled={floatingHeartsEnabled && !reduceMotion} />
 
-      {/* 2. POST-UNLOCK BIRTHDAY EXPERIENCE (Revealed only after correct password 2022) */}
-      {isUnlocked && (
-        <div className="flex-1 flex flex-col animate-fade-in">
-          {/* Ambient Floating Hearts & 3D Rose Petals */}
-          <FloatingHearts count={18} enabled={floatingHeartsEnabled && !reduceMotion} />
-          <RealisticRosePetals enabled={floatingHeartsEnabled && !reduceMotion} />
+            {/* Top Navbar with Left-Aligned Elements */}
+            <Navbar
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              onOpenSurprise={() => setIsEnvelopeOpen(true)}
+              isUnlocked={isUnlocked}
+              birthdayConfig={birthdayConfig ? {
+                recipient_name: birthdayConfig.recipient_name,
+                creator_name: birthdayConfig.creator_name
+              } : undefined}
+            />
 
-          {/* Top Navbar with Left-Aligned Elements */}
-          <Navbar
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onOpenSurprise={() => setIsEnvelopeOpen(true)}
-            isUnlocked={isUnlocked}
-            birthdayConfig={birthdayConfig ? {
-              recipient_name: birthdayConfig.recipient_name,
-              creator_name: birthdayConfig.creator_name
-            } : undefined}
-          />
+            {/* Main Page Content */}
+            <main className="flex-1 relative z-10 overflow-y-auto">
+              {activeTab === 'home' && (
+                <HomePage 
+                  onNavigate={setActiveTab} 
+                  birthdayConfig={birthdayConfig} 
+                  onOpenSurprise={() => setIsEnvelopeOpen(true)}
+                  isUnlocked={isUnlocked}
+                />
+              )}
 
-          {/* Main Page Content */}
-          <main className="flex-1 relative z-10 overflow-y-auto">
-            {activeTab === 'home' && (
-              <HomePage 
-                onNavigate={setActiveTab} 
-                birthdayConfig={birthdayConfig} 
-                onOpenSurprise={() => setIsEnvelopeOpen(true)}
-                isUnlocked={isUnlocked}
-              />
-            )}
+              {activeTab === 'chat' && (
+                <div className="h-[calc(100vh-4rem)]">
+                  <ChatPage />
+                </div>
+              )}
 
-            {activeTab === 'chat' && (
-              <div className="h-[calc(100vh-4rem)]">
-                <ChatPage />
-              </div>
-            )}
+              {activeTab === 'birthday' && (
+                <BirthdayPage 
+                  onNavigate={setActiveTab} 
+                  birthdayConfig={birthdayConfig} 
+                  isUnlocked={isUnlocked}
+                  onRequestUnlock={() => setIsEnvelopeOpen(true)}
+                />
+              )}
 
-            {activeTab === 'birthday' && (
-              <BirthdayPage 
-                onNavigate={setActiveTab} 
-                birthdayConfig={birthdayConfig} 
-                isUnlocked={isUnlocked}
-                onRequestUnlock={() => setIsEnvelopeOpen(true)}
-              />
-            )}
+              {activeTab === 'memories' && (
+                <MemoriesPage />
+              )}
 
-            {activeTab === 'memories' && (
-              <MemoriesPage />
-            )}
+              {activeTab === 'library' && (
+                <PdfLibraryPage />
+              )}
 
-            {activeTab === 'library' && (
-              <PdfLibraryPage />
-            )}
+              {activeTab === 'voice' && (
+                <VoiceSettingsPage />
+              )}
 
-            {activeTab === 'voice' && (
-              <VoiceSettingsPage />
-            )}
+              {activeTab === 'academics' && (
+                <AcademicsPage />
+              )}
 
-            {activeTab === 'academics' && (
-              <AcademicsPage />
-            )}
+              {activeTab === 'settings' && (
+                <SettingsPage
+                  onConfigUpdated={(cfg) => setBirthdayConfig(cfg)}
+                  reduceMotion={reduceMotion}
+                  setReduceMotion={setReduceMotion}
+                  floatingHeartsEnabled={floatingHeartsEnabled}
+                  setFloatingHeartsEnabled={setFloatingHeartsEnabled}
+                  onLockApp={handleLockApp}
+                />
+              )}
+            </main>
 
-            {activeTab === 'settings' && (
-              <SettingsPage
-                onConfigUpdated={(cfg) => setBirthdayConfig(cfg)}
-                reduceMotion={reduceMotion}
-                setReduceMotion={setReduceMotion}
-                floatingHeartsEnabled={floatingHeartsEnabled}
-                setFloatingHeartsEnabled={setFloatingHeartsEnabled}
-                onLockApp={handleLockApp}
-              />
-            )}
-          </main>
+            {/* 3D Wax-Sealed Romantic Love Letter Envelope Modal */}
+            <RomanticEnvelopeModal
+              isOpen={isEnvelopeOpen}
+              onClose={() => setIsEnvelopeOpen(false)}
+              recipientName={birthdayConfig?.recipient_name || 'Akku'}
+              creatorName={birthdayConfig?.creator_name || 'Saki'}
+              letterMessage={birthdayConfig?.love_letter}
+              isUnlocked={true}
+              autoOpenFlap={true}
+            />
 
-          {/* 3D Wax-Sealed Romantic Love Letter Envelope Modal */}
-          <RomanticEnvelopeModal
-            isOpen={isEnvelopeOpen}
-            onClose={() => setIsEnvelopeOpen(false)}
-            recipientName={birthdayConfig?.recipient_name || 'Akku'}
-            creatorName={birthdayConfig?.creator_name || 'Saki'}
-            letterMessage={birthdayConfig?.love_letter}
-            isUnlocked={true}
-            autoOpenFlap={true}
-          />
-        </div>
-      )}
-    </div>
+            {/* Romantic Floating Memory Photo Reveal */}
+            <FloatingMemoryPhoto reduceMotion={reduceMotion} />
+          </div>
+        )}
+      </div>
+    </MemoryPhotoProvider>
   );
 }
 
 export default App;
+

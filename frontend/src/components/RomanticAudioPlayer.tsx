@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, Music, Play, Pause } from 'lucide-react';
+import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 interface RomanticAudioPlayerProps {
   autoPlay?: boolean;
@@ -8,6 +9,7 @@ interface RomanticAudioPlayerProps {
 export const RomanticAudioPlayer: React.FC<RomanticAudioPlayerProps> = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const { triggerMemoryPhoto } = useMemoryPhotos();
   const audioCtxRef = useRef<AudioContext | null>(null);
   const intervalRef = useRef<any>(null);
 
@@ -63,6 +65,7 @@ export const RomanticAudioPlayer: React.FC<RomanticAudioPlayerProps> = () => {
       intervalRef.current = null;
       setIsPlaying(false);
     } else {
+      triggerMemoryPhoto('melody');
       if (!audioCtxRef.current) {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         audioCtxRef.current = new AudioCtx();

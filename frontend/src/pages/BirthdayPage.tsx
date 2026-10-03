@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { NavTab } from '../components/Navbar';
+import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 interface BirthdayPageProps {
   onNavigate: (tab: NavTab) => void;
@@ -21,10 +22,11 @@ interface BirthdayPageProps {
 
 export const BirthdayPage: React.FC<BirthdayPageProps> = ({ 
   onNavigate, 
-  birthdayConfig,
+  birthdayConfig, 
   isUnlocked = false,
   onRequestUnlock
 }) => {
+  const { triggerMemoryPhoto } = useMemoryPhotos();
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
 
@@ -43,6 +45,7 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
     }
 
     setIsRevealed(true);
+    triggerMemoryPhoto('surprise');
     // Burst of hearts and golden sparkles
     confetti({
       particleCount: 80,
@@ -94,7 +97,10 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
       {/* 3D Flippable Birthday Card */}
       <div 
         className="w-full max-w-lg perspective-1000 mb-8 sm:mb-10 cursor-pointer group" 
-        onClick={() => setIsFlipped(!isFlipped)}
+        onClick={() => {
+          triggerMemoryPhoto('surprise');
+          setIsFlipped(!isFlipped);
+        }}
       >
         <div
           className={`relative w-full h-[400px] sm:h-[450px] transition-transform duration-700 transform-style-preserve-3d rounded-3xl shadow-xl hover:shadow-2xl border border-rose-200/80 group-hover:scale-[1.01] ${
