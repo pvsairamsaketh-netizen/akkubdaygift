@@ -209,13 +209,16 @@ class RAGGraphService:
         memories = self.memory_retriever.retrieve_memories(
             query=question,
             top_k=top_k_mem,
-            min_relevance=0.25,
+            min_relevance=0.55,  # Filter out unrelated memories like ice cream on relationship/story queries
             user_id=user_id,
             query_embedding=query_embedding
         )
 
+        has_high_conf = any(m.get("score", 0) >= 0.72 for m in memories)
+        is_rel_query = any(w in question.lower() for w in ["story", "propose", "proposal", "meet", "connect", "college", "beach", "chennai", "bessie", "mess", "canteen", "marry", "marriage"])
+
         chunks = []
-        if q_type == "complex" or len(memories) == 0:
+        if q_type == "complex" or not has_high_conf or is_rel_query or len(memories) == 0:
             top_k_doc = 2 if q_type == "simple" else 3
             chunks = self.retrieval_service.retrieve(
                 question=question,
