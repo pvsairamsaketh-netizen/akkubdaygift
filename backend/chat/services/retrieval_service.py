@@ -77,6 +77,9 @@ class RetrievalService:
             ("शादी", "विवाह", "shaadi", "shadi", "marry", "marriage"): [
                 "marriage", "did they marry"
             ],
+            ("story begin", "first meet", "first met", "how did they connect", "first connect", "story start", "meet each other", "how did we meet", "story", "k section", "b section"): [
+                "how did they first connect", "college acquaintances", "k section to b section", "early shared memories", "began as college acquaintances"
+            ],
             ("आइसक्रीम", "ice cream", "चॉकलेट", "chocolate"): [
                 "ice cream", "chocolate"
             ],
@@ -100,7 +103,7 @@ class RetrievalService:
                 exact_tokens.extend(targets)
 
         # Also add any direct English matches
-        for word in ["may 4, 2022", "may 4", "2022", "october 20", "oct 20", "birthday", "samosa", "canteen", "proposal", "propose", "marriage", "ice cream", "headache", "bay of bengal", "besant nagar", "marina beach"]:
+        for word in ["how did they first connect", "college acquaintances", "k section to b section", "may 4, 2022", "may 4", "2022", "october 20", "oct 20", "birthday", "samosa", "canteen", "proposal", "propose", "marriage", "ice cream", "headache", "bay of bengal", "besant nagar", "marina beach"]:
             if word in lower_q and word not in exact_tokens:
                 exact_tokens.append(word)
 

@@ -31,5 +31,5 @@ RUN mkdir -p /app/data/chroma /app/media/temp_audio /app/media/tts_audio
 
 EXPOSE 8000
 
-# Apply migrations and launch Gunicorn
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"]
+# Apply migrations and launch Gunicorn with exactly 4 workers
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"]
