@@ -12,9 +12,8 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Search, 
-  ExternalLink,
-  Clock,
-  Layers,
+  Clock, 
+  Layers, 
   Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -23,6 +22,8 @@ import { SQLPlayground } from './SQLPlayground';
 import { CodingLab } from './CodingLab';
 import { MCQAssessment } from './MCQAssessment';
 import { NotesWorkspace } from './NotesWorkspace';
+import { TutorialViewer } from './TutorialViewer';
+import { api } from '../../services/api';
 import type { DayLesson, AcademicProgressData } from '../../types/academics';
 
 interface DailyLessonViewProps {
@@ -300,46 +301,28 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
           </button>
         </div>
 
-        {/* Tab 1: Learn */}
+        {/* Tab 1: Learn - Rich Interactive Tutorial Engine */}
         {activeTab === 'learn' && (
-          <div className="p-5 rounded-xl border border-stone-800 bg-[#0d1117] flex flex-col gap-4 text-xs sm:text-sm font-sans leading-relaxed text-stone-200">
-            {/* Learning Objectives Box */}
-            <div className="p-3.5 rounded-xl bg-sky-950/30 border border-sky-800/40">
-              <div className="font-semibold text-sky-300 text-xs uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                <span>Today's Placement Learning Objectives:</span>
-              </div>
-              <ul className="list-disc list-inside space-y-1 text-xs text-sky-200/90 font-sans">
-                {lesson.learningObjectives.map((obj, i) => (
-                  <li key={i}>{obj}</li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Lecture Markdown Content */}
-            <div className="prose prose-invert max-w-none text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans text-stone-200">
-              {lesson.learnContent}
-            </div>
-
-            {/* Documentation Links */}
-            {lesson.docLinks && lesson.docLinks.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-stone-800 flex flex-wrap items-center gap-3">
-                <span className="text-xs text-stone-400 font-semibold">Official Documentation:</span>
-                {lesson.docLinks.map((doc, idx) => (
-                  <a
-                    key={idx}
-                    href={doc.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 hover:underline"
-                  >
-                    <span>{doc.title}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
+          <TutorialViewer
+            lesson={lesson}
+            onNavigateToPractice={() => setActiveTab('practice')}
+            onNavigateToMCQ={() => setActiveTab('mcqs')}
+            onNavigateToInterview={() => setActiveTab('interview')}
+            onSaveNote={async (title, content) => {
+              try {
+                await api.academics.createNote({
+                  title,
+                  content,
+                  category: lesson.subject,
+                  day_number: lesson.dayNumber,
+                  tags: [lesson.subject, 'Tutorial Takeaway'],
+                  is_pinned: true
+                });
+              } catch (e) {
+                console.warn('Note save locally fallback:', e);
+              }
+            }}
+          />
         )}
 
         {/* Tab 2: Examples */}
