@@ -1,4 +1,5 @@
 import type { DayLesson } from '../../types/academics';
+import { DETAILED_DAILY_NOTES } from './detailedDailyNotes';
 
 export interface ModuleInfo {
   id: string;
@@ -2794,3 +2795,13 @@ In enterprise data platforms, processing multi-terabyte feeds reliably without d
     ]
   });
 }
+
+// Systematically enrich all 100 curriculum days with presentation-grade detailed notes, real-life analogies, and ASCII architectural diagrams
+CURRICULUM_DAYS.forEach(day => {
+  const detail = DETAILED_DAILY_NOTES[day.dayNumber];
+  if (detail) {
+    day.learnContent = detail.detailedMarkdown;
+    day.description = `Master ${day.title} • Real-Life Analogy: ${detail.analogy}`;
+  }
+});
+

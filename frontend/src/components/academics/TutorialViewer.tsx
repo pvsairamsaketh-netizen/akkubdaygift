@@ -697,6 +697,36 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
             );
           }
 
+          // Architectural Blueprint & Flowchart Block
+          const isDiagram = sec.type === 'code' && (
+            sec.language === 'text' || 
+            sec.content.includes('+---') || 
+            sec.content.includes('--->') ||
+            sec.content.includes('|')
+          );
+          if (isDiagram) {
+            return (
+              <div key={idx} className="rounded-xl border border-sky-800/60 bg-[#070b12] overflow-hidden shadow-xl">
+                <div className="px-4 py-2 bg-gradient-to-r from-[#0d1626] to-[#0a101c] border-b border-sky-900/60 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <Workflow className="w-4 h-4 text-sky-400" />
+                    <span className="font-mono text-sky-300 font-bold text-xs uppercase tracking-wider">
+                      📐 Architectural Blueprint & Flowchart
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-950 text-sky-400 border border-sky-800/60">
+                    System Architecture
+                  </span>
+                </div>
+                <div className="p-4 overflow-x-auto bg-[#04060a]">
+                  <pre className="font-mono text-sky-300 text-xs sm:text-sm leading-relaxed whitespace-pre font-bold select-all">
+                    {sec.content}
+                  </pre>
+                </div>
+              </div>
+            );
+          }
+
           if (sec.type === 'code') {
             return (
               <div key={idx} className="rounded-xl border border-stone-800 bg-[#0a0d14] overflow-hidden shadow-lg">
@@ -759,10 +789,34 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
             );
           }
 
+          // Real-Life Intuition & Analogy Card
+          const isAnalogy = sec.title?.toLowerCase().includes('analogy') || sec.title?.toLowerCase().includes('intuition');
+          if (isAnalogy) {
+            return (
+              <div 
+                key={idx}
+                className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#1c140d] via-[#17121b] to-[#121620] border border-amber-500/40 shadow-lg"
+              >
+                <div className="flex items-center justify-between text-amber-300 font-bold text-sm sm:text-base mb-2.5 border-b border-amber-800/40 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{sec.title}</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-600/40">
+                    💡 Real-Life Intuition
+                  </span>
+                </div>
+                <div className="text-amber-100/90 text-sm leading-relaxed">
+                  {renderFormattedText(sec.content)}
+                </div>
+              </div>
+            );
+          }
+
           // Regular Conceptual Section Card with custom badges
-          const isWhat = sec.title?.toLowerCase().includes('what is');
-          const isWhy = sec.title?.toLowerCase().includes('why') || sec.title?.toLowerCase().includes('need it');
-          const isKey = sec.title?.toLowerCase().includes('key') || sec.title?.toLowerCase().includes('concept');
+          const isWhat = sec.title?.toLowerCase().includes('what is') || sec.title?.toLowerCase().includes('what problem');
+          const isWhy = sec.title?.toLowerCase().includes('why') || sec.title?.toLowerCase().includes('need it') || sec.title?.toLowerCase().includes('under the hood');
+          const isKey = sec.title?.toLowerCase().includes('key') || sec.title?.toLowerCase().includes('concept') || sec.title?.toLowerCase().includes('gotchas') || sec.title?.toLowerCase().includes('placement');
 
           return (
             <div 
@@ -772,6 +826,8 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
                   ? 'bg-gradient-to-r from-[#0d141e] via-[#0d121c] to-[#0d141e] border-sky-800/40' 
                   : isWhy 
                   ? 'bg-gradient-to-r from-[#0d1715] via-[#0d131a] to-[#0d1715] border-emerald-800/40' 
+                  : isKey
+                  ? 'bg-gradient-to-r from-[#141024] via-[#0f0d1a] to-[#141024] border-purple-800/40'
                   : 'bg-[#0d1117] border-stone-800 hover:border-stone-700/80'
               }`}
             >
