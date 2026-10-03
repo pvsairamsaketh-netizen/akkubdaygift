@@ -167,19 +167,19 @@ class RAGGraphService:
         simple_triggers = [
             "ice cream", "birthday", "bday", "favorite", "favourite", "color", "colour",
             "nickname", "age", "food", "eat", "drink", "what does she like", "what is her",
-            "likes", "loves", "prefers", "dislikes", "hobby", "chocolate"
+            "likes", "loves", "prefers", "dislikes", "hobby", "chocolate", "story",
+            "how did our story begin", "how did we meet", "first meet", "proposal", "propose"
         ]
 
-        complex_triggers = [
-            "proposal", "propose", "story", "narrate", "describe", "explain in detail",
-            "journey", "how did we meet", "first date", "college days", "conflict",
-            "relationship", "compare"
+        # Explicit long narrative requests
+        deep_complex_triggers = [
+            "explain in detail", "thorough comparison", "full narrative",
+            "analyze our relationship", "describe all conflicts", "comprehensive history"
         ]
 
-        is_complex = any(k in q for k in complex_triggers) or len(q) > 90
-        is_simple = any(k in q for k in simple_triggers) and not is_complex
+        is_deep = any(k in q for k in deep_complex_triggers) or len(q) > 160
 
-        if is_simple or not is_complex:
+        if not is_deep:
             q_type = "simple"
             chosen_model = self.llm_service.get_optimal_model(question_type="simple")
             max_tokens = 160
@@ -187,7 +187,7 @@ class RAGGraphService:
         else:
             q_type = "complex"
             chosen_model = self.llm_service.get_optimal_model(question_type="complex")
-            max_tokens = 320
+            max_tokens = 280
             num_ctx = 1536
 
         timings = state.get("timings", {})
