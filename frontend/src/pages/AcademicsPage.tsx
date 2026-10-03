@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AcademicsHeader, type AcademicsViewMode } from '../components/academics/AcademicsHeader';
+import { AcademicsHeader, type AcademicsViewMode, type AcademicTrack } from '../components/academics/AcademicsHeader';
 import { AcademicsDashboard } from '../components/academics/AcademicsDashboard';
 import { DailyLessonView } from '../components/academics/DailyLessonView';
 import { RoadmapView } from '../components/academics/RoadmapView';
@@ -10,6 +10,14 @@ import { CheatSheetLibrary } from '../components/academics/CheatSheetLibrary';
 import { SpacedRevisionTracker } from '../components/academics/SpacedRevisionTracker';
 import { CapstoneProjectView } from '../components/academics/CapstoneProjectView';
 import { ProgressAnalytics } from '../components/academics/ProgressAnalytics';
+import { DSARoadmapView } from '../components/academics/dsa/DSARoadmapView';
+import { DSAQuestionBankView } from '../components/academics/dsa/DSAQuestionBankView';
+import { TimedCodingRound } from '../components/academics/dsa/TimedCodingRound';
+import { DSAInterviewer } from '../components/academics/dsa/DSAInterviewer';
+import { RapidFireChallenge } from '../components/academics/dsa/RapidFireChallenge';
+import { DSAPatternTree } from '../components/academics/dsa/DSAPatternTree';
+import { DSAMistakeNotebook } from '../components/academics/dsa/DSAMistakeNotebook';
+import { FinalDSASimulation } from '../components/academics/dsa/FinalDSASimulation';
 import { api } from '../services/api';
 import type { AcademicProgressData, InterviewQuestionItem } from '../types/academics';
 
@@ -45,6 +53,7 @@ const INITIAL_PROGRESS: AcademicProgressData = {
 };
 
 export const AcademicsPage: React.FC = () => {
+  const [activeTrack, setActiveTrack] = useState<AcademicTrack>('de');
   const [currentView, setCurrentView] = useState<AcademicsViewMode>('dashboard');
   const [currentDayNumber, setCurrentDayNumber] = useState<number>(1);
   const [progress, setProgress] = useState<AcademicProgressData>(() => {
@@ -185,10 +194,26 @@ export const AcademicsPage: React.FC = () => {
           currentView={currentView}
           onViewChange={setCurrentView}
           progress={progress}
+          activeTrack={activeTrack}
+          onTrackChange={(track) => {
+            setActiveTrack(track);
+            if (track === 'dsa') {
+              if (!currentView.startsWith('dsa_')) {
+                setCurrentView('dsa_roadmap');
+              }
+            } else {
+              if (currentView.startsWith('dsa_')) {
+                setCurrentView('dashboard');
+              }
+            }
+          }}
         />
 
         {/* Dynamic View Content */}
         <main className="flex-1 pb-16">
+          {/* ========================================================================= */}
+          {/* DATA ENGINEERING (DAYS 1-100) - UNTOUCHED & FULLY PRESERVED               */}
+          {/* ========================================================================= */}
           {currentView === 'dashboard' && (
             <AcademicsDashboard
               progress={progress}
@@ -213,7 +238,7 @@ export const AcademicsPage: React.FC = () => {
 
           {currentView === 'lesson' && (
             <DailyLessonView
-              currentDayNumber={currentDayNumber}
+              currentDayNumber={currentDayNumber <= 100 ? currentDayNumber : 1}
               onSelectDay={setCurrentDayNumber}
               progress={progress}
               onUpdateProgress={handleUpdateProgress}
@@ -278,6 +303,57 @@ export const AcademicsPage: React.FC = () => {
               progress={progress}
               totalNotesCount={notesCount}
             />
+          )}
+
+          {/* ========================================================================= */}
+          {/* DSA & CODING INTERVIEW (DAYS 101-130)                                    */}
+          {/* ========================================================================= */}
+          {currentView === 'dsa_roadmap' && (
+            <DSARoadmapView
+              progress={progress}
+              currentDay={currentDayNumber >= 101 ? currentDayNumber : 101}
+              onSelectDay={(day) => {
+                setCurrentDayNumber(day);
+                setCurrentView('dsa_lesson');
+              }}
+            />
+          )}
+
+          {currentView === 'dsa_questions' && (
+            <DSAQuestionBankView />
+          )}
+
+          {currentView === 'dsa_lesson' && (
+            <DailyLessonView
+              currentDayNumber={currentDayNumber >= 101 ? currentDayNumber : 101}
+              onSelectDay={setCurrentDayNumber}
+              progress={progress}
+              onUpdateProgress={handleUpdateProgress}
+            />
+          )}
+
+          {currentView === 'dsa_rounds' && (
+            <TimedCodingRound />
+          )}
+
+          {currentView === 'dsa_interviewer' && (
+            <DSAInterviewer />
+          )}
+
+          {currentView === 'dsa_rapid_fire' && (
+            <RapidFireChallenge />
+          )}
+
+          {currentView === 'dsa_pattern_tree' && (
+            <DSAPatternTree />
+          )}
+
+          {currentView === 'dsa_mistakes' && (
+            <DSAMistakeNotebook />
+          )}
+
+          {currentView === 'dsa_final_mock' && (
+            <FinalDSASimulation />
           )}
         </main>
       </div>

@@ -59,7 +59,7 @@ export interface CheatSheetData {
 export interface DayLesson {
   id: string;
   dayNumber: number;
-  subject: string; // 'python' | 'sql' | 'linux_cloud' | 'nosql' | 'hadoop' | 'dwh' | 'tableau' | 'spark' | 'streaming' | 'kafka' | 'airflow' | 'capstone'
+  subject: string;
   moduleTitle: string;
   title: string;
   description: string;
@@ -74,6 +74,12 @@ export interface DayLesson {
   interviewQuestions: InterviewQuestionItem[];
   cheatSheet: CheatSheetData;
   docLinks: { title: string; url: string }[];
+  track?: 'de' | 'dsa';
+  mrcetUnit?: string;
+  academicLevel?: string;
+  visualType?: string;
+  videoUrl?: string;
+  videoTitle?: string;
 }
 
 export interface AcademicNoteItem {

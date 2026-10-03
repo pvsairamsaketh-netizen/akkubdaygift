@@ -21,6 +21,7 @@ import {
   Server
 } from 'lucide-react';
 import type { DayLesson } from '../../types/academics';
+import { DSAVisualizer } from './dsa/DSAVisualizer';
 
 interface TutorialViewerProps {
   lesson: DayLesson;
@@ -30,8 +31,24 @@ interface TutorialViewerProps {
   onSaveNote?: (title: string, content: string) => void;
 }
 
-// Interactive Visual Diagram Components for DE Core Modules
+// Interactive Visual Diagram Components for DE Core Modules & DSA
 const ConceptDiagram: React.FC<{ dayNumber: number; subject?: string }> = ({ dayNumber }) => {
+  if (dayNumber >= 101 && dayNumber <= 130) {
+    if (dayNumber === 104) {
+      return <DSAVisualizer type="binary_search" title="Binary Search Divide-and-Conquer Engine" />;
+    }
+    if (dayNumber === 106) {
+      return <DSAVisualizer type="linked_list" title="Singly Linked List Pointer Engine" />;
+    }
+    if (dayNumber === 107) {
+      return <DSAVisualizer type="stack" title="Monotonic Stack LIFO Push & Pop Simulator" />;
+    }
+    if (dayNumber === 121) {
+      return <DSAVisualizer type="two_pointers" title="Two-Pointer Convergence Simulator" />;
+    }
+    return <DSAVisualizer type="binary_search" title={`Day ${dayNumber}: Placement Visual Execution Engine`} />;
+  }
+
   if (dayNumber >= 1 && dayNumber <= 10) {
     // Python Memory & Pointer Model Diagram
     return (
@@ -592,6 +609,19 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
               <h3 className="text-base sm:text-lg font-bold text-white leading-tight">
                 {lesson.title}
               </h3>
+              {lesson.mrcetUnit && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60 font-semibold flex items-center gap-1">
+                    <BookOpen className="w-3 h-3" />
+                    <span>{lesson.mrcetUnit}</span>
+                  </span>
+                  {lesson.academicLevel && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-800/40 font-semibold">
+                      {lesson.academicLevel}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

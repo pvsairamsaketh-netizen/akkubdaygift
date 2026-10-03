@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   BookOpen, 
   Code, 
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { CURRICULUM_DAYS } from '../../data/academics/curriculum';
+import { DSA_CURRICULUM_DAYS } from '../../data/academics/dsaCurriculum';
 import { SQLPlayground } from './SQLPlayground';
 import { CodingLab } from './CodingLab';
 import { MCQAssessment } from './MCQAssessment';
@@ -43,7 +44,8 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
   const [sidebarSearch, setSidebarSearch] = useState('');
   const [copiedCodeKey, setCopiedCodeKey] = useState<string | null>(null);
 
-  const lesson: DayLesson = CURRICULUM_DAYS.find(d => d.dayNumber === currentDayNumber) || CURRICULUM_DAYS[0];
+  const ALL_CURRICULUM_DAYS = useMemo(() => [...CURRICULUM_DAYS, ...DSA_CURRICULUM_DAYS], []);
+  const lesson: DayLesson = ALL_CURRICULUM_DAYS.find(d => d.dayNumber === currentDayNumber) || CURRICULUM_DAYS[0];
   const isCompleted = progress.completed_days?.includes(lesson.dayNumber) || false;
 
   const handleToggleComplete = () => {
@@ -71,7 +73,14 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
     setTimeout(() => setCopiedCodeKey(null), 2000);
   };
 
-  const filteredSidebarDays = CURRICULUM_DAYS.filter(d => 
+  const isDSADay = currentDayNumber >= 101;
+  const currentTrackDays = isDSADay ? DSA_CURRICULUM_DAYS : CURRICULUM_DAYS;
+  const completedInTrack = isDSADay 
+    ? (progress.completed_days || []).filter(d => d >= 101).length
+    : (progress.completed_days || []).filter(d => d <= 100).length;
+  const trackTotal = isDSADay ? 30 : 100;
+
+  const filteredSidebarDays = currentTrackDays.filter(d => 
     sidebarSearch === '' || 
     d.title.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
     String(d.dayNumber).includes(sidebarSearch) ||
@@ -80,16 +89,16 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 text-stone-200">
-      {/* Left Sidebar: 100 Days Navigator (3 cols) */}
+      {/* Left Sidebar: Navigator (3 cols) */}
       <div className="lg:col-span-3 flex flex-col gap-2.5">
         <div className="p-3.5 rounded-xl border border-stone-800 bg-[#0d1117] flex flex-col gap-2.5">
           <div className="flex items-center justify-between border-b border-stone-800 pb-2">
             <span className="font-semibold text-xs text-stone-300 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-sky-400" />
-              <span>100-Day Curriculum</span>
+              <span>{isDSADay ? 'DSA Curriculum (101–130)' : 'DE Curriculum (1–100)'}</span>
             </span>
             <span className="text-[11px] font-mono text-emerald-400">
-              {progress.completed_days?.length || 0} / 100
+              {completedInTrack} / {trackTotal}
             </span>
           </div>
 
