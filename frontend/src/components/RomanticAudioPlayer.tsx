@@ -86,10 +86,10 @@ export const RomanticAudioPlayer: React.FC<RomanticAudioPlayerProps> = () => {
       {/* Track info & mini sound wave equalizer */}
       <div className="flex flex-col shrink-0">
         <div className="flex items-center gap-1.5">
-          <span className="font-semibold text-rose-950 tracking-tight hidden sm:inline whitespace-nowrap">
+          <span className="font-semibold text-rose-950 tracking-tight hidden min-[1200px]:inline whitespace-nowrap">
             Alaakaa Loova
           </span>
-          <span className="font-medium text-rose-800 sm:hidden whitespace-nowrap">
+          <span className="font-medium text-rose-800 min-[1200px]:hidden whitespace-nowrap text-xs">
             Song
           </span>
           {isPlaying && (

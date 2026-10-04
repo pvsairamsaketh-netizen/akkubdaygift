@@ -262,7 +262,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ) : (
                   <Lock className="w-3.5 h-3.5 text-rose-600 group-hover:text-white transition-colors shrink-0" />
                 )}
-                <span className="hidden sm:inline font-sans whitespace-nowrap">Open Surprise</span>
+                <span className="hidden sm:inline font-sans whitespace-nowrap">
+                  <span className="hidden min-[1200px]:inline">Open </span>Surprise
+                </span>
                 <span className="text-xs shrink-0">💌</span>
               </button>
             )}
