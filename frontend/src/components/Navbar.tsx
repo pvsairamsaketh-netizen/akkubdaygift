@@ -125,8 +125,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
 
-            {/* Desktop Left Navigation (>= 1400px: All 8 Items) */}
-            <nav className="primary-navigation hidden min-[1400px]:flex items-center gap-1.5 lg:gap-2 justify-start min-w-0">
+            {/* Desktop Left Navigation (>= 1520px: All 8 Items) */}
+            <nav className="primary-navigation hidden min-[1520px]:flex items-center gap-1.5 lg:gap-2 justify-start min-w-0">
               {navItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
@@ -157,8 +157,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               })}
             </nav>
 
-            {/* Medium Desktop Left Navigation (1000px - 1399px: Top 4 + More Dropdown) */}
-            <nav className="primary-navigation hidden min-[1000px]:flex min-[1400px]:hidden items-center gap-1.5 justify-start min-w-0">
+            {/* Medium Desktop Left Navigation (1000px - 1519px: Top 4 + More Dropdown) */}
+            <nav className="primary-navigation hidden min-[1000px]:flex min-[1520px]:hidden items-center gap-1.5 justify-start min-w-0">
               {primaryFour.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
@@ -172,7 +172,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                     }`}
                   >
                     <span className={isActive ? 'text-white' : ''}>{item.icon}</span>
-                    <span>{item.label}</span>
+                    <span>
+                      {item.id === 'chat' ? (
+                        <>Chat<span className="hidden min-[1200px]:inline"> with Akku</span></>
+                      ) : (
+                        item.label
+                      )}
+                    </span>
                     {item.badge && (
                       <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none uppercase shrink-0 ${
                         isActive ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-600 border border-rose-200'
