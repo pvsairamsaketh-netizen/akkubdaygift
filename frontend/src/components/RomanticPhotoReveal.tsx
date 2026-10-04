@@ -39,7 +39,7 @@ export const ROMANTIC_MEMORIES: RomanticMemoryItem[] = [
     quote: 'Your smile has a way of making even my toughest days feel lighter.',
     subtext: 'Those campus walks and shared jokes mean the entire world to me.',
     alt: 'A joyful memory of Saki and Akku together outdoors',
-    objectPosition: 'center 22%',
+    objectPosition: 'center center',
   },
   {
     id: 'memory-3',
@@ -75,7 +75,7 @@ export const ROMANTIC_MEMORIES: RomanticMemoryItem[] = [
     quote: "And if I had to choose you all over again, I'd choose you every single time. ❤️",
     subtext: 'From the sweetest past to a lifetime of memories ahead of us.',
     alt: 'A memory collage of Akku childhood and present day',
-    objectPosition: 'center 20%',
+    objectPosition: 'center 35%',
   },
 ];
 
