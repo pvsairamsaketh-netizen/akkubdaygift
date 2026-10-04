@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
   Heart, 
   Gift, 
@@ -35,11 +35,45 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
   const letter = birthdayConfig?.love_letter || `Happy Birthday to the most special person in my life. Every little moment, message, and memory we have shared means the world to me. I made this little world just for you.`;
   const bdayDate = birthdayConfig?.birthday_date || 'October 20';
 
-  const handleCardFlip = (e?: React.SyntheticEvent) => {
-    if (e) {
-      e.stopPropagation();
+  const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastFlipTimeRef = useRef<number>(0);
+
+  const executeFlip = () => {
+    const now = Date.now();
+    // Debounce rapid duplicate triggers (e.g. pointerup + synthetic click)
+    // and prevent accidental flips while 550ms animation is playing
+    if (now - lastFlipTimeRef.current < 450) {
+      return;
     }
+    lastFlipTimeRef.current = now;
     setIsFlipped((prev) => !prev);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    pointerStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now()
+    };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerStartRef.current) return;
+    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
+    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+    const dt = Date.now() - pointerStartRef.current.time;
+    pointerStartRef.current = null;
+
+    // Normal tap tolerance: movement < 15px (accommodates mobile thumb jitter) and duration < 500ms
+    if (dx < 15 && dy < 15 && dt < 500) {
+      executeFlip();
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    executeFlip();
   };
 
   const triggerCelebration = () => {
@@ -101,11 +135,13 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
       {/* 3D Flippable Birthday Card */}
       <div 
         className="w-full max-w-lg perspective-1000 mb-8 sm:mb-10 cursor-pointer group relative z-20 outline-none select-none touch-manipulation" 
-        onClick={handleCardFlip}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onClick={handleClick}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            handleCardFlip();
+            executeFlip();
           }
         }}
         role="button"
@@ -114,15 +150,29 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
         aria-pressed={isFlipped}
       >
         <div
-          className={`relative w-full h-[400px] sm:h-[450px] transition-transform duration-700 transform-style-preserve-3d rounded-3xl shadow-xl hover:shadow-2xl border border-rose-200/80 group-hover:scale-[1.01] ${
-            isFlipped ? 'rotate-y-180' : ''
-          }`}
-          style={{ willChange: 'transform' }}
+          className="relative w-full h-[400px] sm:h-[450px] rounded-3xl shadow-xl hover:shadow-2xl border border-rose-200/80"
+          style={{
+            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            WebkitTransform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            transformStyle: 'preserve-3d',
+            WebkitTransformStyle: 'preserve-3d',
+            transition: 'transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            WebkitTransition: '-webkit-transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            willChange: 'transform',
+          }}
         >
           {/* Card Front: Elegant Cover */}
-          <div className={`absolute inset-0 backface-hidden bg-gradient-to-br from-rose-400 via-pink-400 to-rose-300 rounded-3xl p-8 flex flex-col justify-between text-white shadow-inner overflow-hidden select-none ${
-            isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
-          }`}>
+          <div 
+            className={`absolute inset-0 bg-gradient-to-br from-rose-400 via-pink-400 to-rose-300 rounded-3xl p-8 flex flex-col justify-between text-white shadow-inner overflow-hidden select-none ${
+              isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
+            }`}
+            style={{
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
+              WebkitTransform: 'rotateY(0deg) translateZ(1px)',
+              transform: 'rotateY(0deg) translateZ(1px)',
+            }}
+          >
             <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/15 rounded-full blur-xl pointer-events-none" />
             <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-rose-600/25 rounded-full blur-xl pointer-events-none" />
 
@@ -147,10 +197,18 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
           </div>
 
           {/* Card Back: The Love Letter */}
-          <div className={`absolute inset-0 backface-hidden rotate-y-180 bg-[#fffdfb] rounded-3xl p-6 sm:p-8 flex flex-col justify-between text-stone-800 shadow-inner overflow-y-auto select-none ${
-            isFlipped ? 'pointer-events-auto' : 'pointer-events-none'
-          }`}>
-            <div>
+          <div 
+            className={`absolute inset-0 bg-[#fffdfb] rounded-3xl p-6 sm:p-8 flex flex-col justify-between text-stone-800 shadow-inner select-none ${
+              isFlipped ? 'pointer-events-auto' : 'pointer-events-none'
+            }`}
+            style={{
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
+              WebkitTransform: 'rotateY(180deg) translateZ(1px)',
+              transform: 'rotateY(180deg) translateZ(1px)',
+            }}
+          >
+            <div className="flex-1 overflow-y-auto pr-1 min-h-0">
               <div className="flex items-center justify-between border-b border-rose-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
@@ -169,6 +227,8 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
               <span className="font-semibold text-rose-900 font-serif">Forever & Always, {creator}</span>
               <div className="flex items-center gap-2">
                 <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerUp={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
                     triggerCelebration();
