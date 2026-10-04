@@ -94,7 +94,7 @@ export const RomanticPhotoReveal: React.FC<RomanticPhotoRevealProps> = ({
   const [isFinalScreen, setIsFinalScreen] = useState<boolean>(false);
   const [isPhotoReady, setIsPhotoReady] = useState<boolean>(false);
   const [showRomanticText, setShowRomanticText] = useState<boolean>(false);
-  const [isAutoPlay, setIsAutoPlay] = useState<boolean>(false);
+  const [isAutoPlay, setIsAutoPlay] = useState<boolean>(true);
   const autoPlayTimerRef = useRef<any>(null);
 
   // Preload all 6 images immediately
@@ -140,12 +140,12 @@ export const RomanticPhotoReveal: React.FC<RomanticPhotoRevealProps> = ({
     };
   }, [currentIndex, isFinalScreen]);
 
-  // Auto-play handling (Default OFF, user controlled)
+  // Auto-play handling: Automatically advances through all 6 images with text without clicking
   useEffect(() => {
     if (isAutoPlay && !isFinalScreen) {
       autoPlayTimerRef.current = setTimeout(() => {
         handleNext();
-      }, 5500);
+      }, 4800);
     }
     return () => {
       if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
@@ -267,6 +267,36 @@ export const RomanticPhotoReveal: React.FC<RomanticPhotoRevealProps> = ({
         {!isFinalScreen ? (
           <div className="flex flex-col items-center">
             
+            {/* Story Progress Segments (6 automatic progression bars) */}
+            <div className="w-full flex items-center gap-1.5 mb-3 px-1">
+              <style>{`
+                @keyframes memoryProgressFill {
+                  0% { width: 0%; }
+                  100% { width: 100%; }
+                }
+              `}</style>
+              {ROMANTIC_MEMORIES.map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex-1 h-1.5 rounded-full bg-rose-100/90 overflow-hidden"
+                >
+                  <div 
+                    key={`${idx}-${currentIndex}-${isAutoPlay}`}
+                    className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full"
+                    style={
+                      idx < currentIndex
+                        ? { width: '100%' }
+                        : idx === currentIndex
+                          ? isAutoPlay 
+                            ? { animation: 'memoryProgressFill 4800ms linear forwards' }
+                            : { width: '100%' }
+                          : { width: '0%' }
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+
             {/* 1. Large Centered Photo Frame */}
             <div 
               onClick={handleNext}
