@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ExternalLink, 
   Search, 
@@ -15,11 +15,16 @@ import {
   Printer,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Zap,
   AlertTriangle,
   Play,
   Video,
-  X
+  X,
+  Shuffle,
+  Building2,
+  Tag
 } from 'lucide-react';
 import { 
   DSA_SOURCES, 
@@ -49,19 +54,62 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
   const [selectedSourceCategory, setSelectedSourceCategory] = useState<string>('All');
   const [embeddedVideo, setEmbeddedVideo] = useState<DSAVideoMasterclass | null>(null);
 
-  // Pattern Quiz State
+  // Pattern Quiz State (120+ MNC Questions)
+  const [patternCompanyFilter, setPatternCompanyFilter] = useState<string>('All');
+  const [patternTopicFilter, setPatternTopicFilter] = useState<string>('All');
   const [quizIdx, setQuizIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
+
+  const filteredPatternQuestions = useMemo(() => {
+    return PATTERN_QUIZ_QUESTIONS.filter((q) => {
+      const matchComp = patternCompanyFilter === 'All' || q.companyTag === patternCompanyFilter;
+      const matchTopic = patternTopicFilter === 'All' || q.topic.toLowerCase().includes(patternTopicFilter.toLowerCase());
+      return matchComp && matchTopic;
+    });
+  }, [patternCompanyFilter, patternTopicFilter]);
+
+  const safeQuizIdx = Math.min(quizIdx, Math.max(0, filteredPatternQuestions.length - 1));
+  const activeQuizQ = filteredPatternQuestions[safeQuizIdx] || PATTERN_QUIZ_QUESTIONS[0];
 
   // Selected Pattern for Detail View
   const [selectedPattern, setSelectedPattern] = useState<DSAPatternDetail | null>(DSA_PATTERNS[0]);
 
+  // Interview Answers & Pitch State (125+ FAANG Questions)
+  const [interviewCompanyFilter, setInterviewCompanyFilter] = useState<string>('All');
+  const [interviewTopicFilter, setInterviewTopicFilter] = useState<string>('All');
+  const [interviewDifficultyFilter, setInterviewDifficultyFilter] = useState<string>('All');
+  const [interviewSearchText, setInterviewSearchText] = useState<string>('');
+  const [interviewPage, setInterviewPage] = useState<number>(1);
+  const INTERVIEW_PAGE_SIZE = 10;
+
+  const filteredInterviewQuestions = useMemo(() => {
+    return DSA_INTERVIEW_MASTER_QUESTIONS.filter((item) => {
+      const matchCompany = interviewCompanyFilter === 'All' || item.companyTag === interviewCompanyFilter;
+      const matchTopic = interviewTopicFilter === 'All' || item.topic === interviewTopicFilter;
+      const matchDiff = interviewDifficultyFilter === 'All' || item.difficulty === interviewDifficultyFilter;
+      const qText = interviewSearchText.toLowerCase();
+      const matchQuery = !interviewSearchText.trim() ||
+        item.question.toLowerCase().includes(qText) ||
+        item.topic.toLowerCase().includes(qText) ||
+        item.tags.some(t => t.toLowerCase().includes(qText)) ||
+        (item.companyTag && item.companyTag.toLowerCase().includes(qText));
+      return matchCompany && matchTopic && matchDiff && matchQuery;
+    });
+  }, [interviewCompanyFilter, interviewTopicFilter, interviewDifficultyFilter, interviewSearchText]);
+
+  const totalInterviewPages = Math.max(1, Math.ceil(filteredInterviewQuestions.length / INTERVIEW_PAGE_SIZE));
+  const paginatedInterviewQuestions = useMemo(() => {
+    const start = (interviewPage - 1) * INTERVIEW_PAGE_SIZE;
+    return filteredInterviewQuestions.slice(start, start + INTERVIEW_PAGE_SIZE);
+  }, [filteredInterviewQuestions, interviewPage]);
+
   // Selected Interview Question for Answer Modal/Expand
-  const [expandedInterviewQ, setExpandedInterviewQ] = useState<string | null>(DSA_INTERVIEW_MASTER_QUESTIONS[0].id);
+  const [expandedInterviewQ, setExpandedInterviewQ] = useState<string | null>(DSA_INTERVIEW_MASTER_QUESTIONS[0]?.id || null);
   const [activeAnswerMode, setActiveAnswerMode] = useState<Record<string, '30s' | '1min' | 'deep'>>({});
 
-  // Cheat Sheet Active Topic
+  // Cheat Sheet Active Topic (15 Complete Topics)
   const [activeCheatSheet, setActiveCheatSheet] = useState<DSACheatSheetDetail>(DSA_MASTER_CHEAT_SHEETS[0]);
 
   // Rapid Prep State
@@ -171,6 +219,7 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
         >
           <BrainCircuit className="w-3.5 h-3.5" />
           <span>Pattern Recognition Engine</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-400/30 text-white font-bold">{PATTERN_QUIZ_QUESTIONS.length} Qs</span>
         </button>
 
         <button
@@ -183,6 +232,7 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
         >
           <Flame className="w-3.5 h-3.5 text-amber-400" />
           <span>Interview Answers & Pitch</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-400/30 text-white font-bold">{DSA_INTERVIEW_MASTER_QUESTIONS.length} FAANG</span>
         </button>
 
         <button
@@ -195,6 +245,7 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
         >
           <Layers className="w-3.5 h-3.5 text-emerald-400" />
           <span>20-Point Master Cheat Sheets</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-400/30 text-white font-bold">{DSA_MASTER_CHEAT_SHEETS.length} Topics</span>
         </button>
 
         <button
@@ -547,37 +598,156 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
       {/* ========================================================================= */}
       {activeTab === 'patterns' && (
         <div className="flex flex-col gap-6">
-          {/* Interactive Pattern Quiz Box */}
+          {/* Interactive Pattern Quiz Box (122 MNC Questions) */}
           <div className={`p-5 rounded-2xl border flex flex-col gap-3 ${
             isDark 
               ? 'bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-purple-950/40 border-indigo-800/30' 
               : 'bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-indigo-200'
           }`}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5" /> Pattern Diagnostic Challenge
+            {/* Top Filter & Meta Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-indigo-500/20">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5" /> MNC Pattern Engine
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {filteredPatternQuestions.length} Questions
+                </span>
+                {quizScore.total > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Score: {quizScore.correct}/{quizScore.total} ({Math.round((quizScore.correct / quizScore.total) * 100)}%)
+                  </span>
+                )}
+              </div>
+
+              {/* Stepper & Random Controls */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    setQuizIdx((prev) => (prev > 0 ? prev - 1 : filteredPatternQuestions.length - 1));
+                    setSelectedOption(null);
+                    setIsAnswerSubmitted(false);
+                  }}
+                  className="px-2 py-1 rounded-lg text-xs font-medium bg-stone-800/80 hover:bg-stone-700 text-stone-200 flex items-center gap-1 cursor-pointer"
+                  title="Previous Question"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                </button>
+                <span className="text-xs opacity-75 font-mono px-1">
+                  {safeQuizIdx + 1} / {filteredPatternQuestions.length}
+                </span>
+                <button
+                  onClick={() => {
+                    setQuizIdx((prev) => (prev + 1) % filteredPatternQuestions.length);
+                    setSelectedOption(null);
+                    setIsAnswerSubmitted(false);
+                  }}
+                  className="px-2 py-1 rounded-lg text-xs font-medium bg-stone-800/80 hover:bg-stone-700 text-stone-200 flex items-center gap-1 cursor-pointer"
+                  title="Next Question"
+                >
+                  Next <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    const rnd = Math.floor(Math.random() * filteredPatternQuestions.length);
+                    setQuizIdx(rnd);
+                    setSelectedOption(null);
+                    setIsAnswerSubmitted(false);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1 cursor-pointer ml-1"
+                  title="Random Question"
+                >
+                  <Shuffle className="w-3 h-3" /> Random
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Pills for Company & Topic Dropdown */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-stone-400 flex items-center gap-1 mr-1">
+                  <Building2 className="w-3 h-3" /> Company:
+                </span>
+                {['All', 'Amazon', 'Google', 'Meta', 'Microsoft', 'Apple', 'Uber', 'Bloomberg'].map((comp) => (
+                  <button
+                    key={comp}
+                    onClick={() => {
+                      setPatternCompanyFilter(comp);
+                      setQuizIdx(0);
+                      setSelectedOption(null);
+                      setIsAnswerSubmitted(false);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                      patternCompanyFilter === comp
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : isDark ? 'bg-stone-900/80 text-stone-400 hover:text-stone-200' : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {comp}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-stone-400">Topic:</span>
+                <select
+                  value={patternTopicFilter}
+                  onChange={(e) => {
+                    setPatternTopicFilter(e.target.value);
+                    setQuizIdx(0);
+                    setSelectedOption(null);
+                    setIsAnswerSubmitted(false);
+                  }}
+                  className={`px-2 py-1 rounded-lg text-[11px] border outline-none cursor-pointer ${
+                    isDark ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-white border-slate-300 text-slate-800'
+                  }`}
+                >
+                  <option value="All">All Topics</option>
+                  <option value="Two Pointers">Two Pointers</option>
+                  <option value="Sliding Window">Sliding Window</option>
+                  <option value="Stack">Monotonic Stack / Stack</option>
+                  <option value="Tree">Trees & BST</option>
+                  <option value="Graph">Graphs & BFS/DFS</option>
+                  <option value="Dynamic Programming">Dynamic Programming</option>
+                  <option value="Heap">Heaps / Priority Queue</option>
+                  <option value="Binary Search">Binary Search</option>
+                  <option value="Bit Manipulation">Bit Manipulation</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Problem Tags */}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25 flex items-center gap-1">
+                <Building2 className="w-3 h-3" /> {activeQuizQ.companyTag || 'Top MNC'}
               </span>
-              <span className="text-xs opacity-75 font-mono">
-                Problem {quizIdx + 1} of {PATTERN_QUIZ_QUESTIONS.length}
+              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-500/15 text-purple-300 border border-purple-500/25 flex items-center gap-1">
+                <Tag className="w-3 h-3" /> {activeQuizQ.topic}
               </span>
             </div>
 
-            <h4 className="font-bold text-sm sm:text-base leading-snug">
-              &quot;{PATTERN_QUIZ_QUESTIONS[quizIdx].problem}&quot;
+            {/* Question Title */}
+            <h4 className="font-bold text-sm sm:text-base leading-snug mt-1">
+              &quot;{activeQuizQ.problem}&quot;
             </h4>
 
+            {/* Options */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-              {PATTERN_QUIZ_QUESTIONS[quizIdx].options.map((opt) => (
+              {activeQuizQ.options.map((opt) => (
                 <button
                   key={opt}
                   disabled={isAnswerSubmitted}
                   onClick={() => {
                     setSelectedOption(opt);
                     setIsAnswerSubmitted(true);
+                    setQuizScore(prev => ({
+                      correct: prev.correct + (opt === activeQuizQ.correct ? 1 : 0),
+                      total: prev.total + 1
+                    }));
                   }}
                   className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
                     selectedOption === opt
-                      ? opt === PATTERN_QUIZ_QUESTIONS[quizIdx].correct
+                      ? opt === activeQuizQ.correct
                         ? 'bg-emerald-600 text-white border-emerald-500'
                         : 'bg-rose-600 text-white border-rose-500'
                       : isDark ? 'bg-stone-900 border-stone-700 hover:border-indigo-500' : 'bg-white border-slate-300 hover:border-indigo-400'
@@ -590,24 +760,24 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
 
             {isAnswerSubmitted && (
               <div className={`p-3 rounded-xl border text-xs leading-relaxed mt-2 ${
-                selectedOption === PATTERN_QUIZ_QUESTIONS[quizIdx].correct
+                selectedOption === activeQuizQ.correct
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                   : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
               }`}>
                 <strong>
-                  {selectedOption === PATTERN_QUIZ_QUESTIONS[quizIdx].correct ? '✓ Exactly Right!' : `✕ Correct Pattern: ${PATTERN_QUIZ_QUESTIONS[quizIdx].correct}`}
+                  {selectedOption === activeQuizQ.correct ? '✓ Exactly Right!' : `✕ Correct Pattern: ${activeQuizQ.correct}`}
                 </strong>
-                <p className="mt-1 opacity-90">{PATTERN_QUIZ_QUESTIONS[quizIdx].explanation}</p>
+                <p className="mt-1 opacity-90">{activeQuizQ.explanation}</p>
                 <div className="flex justify-end mt-2">
                   <button
                     onClick={() => {
-                      setQuizIdx((prev) => (prev + 1) % PATTERN_QUIZ_QUESTIONS.length);
+                      setQuizIdx((prev) => (prev + 1) % filteredPatternQuestions.length);
                       setSelectedOption(null);
                       setIsAnswerSubmitted(false);
                     }}
                     className="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer"
                   >
-                    Next Problem ➔
+                    Next Question ➔
                   </button>
                 </div>
               </div>
@@ -760,137 +930,360 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: INTERVIEW ANSWERS & ELEVATOR PITCH                                 */}
+      {/* TAB 4: INTERVIEW ANSWERS & ELEVATOR PITCH (125+ FAANG QUESTIONS)          */}
       {/* ========================================================================= */}
       {activeTab === 'interview' && (
         <div className="flex flex-col gap-5">
-          <div>
-            <h3 className="font-bold text-base flex items-center gap-2">
-              <Flame className="w-4 h-4 text-amber-400" />
-              &quot;What Should I Say In An Interview?&quot; — Model Responses
-            </h3>
-            <p className="text-xs opacity-75 mt-0.5">
-              Practice answering like a FAANG engineer with 30-second elevator pitches, 1-minute deep explanations, and interviewer expectations.
-            </p>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <Flame className="w-4 h-4 text-amber-400" />
+                &quot;What Should I Say In An Interview?&quot; — FAANG Model Responses
+              </h3>
+              <p className="text-xs opacity-75 mt-0.5">
+                Practice answering like a senior FAANG engineer with 30-second elevator pitches, 1-minute comprehensive explanations, deep systems dives, and real follow-ups.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/25">
+                {DSA_INTERVIEW_MASTER_QUESTIONS.length} Verified FAANG Questions
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            {DSA_INTERVIEW_MASTER_QUESTIONS.map((item) => {
-              const isExpanded = expandedInterviewQ === item.id;
-              const mode = activeAnswerMode[item.id] || '30s';
+          {/* Search & Filter Controls */}
+          <div className={`p-4 rounded-2xl border flex flex-col gap-3 ${
+            isDark ? 'bg-stone-900/60 border-stone-800' : 'bg-slate-50 border-slate-200'
+          }`}>
+            {/* Search Input Row */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="text"
+                  placeholder="Search 125+ interview questions by keyword, topic, or concept..."
+                  value={interviewSearchText}
+                  onChange={(e) => {
+                    setInterviewSearchText(e.target.value);
+                    setInterviewPage(1);
+                  }}
+                  className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs border outline-none transition-all ${
+                    isDark ? 'bg-stone-950/80 border-stone-800 text-stone-100 placeholder-stone-500 focus:border-amber-500' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-amber-500'
+                  }`}
+                />
+                {interviewSearchText && (
+                  <button
+                    onClick={() => {
+                      setInterviewSearchText('');
+                      setInterviewPage(1);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
 
-              return (
-                <div 
-                  key={item.id}
-                  className={`rounded-2xl border transition-all ${
-                    isDark ? 'bg-stone-900/60 border-stone-800' : 'bg-slate-50 border-slate-200'
+              {/* Topic Select */}
+              <div className="sm:w-56">
+                <select
+                  value={interviewTopicFilter}
+                  onChange={(e) => {
+                    setInterviewTopicFilter(e.target.value);
+                    setInterviewPage(1);
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl text-xs border outline-none cursor-pointer ${
+                    isDark ? 'bg-stone-950 border-stone-800 text-stone-200' : 'bg-white border-slate-300 text-slate-800'
                   }`}
                 >
-                  {/* Header / Question row */}
-                  <div 
-                    onClick={() => setExpandedInterviewQ(isExpanded ? null : item.id)}
-                    className="p-4 flex items-center justify-between gap-3 cursor-pointer hover:opacity-95"
+                  <option value="All">All Topics ({DSA_INTERVIEW_MASTER_QUESTIONS.length})</option>
+                  <option value="Hashing & Tables">Hashing & Tables</option>
+                  <option value="Arrays & Two Pointers">Arrays & Two Pointers</option>
+                  <option value="Sliding Window">Sliding Window</option>
+                  <option value="Linked Lists">Linked Lists</option>
+                  <option value="Sorting & Searching">Sorting & Searching</option>
+                  <option value="Binary Trees & BST">Binary Trees & BST</option>
+                  <option value="Heaps & Priority Queues">Heaps & Priority Queues</option>
+                  <option value="Graphs & Shortest Path">Graphs & Shortest Path</option>
+                  <option value="Dynamic Programming">Dynamic Programming</option>
+                  <option value="Recursion & Backtracking">Recursion & Backtracking</option>
+                  <option value="Trie & Prefix Trees">Trie & Prefix Trees</option>
+                  <option value="Bit Manipulation">Bit Manipulation</option>
+                  <option value="Monotonic Stack & Queue">Monotonic Stack & Queue</option>
+                  <option value="Greedy Algorithms">Greedy Algorithms</option>
+                  <option value="Intervals & Range Queries">Intervals & Range Queries</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Filter Pills (Company & Difficulty) */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-stone-800/40">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-stone-400 flex items-center gap-1 mr-1">
+                  <Building2 className="w-3 h-3" /> MNC Company:
+                </span>
+                {['All', 'Google', 'Amazon', 'Meta', 'Microsoft', 'Apple', 'Netflix', 'Uber'].map((comp) => (
+                  <button
+                    key={comp}
+                    onClick={() => {
+                      setInterviewCompanyFilter(comp);
+                      setInterviewPage(1);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                      interviewCompanyFilter === comp
+                        ? 'bg-amber-500 text-stone-950 font-bold shadow-sm'
+                        : isDark ? 'bg-stone-800/70 text-stone-400 hover:text-stone-200' : 'bg-slate-200 text-slate-700'
+                    }`}
                   >
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                          {item.topic}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          item.difficulty === 'Beginner' ? 'text-emerald-400 bg-emerald-500/15' : 'text-amber-400 bg-amber-500/15'
-                        }`}>
-                          {item.difficulty}
-                        </span>
-                        <span className="text-[11px] opacity-60 font-mono">Source: {item.source}</span>
-                      </div>
-                      <h4 className="font-bold text-sm sm:text-base mt-0.5">{item.question}</h4>
-                    </div>
-                    <button className="p-1 rounded-lg text-stone-400">
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                  </div>
+                    {comp}
+                  </button>
+                ))}
+              </div>
 
-                  {/* Expanded Body */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 flex flex-col gap-4 border-t border-stone-800/40 pt-4">
-                      {/* Answer Duration Switcher */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-stone-400">🗣 Answer Delivery Mode:</span>
-                        <button
-                          onClick={() => setActiveAnswerMode(prev => ({ ...prev, [item.id]: '30s' }))}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer ${
-                            mode === '30s' ? 'bg-amber-500 text-stone-950 font-bold' : isDark ? 'bg-stone-800 text-stone-300' : 'bg-slate-200 text-slate-700'
-                          }`}
-                        >
-                          ⚡ 30-Second Pitch
-                        </button>
-                        <button
-                          onClick={() => setActiveAnswerMode(prev => ({ ...prev, [item.id]: '1min' }))}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer ${
-                            mode === '1min' ? 'bg-purple-600 text-white font-bold' : isDark ? 'bg-stone-800 text-stone-300' : 'bg-slate-200 text-slate-700'
-                          }`}
-                        >
-                          ⏱ 1-Minute Comprehensive
-                        </button>
-                        <button
-                          onClick={() => setActiveAnswerMode(prev => ({ ...prev, [item.id]: 'deep' }))}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer ${
-                            mode === 'deep' ? 'bg-indigo-600 text-white font-bold' : isDark ? 'bg-stone-800 text-stone-300' : 'bg-slate-200 text-slate-700'
-                          }`}
-                        >
-                          🔬 Deep Systems Dive
-                        </button>
-                      </div>
-
-                      {/* Displayed Pitch Text */}
-                      <div className={`p-4 rounded-xl border text-xs sm:text-sm leading-relaxed ${
-                        mode === '30s' 
-                          ? isDark ? 'bg-amber-950/20 border-amber-800/30 text-amber-100' : 'bg-amber-50 border-amber-200 text-amber-950'
-                          : mode === '1min'
-                          ? isDark ? 'bg-purple-950/20 border-purple-800/30 text-purple-100' : 'bg-purple-50 border-purple-200 text-purple-950'
-                          : isDark ? 'bg-indigo-950/20 border-indigo-800/30 text-indigo-100' : 'bg-indigo-50 border-indigo-200 text-indigo-950'
-                      }`}>
-                        <strong>
-                          {mode === '30s' ? '⚡ Say this in 30 seconds:' : mode === '1min' ? '⏱ Deliver this 1-minute structured answer:' : '🔬 Deep technical explanation for senior interviewers:'}
-                        </strong>
-                        <p className="mt-2 text-xs sm:text-sm opacity-95">
-                          {mode === '30s' ? item.thirtySecAnswer : mode === '1min' ? item.oneMinAnswer : item.deepTechnicalAnswer}
-                        </p>
-                      </div>
-
-                      {/* Concrete Example */}
-                      <div className={`p-3 rounded-xl border text-xs ${
-                        isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
-                      }`}>
-                        <strong>💡 Concrete Example to Mention:</strong>
-                        <p className="font-mono text-[11px] opacity-80 mt-1">{item.example}</p>
-                      </div>
-
-                      {/* Expectations & Follow-ups */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                        <div className={`p-3 rounded-xl border ${
-                          isDark ? 'bg-stone-950/30 border-stone-800' : 'bg-white border-slate-200'
-                        }`}>
-                          <strong className="text-emerald-400">🎯 What Interviewers Look For:</strong>
-                          <p className="mt-1 text-[11px] opacity-80">{item.interviewerExpectation}</p>
-                        </div>
-                        <div className={`p-3 rounded-xl border ${
-                          isDark ? 'bg-stone-950/30 border-stone-800' : 'bg-white border-slate-200'
-                        }`}>
-                          <strong className="text-rose-400">⚠️ Common Mistakes to Avoid:</strong>
-                          <ul className="mt-1 text-[11px] opacity-80 space-y-0.5">
-                            {item.commonMistakes.map((m, i) => (
-                              <li key={i}>• {m}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-stone-400 mr-1">Level:</span>
+                {['All', 'Beginner', 'Intermediate', 'Advanced'].map((lvl) => (
+                  <button
+                    key={lvl}
+                    onClick={() => {
+                      setInterviewDifficultyFilter(lvl);
+                      setInterviewPage(1);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all cursor-pointer ${
+                      interviewDifficultyFilter === lvl
+                        ? 'bg-purple-600 text-white font-bold'
+                        : isDark ? 'bg-stone-800/70 text-stone-400 hover:text-stone-200' : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {/* Results Summary Bar */}
+          <div className="flex items-center justify-between text-xs opacity-75 px-1">
+            <span>
+              Showing {filteredInterviewQuestions.length === 0 ? 0 : (interviewPage - 1) * INTERVIEW_PAGE_SIZE + 1}–{Math.min(interviewPage * INTERVIEW_PAGE_SIZE, filteredInterviewQuestions.length)} of {filteredInterviewQuestions.length} Questions
+            </span>
+            <span>
+              Page {interviewPage} of {totalInterviewPages}
+            </span>
+          </div>
+
+          {/* Questions Accordion List */}
+          <div className="flex flex-col gap-3.5">
+            {paginatedInterviewQuestions.length === 0 ? (
+              <div className={`p-8 rounded-2xl border text-center ${
+                isDark ? 'bg-stone-900/40 border-stone-800 text-stone-400' : 'bg-slate-100 border-slate-200 text-slate-600'
+              }`}>
+                <p className="text-sm font-semibold">No questions match your filter criteria.</p>
+                <button
+                  onClick={() => {
+                    setInterviewCompanyFilter('All');
+                    setInterviewTopicFilter('All');
+                    setInterviewDifficultyFilter('All');
+                    setInterviewSearchText('');
+                  }}
+                  className="mt-3 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-600 text-white cursor-pointer"
+                >
+                  Reset All Filters
+                </button>
+              </div>
+            ) : (
+              paginatedInterviewQuestions.map((item) => {
+                const isExpanded = expandedInterviewQ === item.id;
+                const mode = activeAnswerMode[item.id] || '30s';
+
+                return (
+                  <div 
+                    key={item.id}
+                    className={`rounded-2xl border transition-all ${
+                      isDark ? 'bg-stone-900/60 border-stone-800' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    {/* Header / Question row */}
+                    <div 
+                      onClick={() => setExpandedInterviewQ(isExpanded ? null : item.id)}
+                      className="p-4 flex items-center justify-between gap-3 cursor-pointer hover:opacity-95"
+                    >
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {item.companyTag && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                              <Building2 className="w-2.5 h-2.5" /> {item.companyTag}
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                            {item.topic}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            item.difficulty === 'Beginner' ? 'text-emerald-400 bg-emerald-500/15' : item.difficulty === 'Intermediate' ? 'text-amber-400 bg-amber-500/15' : 'text-rose-400 bg-rose-500/15'
+                          }`}>
+                            {item.difficulty}
+                          </span>
+                          <span className="text-[11px] opacity-60 font-mono">Source: {item.source}</span>
+                        </div>
+                        <h4 className="font-bold text-sm sm:text-base">{item.question}</h4>
+                      </div>
+                      <button className="p-1 rounded-lg text-stone-400 shrink-0">
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    {/* Expanded Body */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 flex flex-col gap-4 border-t border-stone-800/40 pt-4">
+                        {/* Answer Duration Switcher */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-bold text-stone-400">🗣 Answer Delivery Mode:</span>
+                          <button
+                            onClick={() => setActiveAnswerMode(prev => ({ ...prev, [item.id]: '30s' }))}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer ${
+                              mode === '30s' ? 'bg-amber-500 text-stone-950 font-bold' : isDark ? 'bg-stone-800 text-stone-300' : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            ⚡ 30-Second Pitch
+                          </button>
+                          <button
+                            onClick={() => setActiveAnswerMode(prev => ({ ...prev, [item.id]: '1min' }))}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer ${
+                              mode === '1min' ? 'bg-purple-600 text-white font-bold' : isDark ? 'bg-stone-800 text-stone-300' : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            ⏱ 1-Minute Comprehensive
+                          </button>
+                          <button
+                            onClick={() => setActiveAnswerMode(prev => ({ ...prev, [item.id]: 'deep' }))}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer ${
+                              mode === 'deep' ? 'bg-indigo-600 text-white font-bold' : isDark ? 'bg-stone-800 text-stone-300' : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            🔬 Deep Systems Dive
+                          </button>
+                        </div>
+
+                        {/* Displayed Pitch Text */}
+                        <div className={`p-4 rounded-xl border text-xs sm:text-sm leading-relaxed ${
+                          mode === '30s' 
+                            ? isDark ? 'bg-amber-950/20 border-amber-800/30 text-amber-100' : 'bg-amber-50 border-amber-200 text-amber-950'
+                            : mode === '1min'
+                            ? isDark ? 'bg-purple-950/20 border-purple-800/30 text-purple-100' : 'bg-purple-50 border-purple-200 text-purple-950'
+                            : isDark ? 'bg-indigo-950/20 border-indigo-800/30 text-indigo-100' : 'bg-indigo-50 border-indigo-200 text-indigo-950'
+                        }`}>
+                          <strong>
+                            {mode === '30s' ? '⚡ Say this in 30 seconds:' : mode === '1min' ? '⏱ Deliver this 1-minute structured answer:' : '🔬 Deep technical explanation for senior interviewers:'}
+                          </strong>
+                          <p className="mt-2 text-xs sm:text-sm opacity-95">
+                            {mode === '30s' ? item.thirtySecAnswer : mode === '1min' ? item.oneMinAnswer : item.deepTechnicalAnswer}
+                          </p>
+                        </div>
+
+                        {/* Concrete Example */}
+                        <div className={`p-3 rounded-xl border text-xs ${
+                          isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+                        }`}>
+                          <strong>💡 Concrete Example to Mention:</strong>
+                          <p className="font-mono text-[11px] opacity-80 mt-1">{item.example}</p>
+                        </div>
+
+                        {/* Expectations & Common Mistakes */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                          <div className={`p-3 rounded-xl border ${
+                            isDark ? 'bg-stone-950/30 border-stone-800' : 'bg-white border-slate-200'
+                          }`}>
+                            <strong className="text-emerald-400">🎯 What Interviewers Look For:</strong>
+                            <p className="mt-1 text-[11px] opacity-80">{item.interviewerExpectation}</p>
+                          </div>
+                          <div className={`p-3 rounded-xl border ${
+                            isDark ? 'bg-stone-950/30 border-stone-800' : 'bg-white border-slate-200'
+                          }`}>
+                            <strong className="text-rose-400">⚠️ Common Mistakes to Avoid:</strong>
+                            <ul className="mt-1 text-[11px] opacity-80 space-y-0.5">
+                              {item.commonMistakes.map((m, i) => (
+                                <li key={i}>• {m}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        {/* Follow-up Questions */}
+                        {item.followUpQuestions && item.followUpQuestions.length > 0 && (
+                          <div className={`p-3 rounded-xl border text-xs ${
+                            isDark ? 'bg-purple-950/20 border-purple-900/30 text-purple-200' : 'bg-purple-50 border-purple-200 text-purple-950'
+                          }`}>
+                            <strong className="text-purple-400">🔄 Expected Senior Follow-up Questions:</strong>
+                            <div className="flex flex-col gap-1 mt-1.5">
+                              {item.followUpQuestions.map((fu, idx) => (
+                                <div key={idx} className="flex items-start gap-1.5 text-[11px] opacity-90">
+                                  <span className="font-bold text-purple-400">Q{idx + 1}:</span>
+                                  <span>{fu}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalInterviewPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <button
+                disabled={interviewPage === 1}
+                onClick={() => setInterviewPage(prev => Math.max(1, prev - 1))}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all ${
+                  interviewPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-stone-800 hover:bg-stone-700 text-white'
+                }`}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Previous Page
+              </button>
+
+              <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-none">
+                {Array.from({ length: totalInterviewPages }, (_, i) => i + 1).map((pg) => {
+                  if (
+                    pg === 1 || 
+                    pg === totalInterviewPages || 
+                    Math.abs(pg - interviewPage) <= 1
+                  ) {
+                    return (
+                      <button
+                        key={pg}
+                        onClick={() => setInterviewPage(pg)}
+                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          interviewPage === pg
+                            ? 'bg-amber-500 text-stone-950'
+                            : isDark ? 'bg-stone-900 text-stone-400 hover:text-white' : 'bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {pg}
+                      </button>
+                    );
+                  }
+                  if (pg === 2 && interviewPage > 3) return <span key={pg} className="px-1 text-xs opacity-50">...</span>;
+                  if (pg === totalInterviewPages - 1 && interviewPage < totalInterviewPages - 2) return <span key={pg} className="px-1 text-xs opacity-50">...</span>;
+                  return null;
+                })}
+              </div>
+
+              <button
+                disabled={interviewPage === totalInterviewPages}
+                onClick={() => setInterviewPage(prev => Math.min(totalInterviewPages, prev + 1))}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all ${
+                  interviewPage === totalInterviewPages ? 'opacity-40 cursor-not-allowed' : 'bg-stone-800 hover:bg-stone-700 text-white'
+                }`}
+              >
+                Next Page <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -938,87 +1331,327 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
             ))}
           </div>
 
-          {/* Active 20-Point Sheet Display */}
+          {/* Active 20-Point Sheet Display (All 20 Points in Full Detail) */}
           <div className={`p-5 rounded-2xl border flex flex-col gap-6 ${
             isDark ? 'bg-stone-900/60 border-stone-800' : 'bg-slate-50 border-slate-200'
           }`}>
-            {/* Header info */}
-            <div className="flex flex-col gap-1 pb-4 border-b border-stone-800/40">
-              <h3 className="text-xl font-black">{activeCheatSheet.topic}</h3>
-              <p className="text-xs sm:text-sm text-emerald-400 font-semibold">{activeCheatSheet.oneLineDefinition}</p>
-              <p className="text-xs opacity-80 mt-1 leading-relaxed">{activeCheatSheet.whatIsIt}</p>
+            {/* Points 1 & 2: Topic Definition & In-Depth Architecture */}
+            <div className="flex flex-col gap-2 pb-4 border-b border-stone-800/40">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Points 1 & 2: Definition & Architecture
+                  </span>
+                  <span className="text-xs font-mono opacity-60">Topic: {activeCheatSheet.id}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    ⏱ {activeCheatSheet.timeComplexity}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    💾 {activeCheatSheet.spaceComplexity}
+                  </span>
+                </div>
+              </div>
+              <h3 className="text-2xl font-black text-stone-100">{activeCheatSheet.topic}</h3>
+              <p className="text-sm text-emerald-400 font-semibold">{activeCheatSheet.oneLineDefinition}</p>
+              <p className="text-xs sm:text-sm opacity-90 leading-relaxed mt-1">{activeCheatSheet.whatIsIt}</p>
             </div>
 
-            {/* Analogy & Recognition */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Points 3, 4, 5: Analogy, When to Use & Interview Recognition */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className={`p-4 rounded-xl border ${
                 isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
               }`}>
-                <h5 className="font-bold text-xs text-amber-400">🌎 Real-Life Intuitive Analogy</h5>
-                <p className="text-xs opacity-90 mt-1.5 leading-relaxed">{activeCheatSheet.analogy}</p>
+                <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-1">
+                  Point 3 • 🌎 Real-Life Analogy
+                </div>
+                <p className="text-xs opacity-90 leading-relaxed">{activeCheatSheet.analogy}</p>
               </div>
 
               <div className={`p-4 rounded-xl border ${
                 isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
               }`}>
-                <h5 className="font-bold text-xs text-sky-400">🔍 How to Recognize in Interviews</h5>
-                <p className="text-xs opacity-90 mt-1.5 leading-relaxed">{activeCheatSheet.interviewRecognition}</p>
+                <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1">
+                  Point 4 • 🎯 When to Use
+                </div>
+                <p className="text-xs opacity-90 leading-relaxed">{activeCheatSheet.whenToUse}</p>
+              </div>
+
+              <div className={`p-4 rounded-xl border ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <div className="text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-1">
+                  Point 5 • 🔍 FAANG Interview Signals
+                </div>
+                <p className="text-xs opacity-90 leading-relaxed">{activeCheatSheet.interviewRecognition}</p>
               </div>
             </div>
 
-            {/* Core Operations & Complexities */}
-            <div>
-              <h5 className="font-bold text-xs mb-2">⚡ Core Operations & Complexities</h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {activeCheatSheet.coreOperations.map((op, i) => (
-                  <div 
-                    key={i}
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
-                      isDark ? 'bg-stone-950/30 border-stone-800' : 'bg-white border-slate-200'
-                    }`}
-                  >
-                    <div>
-                      <div className="font-semibold">{op.op}</div>
-                      <div className="text-[10px] opacity-70 mt-0.5">{op.desc}</div>
+            {/* Points 6 & 7: Common Patterns & Core Operations Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Point 6: Common Algorithmic Patterns */}
+              <div className={`p-4 rounded-xl border flex flex-col gap-2.5 ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <div className="text-[11px] font-bold text-purple-400 uppercase tracking-wider">
+                  Point 6 • 🧩 High-Yield Patterns
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {activeCheatSheet.commonPatterns.map((pat, idx) => (
+                    <span 
+                      key={idx}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/25"
+                    >
+                      {pat}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Point 7: Core Operations Breakdown & Complexities */}
+              <div className={`lg:col-span-2 p-4 rounded-xl border flex flex-col gap-2.5 ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <div className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">
+                  Point 7 • ⚡ Core Operations Complexity
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                  {activeCheatSheet.coreOperations.map((op, i) => (
+                    <div 
+                      key={i}
+                      className={`p-2.5 rounded-lg border flex items-center justify-between text-xs ${
+                        isDark ? 'bg-stone-900/60 border-stone-800' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-semibold text-stone-200">{op.op}</div>
+                        <div className="text-[10px] opacity-70 mt-0.5">{op.desc}</div>
+                      </div>
+                      <span className="font-mono font-bold text-purple-400 text-xs shrink-0 ml-2">{op.complexity}</span>
                     </div>
-                    <span className="font-mono font-bold text-purple-400 text-xs shrink-0">{op.complexity}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Points 8 & 9: Time & Space Complexity Profile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className={`p-3.5 rounded-xl border flex items-center gap-3 ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <Clock className="w-5 h-5 text-purple-400 shrink-0" />
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-purple-400">Point 8 • Time Complexity Invariants</div>
+                  <div className="font-mono text-xs font-semibold text-stone-200 mt-0.5">{activeCheatSheet.timeComplexity}</div>
+                </div>
+              </div>
+              <div className={`p-3.5 rounded-xl border flex items-center gap-3 ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <Layers className="w-5 h-5 text-indigo-400 shrink-0" />
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-indigo-400">Point 9 • Memory & Space Complexity</div>
+                  <div className="font-mono text-xs font-semibold text-stone-200 mt-0.5">{activeCheatSheet.spaceComplexity}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Points 10, 11, 12: Multilingual Syntax Cheatsheet */}
+            <div>
+              <div className="text-xs font-bold text-stone-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <span>Points 10, 11 & 12 • 💻 Multilingual Syntax Snippets</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-stone-400 mb-1">
+                    <span>Point 10 • 🐍 Python Syntax</span>
+                    <button 
+                      onClick={() => handleCopyCode(activeCheatSheet.pythonSyntax)}
+                      className="hover:text-stone-200 p-0.5 cursor-pointer"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
                   </div>
-                ))}
+                  <pre className="p-3 rounded-xl bg-black/60 border border-stone-800 text-[10px] font-mono text-emerald-300 overflow-x-auto min-h-[100px]">
+                    {activeCheatSheet.pythonSyntax}
+                  </pre>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-stone-400 mb-1">
+                    <span>Point 11 • ⚙️ C++ STL Syntax</span>
+                    <button 
+                      onClick={() => handleCopyCode(activeCheatSheet.cppSyntax)}
+                      className="hover:text-stone-200 p-0.5 cursor-pointer"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <pre className="p-3 rounded-xl bg-black/60 border border-stone-800 text-[10px] font-mono text-sky-300 overflow-x-auto min-h-[100px]">
+                    {activeCheatSheet.cppSyntax}
+                  </pre>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-stone-400 mb-1">
+                    <span>Point 12 • ☕ Java Syntax</span>
+                    <button 
+                      onClick={() => handleCopyCode(activeCheatSheet.javaSyntax)}
+                      className="hover:text-stone-200 p-0.5 cursor-pointer"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <pre className="p-3 rounded-xl bg-black/60 border border-stone-800 text-[10px] font-mono text-amber-300 overflow-x-auto min-h-[100px]">
+                    {activeCheatSheet.javaSyntax}
+                  </pre>
+                </div>
               </div>
             </div>
 
-            {/* Multilingual Syntax (Python, C++, Java) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <div className="text-[11px] font-bold text-stone-400 mb-1">🐍 Python Syntax</div>
-                <pre className="p-3 rounded-xl bg-black/60 border border-stone-800 text-[10px] font-mono text-emerald-300 overflow-x-auto">
-                  {activeCheatSheet.pythonSyntax}
-                </pre>
+            {/* Points 13, 14, 15: Core Algorithms, High-Frequency Questions & Practice Problems */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Point 13: Core Canonical Algorithms */}
+              <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <div className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
+                  Point 13 • ⚙️ Canonical Algorithms
+                </div>
+                <ul className="text-xs space-y-1 mt-1 text-stone-300">
+                  {activeCheatSheet.commonAlgorithms.map((alg, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-cyan-400">•</span>
+                      <span>{alg}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div>
-                <div className="text-[11px] font-bold text-stone-400 mb-1">⚙️ C++ Syntax</div>
-                <pre className="p-3 rounded-xl bg-black/60 border border-stone-800 text-[10px] font-mono text-sky-300 overflow-x-auto">
-                  {activeCheatSheet.cppSyntax}
-                </pre>
+
+              {/* Point 14: Top High-Frequency Interview Questions */}
+              <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                  Point 14 • 💬 High-Frequency Interview Qs
+                </div>
+                <ul className="text-xs space-y-1 mt-1 text-stone-300">
+                  {activeCheatSheet.commonInterviewQs.map((q, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-amber-400 font-bold">{i + 1}.</span>
+                      <span>{q}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div>
-                <div className="text-[11px] font-bold text-stone-400 mb-1">☕ Java Syntax</div>
-                <pre className="p-3 rounded-xl bg-black/60 border border-stone-800 text-[10px] font-mono text-amber-300 overflow-x-auto">
-                  {activeCheatSheet.javaSyntax}
-                </pre>
+
+              {/* Point 15: Must-Solve LeetCode Practice Problems */}
+              <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                  Point 15 • 🏆 Must-Solve Problems
+                </div>
+                <ul className="text-xs space-y-1 mt-1 text-stone-300">
+                  {activeCheatSheet.commonProblems.map((prob, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-emerald-400 font-bold">✓</span>
+                      <span>{prob}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
 
-            {/* 60-Second Revision Summary */}
-            <div className={`p-4 rounded-xl border ${
-              isDark ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-100' : 'bg-emerald-50 border-emerald-200 text-emerald-950'
-            }`}>
-              <h5 className="font-bold text-xs flex items-center gap-1.5 text-emerald-400">
-                ⚡ 60-Second Placement Revision
-              </h5>
-              <p className="text-xs mt-1.5 leading-relaxed opacity-95">
-                {activeCheatSheet.sixtySecRevision}
-              </p>
+            {/* Points 16, 17, 18: Common Mistakes, Edge Cases & Follow-up Questions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Point 16: Common Traps & Mistakes */}
+              <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
+                isDark ? 'bg-rose-950/20 border-rose-900/30 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-900'
+              }`}>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" /> Point 16 • Traps to Avoid
+                </div>
+                <ul className="text-xs space-y-1 mt-1 opacity-90">
+                  {activeCheatSheet.commonMistakes.map((mis, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span>✕</span>
+                      <span>{mis}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Point 17: Critical Edge Cases */}
+              <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
+                isDark ? 'bg-amber-950/20 border-amber-900/30 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Point 17 • Critical Edge Cases
+                </div>
+                <ul className="text-xs space-y-1 mt-1 opacity-90">
+                  {activeCheatSheet.edgeCases.map((edge, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span>•</span>
+                      <span>{edge}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Point 18: Tricky Interview Follow-Ups */}
+              <div className={`p-4 rounded-xl border flex flex-col gap-2 ${
+                isDark ? 'bg-purple-950/20 border-purple-900/30 text-purple-200' : 'bg-purple-50 border-purple-200 text-purple-900'
+              }`}>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5" /> Point 18 • Interview Follow-Ups
+                </div>
+                <ul className="text-xs space-y-1 mt-1 opacity-90">
+                  {activeCheatSheet.interviewFollowUps.map((fu, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="font-bold text-purple-400">Q{i + 1}:</span>
+                      <span>{fu}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Points 19 & 20: 60-Second Revision Summary & Related Topics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Point 19: 60-Second Placement Revision */}
+              <div className={`md:col-span-3 p-4 rounded-xl border ${
+                isDark ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-100' : 'bg-emerald-50 border-emerald-200 text-emerald-950'
+              }`}>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5">
+                  <Zap className="w-3.5 h-3.5" /> Point 19 • 60-Second Placement Revision
+                </div>
+                <p className="text-xs leading-relaxed opacity-95 font-medium">
+                  {activeCheatSheet.sixtySecRevision}
+                </p>
+              </div>
+
+              {/* Point 20: Related Topics */}
+              <div className={`p-4 rounded-xl border flex flex-col justify-between ${
+                isDark ? 'bg-stone-950/40 border-stone-800' : 'bg-white border-slate-200'
+              }`}>
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-2">
+                    Point 20 • Related Topics
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeCheatSheet.relatedTopics.map((rel, i) => (
+                      <span 
+                        key={i}
+                        className="px-2 py-0.5 rounded text-[10px] font-medium bg-stone-800 text-stone-300 border border-stone-700"
+                      >
+                        {rel}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
