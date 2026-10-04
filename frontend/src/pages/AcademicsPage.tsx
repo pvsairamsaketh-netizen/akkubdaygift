@@ -18,6 +18,7 @@ import { RapidFireChallenge } from '../components/academics/dsa/RapidFireChallen
 import { DSAPatternTree } from '../components/academics/dsa/DSAPatternTree';
 import { DSAMistakeNotebook } from '../components/academics/dsa/DSAMistakeNotebook';
 import { FinalDSASimulation } from '../components/academics/dsa/FinalDSASimulation';
+import { DSAResourcesKnowledgeHub } from '../components/academics/dsa/DSAResourcesKnowledgeHub';
 import { api } from '../services/api';
 import type { AcademicProgressData, InterviewQuestionItem } from '../types/academics';
 import { AcademicsThemeProvider, useAcademicsTheme } from '../context/AcademicsThemeContext';
@@ -355,6 +356,15 @@ const AcademicsPageInner: React.FC = () => {
 
           {currentView === 'dsa_final_mock' && (
             <FinalDSASimulation />
+          )}
+
+          {(currentView === 'resources' || currentView === 'dsa_resources') && (
+            <DSAResourcesKnowledgeHub 
+              onSelectDay={(day) => {
+                setCurrentDayNumber(day);
+                setCurrentView(day >= 101 ? 'dsa_lesson' : 'lesson');
+              }}
+            />
           )}
         </main>
       </div>

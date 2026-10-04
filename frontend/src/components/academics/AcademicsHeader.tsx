@@ -41,6 +41,7 @@ export type AcademicsViewMode =
   | 'revision'
   | 'capstone'
   | 'analytics'
+  | 'resources'
   // DSA Views (Days 101-130)
   | 'dsa_roadmap'
   | 'dsa_questions'
@@ -50,7 +51,8 @@ export type AcademicsViewMode =
   | 'dsa_rapid_fire'
   | 'dsa_pattern_tree'
   | 'dsa_mistakes'
-  | 'dsa_final_mock';
+  | 'dsa_final_mock'
+  | 'dsa_resources';
 
 interface AcademicsHeaderProps {
   currentView: AcademicsViewMode;
@@ -95,6 +97,7 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
     { id: 'lesson', label: 'Daily Lesson', icon: <BookOpen className="w-3.5 h-3.5" />, badge: `Day ${progress.completed_days?.[progress.completed_days.length - 1] ? Math.min(100, (progress.completed_days[progress.completed_days.length - 1] + 1)) : 1}` },
     { id: 'sql_playground', label: 'SQL Sandbox', icon: <Database className="w-3.5 h-3.5 text-sky-400" /> },
     { id: 'interview_bank', label: '1,000+ DE Bank', icon: <Sparkles className="w-3.5 h-3.5 text-amber-400" /> },
+    { id: 'resources', label: 'Resources & Knowledge Hub', icon: <Sparkles className="w-3.5 h-3.5 text-indigo-400" />, badge: '10 Sources' },
     { id: 'notes', label: 'My Notes', icon: <FileText className="w-3.5 h-3.5" /> },
     { id: 'cheatsheets', label: 'Cheat Sheets', icon: <FileCheck2 className="w-3.5 h-3.5" /> },
     { id: 'revision', label: 'Revision Queue', icon: <BrainCircuit className="w-3.5 h-3.5 text-purple-400" /> },
@@ -105,6 +108,7 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
   // 2. DSA & Coding Interview Track Subnav (Days 101-130)
   const dsaNavItems: { id: AcademicsViewMode; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'dsa_roadmap', label: 'DSA Roadmap (101–130)', icon: <Calendar className="w-3.5 h-3.5 text-purple-400" /> },
+    { id: 'resources', label: 'Resources & Knowledge Hub', icon: <Sparkles className="w-3.5 h-3.5 text-indigo-400" />, badge: '10 Sources' },
     { id: 'dsa_questions', label: '3,000+ DSA Bank', icon: <Code2 className="w-3.5 h-3.5 text-emerald-400" />, badge: '3,130 Qs' },
     { id: 'dsa_lesson', label: 'DSA Daily Lesson', icon: <BookOpen className="w-3.5 h-3.5 text-sky-400" />, badge: 'Days 101–130' },
     { id: 'dsa_rounds', label: 'Timed Coding Rounds', icon: <Flame className="w-3.5 h-3.5 text-amber-400" /> },
