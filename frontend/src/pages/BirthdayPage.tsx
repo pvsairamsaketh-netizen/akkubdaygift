@@ -35,6 +35,13 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
   const letter = birthdayConfig?.love_letter || `Happy Birthday to the most special person in my life. Every little moment, message, and memory we have shared means the world to me. I made this little world just for you.`;
   const bdayDate = birthdayConfig?.birthday_date || 'October 20';
 
+  const handleCardFlip = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setIsFlipped((prev) => !prev);
+  };
+
   const triggerCelebration = () => {
     // If locked, request unlock first
     if (!isUnlocked && onRequestUnlock) {
@@ -93,27 +100,38 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
 
       {/* 3D Flippable Birthday Card */}
       <div 
-        className="w-full max-w-lg perspective-1000 mb-8 sm:mb-10 cursor-pointer group" 
-        onClick={() => {
-          setIsFlipped(!isFlipped);
+        className="w-full max-w-lg perspective-1000 mb-8 sm:mb-10 cursor-pointer group relative z-20 outline-none select-none touch-manipulation" 
+        onClick={handleCardFlip}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleCardFlip();
+          }
         }}
+        role="button"
+        tabIndex={0}
+        aria-label="Birthday Love Letter Card - Click to flip"
+        aria-pressed={isFlipped}
       >
         <div
           className={`relative w-full h-[400px] sm:h-[450px] transition-transform duration-700 transform-style-preserve-3d rounded-3xl shadow-xl hover:shadow-2xl border border-rose-200/80 group-hover:scale-[1.01] ${
             isFlipped ? 'rotate-y-180' : ''
           }`}
+          style={{ willChange: 'transform' }}
         >
           {/* Card Front: Elegant Cover */}
-          <div className="absolute inset-0 backface-hidden bg-gradient-to-br from-rose-400 via-pink-400 to-rose-300 rounded-3xl p-8 flex flex-col justify-between text-white shadow-inner overflow-hidden select-none">
+          <div className={`absolute inset-0 backface-hidden bg-gradient-to-br from-rose-400 via-pink-400 to-rose-300 rounded-3xl p-8 flex flex-col justify-between text-white shadow-inner overflow-hidden select-none ${
+            isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
+          }`}>
             <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/15 rounded-full blur-xl pointer-events-none" />
             <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-rose-600/25 rounded-full blur-xl pointer-events-none" />
 
-            <div className="flex items-center justify-between z-10">
+            <div className="flex items-center justify-between z-10 pointer-events-none">
               <span className="text-xs uppercase tracking-widest font-semibold text-rose-100 font-mono">Special Edition</span>
               <Heart className="w-6 h-6 text-white fill-white animate-pulse" />
             </div>
 
-            <div className="text-center space-y-3.5 my-auto z-10">
+            <div className="text-center space-y-3.5 my-auto z-10 pointer-events-none">
               <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto shadow-md border border-white/30">
                 <Gift className="w-9 h-9 sm:w-10 sm:h-10 text-white" />
               </div>
@@ -122,14 +140,16 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
               <p className="text-sm font-semibold tracking-wider text-white font-serif">{creator}</p>
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-xs font-medium text-rose-100/95 z-10 bg-white/10 py-1.5 px-4 rounded-full backdrop-blur-xs mx-auto">
+            <div className="flex items-center justify-center gap-2 text-xs font-medium text-rose-100/95 z-10 bg-white/10 py-1.5 px-4 rounded-full backdrop-blur-xs mx-auto pointer-events-none">
               <RotateCw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '6s' }} />
               <span>Tap anywhere to flip card & read letter</span>
             </div>
           </div>
 
           {/* Card Back: The Love Letter */}
-          <div className="absolute inset-0 backface-hidden rotate-y-180 bg-[#fffdfb] rounded-3xl p-6 sm:p-8 flex flex-col justify-between text-stone-800 shadow-inner overflow-y-auto select-none">
+          <div className={`absolute inset-0 backface-hidden rotate-y-180 bg-[#fffdfb] rounded-3xl p-6 sm:p-8 flex flex-col justify-between text-stone-800 shadow-inner overflow-y-auto select-none ${
+            isFlipped ? 'pointer-events-auto' : 'pointer-events-none'
+          }`}>
             <div>
               <div className="flex items-center justify-between border-b border-rose-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
