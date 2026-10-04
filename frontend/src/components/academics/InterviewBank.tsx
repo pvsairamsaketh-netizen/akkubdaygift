@@ -3,24 +3,22 @@ import {
   HelpCircle, 
   Search, 
   CheckCircle2, 
-  AlertTriangle, 
   Bookmark, 
   BookmarkCheck, 
   ChevronDown, 
   ChevronUp, 
-  BookOpen,
   Building2,
   Code2,
   CheckSquare,
   Square,
   ChevronLeft,
   ChevronRight,
-  Copy,
-  Check,
   Filter,
-  Award
+  Award,
+  ArrowRight
 } from 'lucide-react';
 import { FAANG_INTERVIEW_QUESTIONS } from '../../data/academics/interviewQuestionsBank';
+import { DEPracticeEnvironment } from './de/DEPracticeEnvironment';
 
 interface InterviewBankProps {
   onSaveToNotes?: (question: any) => void;
@@ -44,7 +42,6 @@ export const InterviewBank: React.FC<InterviewBankProps> = ({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revealedHintIds, setRevealedHintIds] = useState<Record<string, boolean>>({});
   const [selectedMcqAnswers, setSelectedMcqAnswers] = useState<Record<string, number>>({});
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Solved state persisted locally
   const [solvedIds, setSolvedIds] = useState<string[]>(() => {
@@ -64,12 +61,6 @@ export const InterviewBank: React.FC<InterviewBankProps> = ({
       } catch {}
       return updated;
     });
-  };
-
-  const handleCopyCode = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const toggleHint = (id: string) => {
@@ -494,18 +485,32 @@ export const InterviewBank: React.FC<InterviewBankProps> = ({
                       </button>
                     )}
 
-                    <button
-                      onClick={() => setExpandedId(isExpanded ? null : q.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      <span>{isExpanded ? 'Hide Details' : 'View Solution'}</span>
-                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
+                    {q.type === 'coding' ? (
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : q.id)}
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                          isExpanded 
+                            ? 'bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700' 
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                        }`}
+                      >
+                        <span>{isExpanded ? 'Close Lab' : 'SOLVE PROBLEM →'}</span>
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : q.id)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        <span>{isExpanded ? 'Hide Details' : 'ATTEMPT QUIZ →'}</span>
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Progressive Hint Button in Collapsed Card */}
-                {!isExpanded && (
+                {/* Progressive Hint Button in Collapsed Card (for MCQs) */}
+                {!isExpanded && q.type === 'mcq' && (
                   <div className="px-4 pb-3 flex items-center justify-between border-t border-stone-800/40 pt-2 text-xs">
                     {!isHintRevealed ? (
                       <button
@@ -532,150 +537,104 @@ export const InterviewBank: React.FC<InterviewBankProps> = ({
                   </div>
                 )}
 
-                {/* Expanded Drawer: Interactive MCQ or Coding Solution */}
+                {/* Expanded Drawer: Full Interactive DE IDE for Coding OR Interactive MCQ Quiz */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 pt-3 border-t border-stone-800 bg-[#141924]/60 flex flex-col gap-3.5 text-xs">
-                    {/* 1. Progressive Hint in Drawer */}
-                    {q.hint && (
-                      <div className="p-3 rounded-xl bg-amber-950/25 border border-amber-700/40 text-amber-200">
-                        <div className="flex items-center gap-1.5 font-bold text-amber-300 mb-1">
-                          <HelpCircle className="w-4 h-4 text-amber-400" />
-                          <span>Interviewer Placement Clue & Hint</span>
-                        </div>
-                        <p className="leading-relaxed pl-5">{q.hint}</p>
+                  <>
+                    {q.type === 'coding' ? (
+                      <div className="p-3 border-t border-stone-800 bg-[#070a10]">
+                        <DEPracticeEnvironment
+                          question={q}
+                          isBookmarked={isBookmarked}
+                          onToggleBookmark={onToggleBookmark}
+                          onSaveToNotes={onSaveToNotes}
+                          onSolved={(id) => handleToggleSolved(id)}
+                          onAddMistake={(id, mistake) => {
+                            try {
+                              const mistakes = JSON.parse(localStorage.getItem('akku_de_mistakes') || '[]');
+                              mistakes.push({ id, ...mistake, timestamp: new Date().toISOString() });
+                              localStorage.setItem('akku_de_mistakes', JSON.stringify(mistakes));
+                            } catch {}
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="px-4 pb-4 pt-3 border-t border-stone-800 bg-[#141924]/60 flex flex-col gap-3.5 text-xs">
+                        {/* 1. Progressive Hint in Drawer */}
+                        {q.hint && (
+                          <div className="p-3 rounded-xl bg-amber-950/25 border border-amber-700/40 text-amber-200">
+                            <div className="flex items-center gap-1.5 font-bold text-amber-300 mb-1">
+                              <HelpCircle className="w-4 h-4 text-amber-400" />
+                              <span>Interviewer Placement Clue & Hint</span>
+                            </div>
+                            <p className="leading-relaxed pl-5">{q.hint}</p>
+                          </div>
+                        )}
+
+                        {/* 2. Interactive MCQ Choices */}
+                        {q.options && (
+                          <div className="flex flex-col gap-2">
+                            <span className="font-semibold text-xs text-stone-300 uppercase tracking-wider">
+                              Select Your Answer:
+                            </span>
+                            <div className="grid grid-cols-1 gap-2">
+                              {q.options.map((opt, optIdx) => {
+                                const isSelected = userChoice === optIdx;
+                                const isCorrect = q.correctIndex === optIdx;
+                                const hasAnswered = userChoice !== undefined;
+
+                                let optionStyle = 'bg-[#161c28] border-stone-800 hover:border-sky-600/60 text-stone-200';
+                                if (hasAnswered) {
+                                  if (isCorrect) {
+                                    optionStyle = 'bg-emerald-950/40 border-emerald-600 text-emerald-200 font-semibold shadow-sm';
+                                  } else if (isSelected && !isCorrect) {
+                                    optionStyle = 'bg-rose-950/40 border-rose-600 text-rose-200';
+                                  }
+                                }
+
+                                return (
+                                  <button
+                                    key={optIdx}
+                                    onClick={() => handleSelectOption(q.id, optIdx)}
+                                    className={`p-3 rounded-xl border text-left text-xs transition-all flex items-start gap-3 cursor-pointer ${optionStyle}`}
+                                  >
+                                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0 font-bold border ${
+                                      hasAnswered && isCorrect 
+                                        ? 'bg-emerald-600 text-white border-emerald-500' 
+                                        : hasAnswered && isSelected && !isCorrect
+                                        ? 'bg-rose-600 text-white border-rose-500'
+                                        : 'bg-[#10141d] text-stone-400 border-stone-700'
+                                    }`}>
+                                      {String.fromCharCode(65 + optIdx)}
+                                    </span>
+                                    <span className="flex-1 leading-snug">{opt}</span>
+                                    {hasAnswered && isCorrect && (
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 3. Model Solution & Explanation (Revealed after MCQ answered) */}
+                        {userChoice !== undefined && (
+                          <div className="bg-[#0b0e14] p-4 rounded-xl border border-stone-800">
+                            <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                <span>Explanation & Reasoning:</span>
+                              </span>
+                            </div>
+
+                            <p className="text-stone-300 leading-relaxed text-xs">
+                              {q.explanation}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
-
-                    {/* 2. Interactive MCQ Choices */}
-                    {q.type === 'mcq' && q.options && (
-                      <div className="flex flex-col gap-2">
-                        <span className="font-semibold text-xs text-stone-300 uppercase tracking-wider">
-                          Select Your Answer:
-                        </span>
-                        <div className="grid grid-cols-1 gap-2">
-                          {q.options.map((opt, optIdx) => {
-                            const isSelected = userChoice === optIdx;
-                            const isCorrect = q.correctIndex === optIdx;
-                            const hasAnswered = userChoice !== undefined;
-
-                            let optionStyle = 'bg-[#161c28] border-stone-800 hover:border-sky-600/60 text-stone-200';
-                            if (hasAnswered) {
-                              if (isCorrect) {
-                                optionStyle = 'bg-emerald-950/40 border-emerald-600 text-emerald-200 font-semibold shadow-sm';
-                              } else if (isSelected && !isCorrect) {
-                                optionStyle = 'bg-rose-950/40 border-rose-600 text-rose-200';
-                              }
-                            }
-
-                            return (
-                              <button
-                                key={optIdx}
-                                onClick={() => handleSelectOption(q.id, optIdx)}
-                                className={`p-3 rounded-xl border text-left text-xs transition-all flex items-start gap-3 cursor-pointer ${optionStyle}`}
-                              >
-                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0 font-bold border ${
-                                  hasAnswered && isCorrect 
-                                    ? 'bg-emerald-600 text-white border-emerald-500' 
-                                    : hasAnswered && isSelected && !isCorrect
-                                    ? 'bg-rose-600 text-white border-rose-500'
-                                    : 'bg-[#10141d] text-stone-400 border-stone-700'
-                                }`}>
-                                  {String.fromCharCode(65 + optIdx)}
-                                </span>
-                                <span className="flex-1 leading-snug">{opt}</span>
-                                {hasAnswered && isCorrect && (
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 3. Model Solution & Explanation */}
-                    <div className="bg-[#0b0e14] p-4 rounded-xl border border-stone-800">
-                      <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
-                        <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span>FAANG Senior DE Model Solution & Reasoning:</span>
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleCopyCode(q.id, q.solution)}
-                            className="text-[11px] text-stone-400 hover:text-stone-200 flex items-center gap-1 px-2 py-1 rounded bg-[#161c28] border border-stone-800 transition-colors cursor-pointer"
-                          >
-                            {copiedId === q.id ? (
-                              <>
-                                <Check className="w-3 h-3 text-emerald-400" />
-                                <span className="text-emerald-400">Copied</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3" />
-                                <span>Copy Code</span>
-                              </>
-                            )}
-                          </button>
-
-                          {onSaveToNotes && (
-                            <button
-                              onClick={() => onSaveToNotes(q)}
-                              className="text-[11px] text-sky-400 hover:text-sky-300 flex items-center gap-1 px-2.5 py-1 rounded bg-sky-950/40 border border-sky-800/40 transition-colors cursor-pointer"
-                            >
-                              <BookOpen className="w-3 h-3" />
-                              <span>Save to Revision Notes</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Code / Solution block */}
-                      <pre className="p-3 rounded-lg bg-[#07090e] border border-stone-800/80 font-mono text-emerald-300 text-xs overflow-x-auto leading-relaxed whitespace-pre-wrap">
-                        {q.solution}
-                      </pre>
-
-                      {/* Detailed Explanation */}
-                      <div className="mt-3 pt-3 border-t border-stone-800/60 text-xs text-stone-300 leading-relaxed">
-                        <strong className="text-stone-100 block mb-1 font-semibold">
-                          Why This Works & Key Takeaways:
-                        </strong>
-                        <p>{q.explanation}</p>
-                      </div>
-
-                      {/* Complexity & Common Traps */}
-                      {(q.timeComplexity || q.commonTraps) && (
-                        <div className="mt-3 pt-3 border-t border-stone-800/60 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                          {q.timeComplexity && (
-                            <div className="p-2.5 rounded-lg bg-[#141a24] border border-stone-800">
-                              <span className="font-semibold text-stone-400 text-[10px] uppercase block mb-1">
-                                Algorithmic Complexity
-                              </span>
-                              <div className="font-mono text-sky-300 text-[11px]">
-                                • Time: {q.timeComplexity}
-                              </div>
-                              <div className="font-mono text-sky-300 text-[11px]">
-                                • Space: {q.spaceComplexity || 'O(1)'}
-                              </div>
-                            </div>
-                          )}
-
-                          {q.commonTraps && (
-                            <div className="p-2.5 rounded-lg bg-rose-950/20 border border-rose-800/30">
-                              <span className="font-semibold text-rose-400 text-[10px] uppercase block mb-1 flex items-center gap-1">
-                                <AlertTriangle className="w-3 h-3 text-rose-400" />
-                                <span>Interviewer Trap Alert</span>
-                              </span>
-                              <p className="text-stone-300 text-[11px] leading-snug">
-                                {q.commonTraps}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  </>
                 )}
               </div>
             );

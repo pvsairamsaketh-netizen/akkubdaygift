@@ -11,6 +11,8 @@ import {
   Circle, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronUp,
+  ArrowRight,
   Search, 
   Clock, 
   Layers, 
@@ -28,6 +30,7 @@ import { CodingLab } from './CodingLab';
 import { MCQAssessment } from './MCQAssessment';
 import { NotesWorkspace } from './NotesWorkspace';
 import { TutorialViewer } from './TutorialViewer';
+import { DEPracticeEnvironment } from './de/DEPracticeEnvironment';
 import { api } from '../../services/api';
 import type { DayLesson, AcademicProgressData } from '../../types/academics';
 import { useAcademicsTheme } from '../../context/AcademicsThemeContext';
@@ -50,6 +53,7 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
   const [sidebarSearch, setSidebarSearch] = useState('');
   const [copiedCodeKey, setCopiedCodeKey] = useState<string | null>(null);
   const [copiedSheet, setCopiedSheet] = useState(false);
+  const [expandedInterviewIdx, setExpandedInterviewIdx] = useState<number | null>(null);
 
   // Bookmarks persisted locally
   const [bookmarkedDays, setBookmarkedDays] = useState<number[]>(() => {
@@ -523,31 +527,75 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
         {/* Tab 5: Interview */}
         {activeTab === 'interview' && (
           <div className="flex flex-col gap-3">
-            {lesson.interviewQuestions.map((q, idx) => (
-              <div key={q.id || idx} className={`p-4 rounded-xl border flex flex-col gap-2.5 shadow-md ${
-                isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-sky-400 font-mono font-bold">
-                    Placement Question #{idx + 1}
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">
-                    {q.difficulty}
-                  </span>
-                </div>
+            {lesson.interviewQuestions.map((q, idx) => {
+              const isExpanded = expandedInterviewIdx === idx;
+              return (
+                <div key={q.id || idx} className={`p-4 rounded-xl border flex flex-col gap-2.5 shadow-md overflow-hidden ${
+                  isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-sky-400 font-mono font-bold">
+                        Placement Question #{idx + 1}
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">
+                        {q.difficulty}
+                      </span>
+                    </div>
 
-                <h4 className="font-bold text-sm font-sans">
-                  {q.question}
-                </h4>
-
-                <div className="bg-[#07090e] p-3 rounded-lg border border-stone-800 text-xs font-mono text-stone-200 whitespace-pre-wrap leading-relaxed">
-                  <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1 font-sans">
-                    Placement Model Answer:
+                    <button
+                      onClick={() => setExpandedInterviewIdx(isExpanded ? null : idx)}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                        isExpanded 
+                          ? 'bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700' 
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                      }`}
+                    >
+                      <span>{isExpanded ? 'Close Lab' : 'SOLVE CHALLENGE →'}</span>
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
-                  {q.solution}
+
+                  <h4 className="font-bold text-sm font-sans text-stone-100">
+                    {q.question}
+                  </h4>
+
+                  {/* Immediate Interactive IDE Lab (Solution remains strictly hidden!) */}
+                  {isExpanded && (
+                    <div className="mt-2 pt-2 border-t border-stone-800">
+                      <DEPracticeEnvironment
+                        question={{
+                          id: q.id || `day_${lesson.dayNumber}_q_${idx + 1}`,
+                          title: `Day ${lesson.dayNumber} Challenge: ${q.question.slice(0, 65)}...`,
+                          question: q.question,
+                          difficulty: q.difficulty,
+                          category: lesson.subject,
+                          topic: lesson.title,
+                          solution: q.solution,
+                          hint: q.hint,
+                          timeComplexity: q.timeComplexity,
+                          spaceComplexity: q.spaceComplexity,
+                          tags: [lesson.subject, ...(q.tags || [])]
+                        }}
+                        onSolved={(id) => {
+                          const existing = progress.coding_submissions || {};
+                          onUpdateProgress({
+                            coding_submissions: {
+                              ...existing,
+                              [id]: {
+                                code: 'SOLVED',
+                                passed: true,
+                                timestamp: new Date().toISOString()
+                              }
+                            }
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
