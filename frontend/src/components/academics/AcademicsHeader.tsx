@@ -19,9 +19,13 @@ import {
   Zap,
   Award,
   AlertTriangle,
-  Bot
+  Bot,
+  Sun,
+  Moon,
+  Laptop
 } from 'lucide-react';
 import type { AcademicProgressData } from '../../types/academics';
+import { useAcademicsTheme } from '../../context/AcademicsThemeContext';
 
 export type AcademicTrack = 'de' | 'dsa';
 
@@ -63,6 +67,8 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
   activeTrack,
   onTrackChange
 }) => {
+  const { theme, setTheme, isDark } = useAcademicsTheme();
+
   const [showBirthdayBanner, setShowBirthdayBanner] = useState(() => {
     try {
       return localStorage.getItem('akku_hide_bday_academy_banner') !== 'true';
@@ -110,7 +116,7 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
   ];
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 font-sans">
       {/* Dismissible Birthday Greeting for Akku */}
       {showBirthdayBanner && (
         <div className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 border border-amber-500/30 flex items-center justify-between text-xs text-amber-100 shadow-sm animate-fade-in">
@@ -131,54 +137,93 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
       )}
 
       {/* Main Academy Header Bar */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#0d1117] border border-stone-800 text-stone-200 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Left: Academy Branding & Personalized Subtitle */}
+      <div className={`p-4 sm:p-5 rounded-2xl border shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${
+        isDark ? 'bg-[#0d1117] border-stone-800 text-stone-200' : 'bg-white border-slate-200 text-slate-800'
+      }`}>
+        {/* Left: Academy Branding & Subtitle */}
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-sky-900/40 shrink-0">
             <GraduationCap className="w-6 h-6 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight font-sans">
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
                 Akku's Placement Academy
               </h1>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-semibold border border-sky-500/30 font-mono">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 font-semibold border border-sky-500/30 font-mono">
                 M.Tech Placement Prep
               </span>
             </div>
-            <p className="text-xs text-stone-400 mt-0.5 font-sans">
+            <p className="text-xs opacity-75 mt-0.5">
               "Days 1–100: Data Engineering • Days 101–130: Complete DSA & Coding Interview"
             </p>
           </div>
         </div>
 
-        {/* Right: Quick Stats & Metrics */}
+        {/* Right: Theme Switcher & Stats */}
         <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+          {/* Theme Selector: Light, Dark, System */}
+          <div className={`flex items-center p-1 rounded-xl border text-xs ${
+            isDark ? 'bg-[#161b22] border-stone-800' : 'bg-slate-100 border-slate-200'
+          }`}>
+            <button
+              onClick={() => setTheme('light')}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                theme === 'light' ? 'bg-amber-500 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
+              }`}
+              title="Light Mode"
+            >
+              <Sun className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setTheme('dark')}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                theme === 'dark' ? 'bg-indigo-600 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
+              }`}
+              title="Dark Mode"
+            >
+              <Moon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setTheme('system')}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                theme === 'system' ? 'bg-sky-600 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
+              }`}
+              title="System Theme"
+            >
+              <Laptop className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           {/* Day Streak Counter */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#161b22] border border-stone-800 text-xs">
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs ${
+            isDark ? 'bg-[#161b22] border-stone-800' : 'bg-slate-100 border-slate-200'
+          }`}>
             <Flame className="w-4 h-4 text-amber-400 fill-amber-400/20 animate-pulse" />
-            <span className="font-semibold text-stone-300 font-mono">{streak}</span>
-            <span className="text-stone-500 hidden sm:inline">Day Streak</span>
+            <span className="font-semibold font-mono">{streak}</span>
+            <span className="opacity-75 hidden sm:inline">Streak</span>
           </div>
 
           {/* DE Completion Badge */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-950/40 border border-sky-800/40 text-xs">
             <Database className="w-3.5 h-3.5 text-sky-400" />
-            <span className="text-stone-400">DE:</span>
+            <span className="opacity-75">DE:</span>
             <span className="font-bold text-sky-300 font-mono">{deCompleted}/100</span>
           </div>
 
           {/* DSA Completion Badge */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/40 border border-purple-800/40 text-xs">
             <Code2 className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-stone-400">DSA:</span>
+            <span className="opacity-75">DSA:</span>
             <span className="font-bold text-purple-300 font-mono">{dsaCompleted}/30</span>
           </div>
         </div>
       </div>
 
       {/* 2. DUAL-TRACK SELECTOR: DATA ENGINEERING vs DSA */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-[#090d14] rounded-2xl border border-stone-800 shadow-inner">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 rounded-2xl border shadow-inner ${
+        isDark ? 'bg-[#090d14] border-stone-800' : 'bg-slate-100 border-slate-200'
+      }`}>
         <button
           onClick={() => {
             onTrackChange('de');
@@ -189,7 +234,7 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
           className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTrack === 'de'
               ? 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-lg shadow-sky-900/40 ring-1 ring-sky-400/50'
-              : 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]'
+              : 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]/60'
           }`}
         >
           <Database className="w-4 h-4 text-sky-300" />
@@ -209,7 +254,7 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
           className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTrack === 'dsa'
               ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-rose-600 text-white shadow-lg shadow-purple-900/40 ring-1 ring-purple-400/50'
-              : 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]'
+              : 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]/60'
           }`}
         >
           <Code2 className="w-4 h-4 text-purple-300" />
@@ -233,7 +278,9 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
                   ? activeTrack === 'dsa'
                     ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 ring-1 ring-purple-400/50'
                     : 'bg-sky-600 text-white shadow-md shadow-sky-900/40 ring-1 ring-sky-400/50'
-                  : 'bg-[#0d1117] text-stone-400 hover:text-stone-200 hover:bg-[#161b22] border border-stone-800'
+                  : isDark
+                  ? 'bg-[#0d1117] text-stone-400 hover:text-stone-200 hover:bg-[#161b22] border border-stone-800'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200'
               }`}
             >
               {item.icon}
@@ -242,7 +289,7 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
                   isActive
                     ? 'bg-white/20 text-white'
-                    : 'bg-stone-800 text-stone-300'
+                    : isDark ? 'bg-stone-800 text-stone-300' : 'bg-slate-200 text-slate-700'
                 }`}>
                   {item.badge}
                 </span>

@@ -20,6 +20,7 @@ import { DSAMistakeNotebook } from '../components/academics/dsa/DSAMistakeNotebo
 import { FinalDSASimulation } from '../components/academics/dsa/FinalDSASimulation';
 import { api } from '../services/api';
 import type { AcademicProgressData, InterviewQuestionItem } from '../types/academics';
+import { AcademicsThemeProvider, useAcademicsTheme } from '../context/AcademicsThemeContext';
 
 const INITIAL_PROGRESS: AcademicProgressData = {
   user_id: 'default_user',
@@ -52,7 +53,8 @@ const INITIAL_PROGRESS: AcademicProgressData = {
   streak_count: 1
 };
 
-export const AcademicsPage: React.FC = () => {
+const AcademicsPageInner: React.FC = () => {
+  const { isDark } = useAcademicsTheme();
   const [activeTrack, setActiveTrack] = useState<AcademicTrack>('de');
   const [currentView, setCurrentView] = useState<AcademicsViewMode>('dashboard');
   const [currentDayNumber, setCurrentDayNumber] = useState<number>(1);
@@ -102,41 +104,38 @@ export const AcademicsPage: React.FC = () => {
       ...progress,
       ...delta
     };
+
     setProgress(updated);
     try {
       localStorage.setItem('akku_academic_progress', JSON.stringify(updated));
-    } catch {}
-
-    try {
       await api.academics.updateProgress(delta);
     } catch (err) {
-      console.warn('Progress synced locally, backend deferred:', err);
+      console.warn('Failed to sync progress with backend, saved locally:', err);
     }
   };
 
   const handleToggleBookmark = (id: string) => {
-    const currentBookmarks = progress.bookmarks || [];
-    const exists = currentBookmarks.includes(id);
-    const updated = exists 
-      ? currentBookmarks.filter(b => b !== id)
-      : [...currentBookmarks, id];
+    const existing = progress.bookmarks || [];
+    const updated = existing.includes(id)
+      ? existing.filter(b => b !== id)
+      : [...existing, id];
     handleUpdateProgress({ bookmarks: updated });
   };
 
   const handleToggleSaveSheet = (dayNumber: number) => {
-    const currentSheets = progress.saved_cheat_sheets || [];
-    const exists = currentSheets.includes(String(dayNumber));
-    const updated = exists
-      ? currentSheets.filter(s => s !== String(dayNumber))
-      : [...currentSheets, String(dayNumber)];
+    const dayStr = String(dayNumber);
+    const existing = progress.saved_cheat_sheets || [];
+    const updated = existing.includes(dayStr)
+      ? existing.filter(d => d !== dayStr)
+      : [...existing, dayStr];
     handleUpdateProgress({ saved_cheat_sheets: updated });
   };
 
-  const handleToggleMilestone = (milestoneId: string) => {
-    const current = progress.capstone_progress || {};
+  const handleToggleMilestone = (key: string) => {
+    const existing = progress.capstone_progress || {};
     const updated = {
-      ...current,
-      [milestoneId]: !current[milestoneId]
+      ...existing,
+      [key]: !existing[key]
     };
     handleUpdateProgress({ capstone_progress: updated });
   };
@@ -145,8 +144,6 @@ export const AcademicsPage: React.FC = () => {
     const items = [...(progress.revision_items || [])];
     const itemIndex = items.findIndex(i => i.topic === topic);
     const today = new Date();
-    
-    // Spaced repetition interval days
     const daysToAdd = newDifficulty === 'easy' ? 7 : newDifficulty === 'medium' ? 3 : 1;
     const nextDate = new Date(today.getTime() + daysToAdd * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -187,7 +184,9 @@ export const AcademicsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-stone-100 flex flex-col font-sans">
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+      isDark ? 'bg-[#07090e] text-stone-100' : 'bg-[#f8fafc] text-slate-900'
+    }`}>
       <div className="max-w-7xl mx-auto w-full px-3 sm:px-5 lg:px-6 py-4 flex flex-col gap-5">
         {/* Top Academics Header Bar & Sub-Nav */}
         <AcademicsHeader
@@ -246,10 +245,12 @@ export const AcademicsPage: React.FC = () => {
           )}
 
           {currentView === 'sql_playground' && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-[#0d1117] border border-stone-800 shadow-xl flex flex-col gap-4">
+            <div className={`p-4 sm:p-5 rounded-2xl border shadow-xl flex flex-col gap-4 ${
+              isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+            }`}>
               <div>
-                <h3 className="font-bold text-lg text-white">SQL Analytical Sandbox & Laboratory</h3>
-                <p className="text-xs text-stone-400 mt-0.5">
+                <h3 className="font-bold text-lg">SQL Analytical Sandbox & Laboratory</h3>
+                <p className="text-xs opacity-75 mt-0.5">
                   Execute live queries against 12 relational and Kimball dimensional tables (`fact_sales`, `dim_customer`, `dim_product`, `dim_date`, `orders`, `employees`).
                 </p>
               </div>
@@ -358,5 +359,13 @@ export const AcademicsPage: React.FC = () => {
         </main>
       </div>
     </div>
+  );
+};
+
+export const AcademicsPage: React.FC = () => {
+  return (
+    <AcademicsThemeProvider>
+      <AcademicsPageInner />
+    </AcademicsThemeProvider>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Play, 
   Send, 
@@ -9,37 +9,98 @@ import {
   XCircle, 
   Clock, 
   Terminal, 
-  FileCode
+  FileCode,
+  Brain,
+  Lightbulb,
+  ChevronDown,
+  ChevronUp,
+  Layers,
+  Code2
 } from 'lucide-react';
 import { CodeEditor } from './CodeEditor';
 import { api } from '../../services/api';
-import type { CodingExercise } from '../../types/academics';
+import type { CodingExercise, DayLesson } from '../../types/academics';
+import { getEnrichedExercise } from '../../data/academics/academicPedagogy';
+import { InteractiveDryRunModal } from './InteractiveDryRunModal';
+import { PracticeGuidanceModal, type GuidanceModalType } from './PracticeGuidanceModal';
+import { useAcademicsTheme } from '../../context/AcademicsThemeContext';
 
 interface CodingLabProps {
   exercise: CodingExercise;
   onSuccess?: () => void;
   dayNumber?: number;
+  lesson?: DayLesson;
 }
 
 export const CodingLab: React.FC<CodingLabProps> = ({
-  exercise,
-  onSuccess
+  exercise: rawExercise,
+  onSuccess,
+  dayNumber = 1,
+  lesson
 }) => {
+  const { isDark } = useAcademicsTheme();
+
+  // Enrich exercise with complete pedagogical breakdowns
+  const exercise = useMemo(() => {
+    const mockLesson: DayLesson = lesson || {
+      id: `day_${dayNumber}`,
+      dayNumber,
+      subject: 'Python & Data Engineering',
+      moduleTitle: 'Placement Preparation',
+      title: rawExercise.title,
+      description: rawExercise.problemStatement,
+      durationMinutes: 15,
+      difficulty: 'Beginner',
+      learningObjectives: [],
+      prerequisites: [],
+      learnContent: '',
+      examples: [],
+      practiceExercise: rawExercise,
+      mcqs: [],
+      interviewQuestions: [],
+      cheatSheet: { summary: '', definitions: [], syntaxSnippets: [], commonMistakes: [], interviewTips: [] },
+      docLinks: []
+    };
+    return getEnrichedExercise(rawExercise, mockLesson);
+  }, [rawExercise, lesson, dayNumber]);
+
   const [code, setCode] = useState(exercise.starterCode);
+  const [selectedLanguage, setSelectedLanguage] = useState<'python' | 'cpp' | 'java'>('python');
   const [customStdin, setCustomStdin] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [runMode, setRunMode] = useState<'sample' | 'submit'>('sample');
   const [executionResult, setExecutionResult] = useState<any>(null);
   const [revealedHintIndex, setRevealedHintIndex] = useState<number>(-1);
   const [showSolution, setShowSolution] = useState(false);
-  const [activeBottomTab, setActiveBottomTab] = useState<'testcases' | 'output' | 'custom_input'>('testcases');
+  const [activeBottomTab, setActiveBottomTab] = useState<'testcases' | 'output' | 'custom_input' | 'approaches'>('testcases');
+  const [selectedApproachTab, setSelectedApproachTab] = useState<'brute_force' | 'optimal'>('optimal');
+
+  // Modals state
+  const [guidanceModal, setGuidanceModal] = useState<{ open: boolean; type: GuidanceModalType }>({
+    open: false,
+    type: 'dont_understand'
+  });
+  const [dryRunOpen, setDryRunOpen] = useState(false);
+  const [showPseudocode, setShowPseudocode] = useState(false);
 
   useEffect(() => {
     setCode(exercise.starterCode);
     setExecutionResult(null);
     setRevealedHintIndex(-1);
     setShowSolution(false);
+    setShowPseudocode(false);
   }, [exercise.id]);
+
+  const handleLanguageChange = (lang: 'python' | 'cpp' | 'java') => {
+    setSelectedLanguage(lang);
+    if (lang === 'cpp') {
+      setCode(`// C++ Solution for: ${exercise.title}\n#include <iostream>\n#include <vector>\n#include <string>\n\nusing namespace std;\n\nint main() {\n    // Implement optimal approach\n    cout << "Testing C++ execution" << endl;\n    return 0;\n}`);
+    } else if (lang === 'java') {
+      setCode(`// Java Solution for: ${exercise.title}\nimport java.util.*;\n\npublic class Solution {\n    public static void main(String[] args) {\n        // Implement optimal approach\n        System.out.println("Testing Java execution");\n    }\n}`);
+    } else {
+      setCode(exercise.starterCode);
+    }
+  };
 
   const handleRunCode = async (mode: 'sample' | 'submit') => {
     setRunMode(mode);
@@ -74,80 +135,179 @@ export const CodingLab: React.FC<CodingLabProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 text-stone-200">
-      {/* Left Column: Problem Statement & Hints (5 cols) */}
+    <div className={`grid grid-cols-1 lg:grid-cols-12 gap-4 ${isDark ? 'text-stone-200' : 'text-slate-800'}`}>
+      {/* Left Column: Problem Breakdown, Thinking Framework & Hints (5 cols) */}
       <div className="lg:col-span-5 flex flex-col gap-3">
-        <div className="p-4 rounded-xl border border-stone-800 bg-[#0d1117] flex flex-col gap-3">
-          <div className="flex items-center justify-between border-b border-stone-800 pb-2">
-            <h3 className="font-semibold text-base text-stone-100 flex items-center gap-2">
+        {/* Main Problem Card */}
+        <div className={`p-4 rounded-xl border flex flex-col gap-3 shadow-md ${
+          isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+        }`}>
+          {/* Header Title & Badges */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2.5 border-stone-800/80">
+            <h3 className="font-bold text-sm sm:text-base flex items-center gap-2">
               <FileCode className="w-4 h-4 text-emerald-400" />
               <span>{exercise.title}</span>
             </h3>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              {exercise.language.toUpperCase()}
-            </span>
+
+            <div className="flex items-center gap-1.5">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">
+                🟢 Beginner Friendly
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/20 text-sky-400 font-semibold border border-sky-500/30">
+                ⏱ ~{exercise.estimatedMinutes || 15} mins
+              </span>
+            </div>
           </div>
 
-          <div className="text-xs text-stone-300 leading-relaxed whitespace-pre-wrap font-sans">
+          {/* Goal & Scenario Alert */}
+          {exercise.goal && (
+            <div className={`p-2.5 rounded-lg border text-xs leading-relaxed ${
+              isDark ? 'bg-[#121927] border-sky-900/50 text-sky-200' : 'bg-sky-50 border-sky-200 text-sky-900'
+            }`}>
+              <strong className="text-sky-400 font-bold block mb-0.5">🎯 What are we trying to do?</strong>
+              <span>{exercise.goal}</span>
+            </div>
+          )}
+
+          {/* Problem Statement */}
+          <div className="text-xs leading-relaxed whitespace-pre-wrap font-sans">
             {exercise.problemStatement}
           </div>
 
-          {exercise.inputFormat && (
-            <div className="bg-[#161b22] p-2.5 rounded-lg border border-stone-800 text-xs">
-              <div className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
-                Input Format:
+          {/* Input & Output Specifications */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className={`p-2.5 rounded-lg border ${
+              isDark ? 'bg-[#161b22] border-stone-800' : 'bg-slate-50 border-slate-200'
+            }`}>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">
+                📥 Input Format:
               </div>
-              <div className="text-stone-300 font-mono text-[11px]">{exercise.inputFormat}</div>
-            </div>
-          )}
-
-          {exercise.outputFormat && (
-            <div className="bg-[#161b22] p-2.5 rounded-lg border border-stone-800 text-xs">
-              <div className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
-                Output Format:
+              <div className="font-mono text-[11px] opacity-90">
+                {exercise.sampleInputExplanation || exercise.inputFormat || 'Dictionary or List'}
               </div>
-              <div className="text-stone-300 font-mono text-[11px]">{exercise.outputFormat}</div>
             </div>
-          )}
 
-          {exercise.constraints && exercise.constraints.length > 0 && (
-            <div className="text-xs">
-              <div className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-1">
-                Constraints & Complexity:
+            <div className={`p-2.5 rounded-lg border ${
+              isDark ? 'bg-[#161b22] border-stone-800' : 'bg-slate-50 border-slate-200'
+            }`}>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-sky-400 mb-1">
+                📤 Output Format:
               </div>
-              <ul className="list-disc list-inside space-y-0.5 text-stone-400 font-mono text-[11px]">
-                {exercise.constraints.map((c, i) => (
-                  <li key={i}>{c}</li>
-                ))}
-                {exercise.timeComplexity && <li>Expected Time: {exercise.timeComplexity}</li>}
-                {exercise.spaceComplexity && <li>Expected Space: {exercise.spaceComplexity}</li>}
-              </ul>
+              <div className="font-mono text-[11px] opacity-90">
+                {exercise.sampleOutputExplanation || exercise.outputFormat || 'Cleaned output'}
+              </div>
             </div>
-          )}
+          </div>
 
-          {/* Progressive Hints Section */}
+          {/* Concrete Sample Example */}
+          <div className={`p-2.5 rounded-lg border text-xs font-mono ${
+            isDark ? 'bg-[#0a0d14] border-stone-800' : 'bg-slate-100 border-slate-200'
+          }`}>
+            <span className="text-[10px] font-sans font-bold uppercase text-amber-400 block mb-1">
+              🔍 Example Walkthrough:
+            </span>
+            <div className="space-y-1">
+              <div><span className="text-stone-400">Input:  </span><span className="text-stone-200 font-semibold">{exercise.sampleExampleInput}</span></div>
+              <div><span className="text-stone-400">Output: </span><span className="text-emerald-400 font-semibold">{exercise.sampleExampleOutput}</span></div>
+            </div>
+          </div>
+
+          {/* Pedagogical Help Buttons */}
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            <button
+              onClick={() => setGuidanceModal({ open: true, type: 'dont_understand' })}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                isDark 
+                  ? 'bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-900/50' 
+                  : 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>❓ I Don't Understand</span>
+            </button>
+
+            <button
+              onClick={() => setGuidanceModal({ open: true, type: 'how_to_think' })}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                isDark 
+                  ? 'bg-purple-950/40 border-purple-800/60 text-purple-300 hover:bg-purple-900/50' 
+                  : 'bg-purple-50 border-purple-300 text-purple-800 hover:bg-purple-100'
+              }`}
+            >
+              <Brain className="w-3.5 h-3.5" />
+              <span>🧠 How Should I Think?</span>
+            </button>
+
+            <button
+              onClick={() => setDryRunOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all cursor-pointer shadow-sm"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>▶ Dry Run</span>
+            </button>
+
+            <button
+              onClick={() => setGuidanceModal({ open: true, type: 'another_example' })}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                isDark
+                  ? 'bg-[#161f30] border-sky-800/50 text-sky-300 hover:bg-[#1f2b42]'
+                  : 'bg-sky-50 border-sky-200 text-sky-700 hover:bg-sky-100'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>👀 Another Example</span>
+            </button>
+          </div>
+
+          {/* Pseudocode Accordion */}
+          <div className="pt-2 border-t border-stone-800/80">
+            <button
+              onClick={() => setShowPseudocode(!showPseudocode)}
+              className="w-full flex items-center justify-between text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors py-1 cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <Code2 className="w-3.5 h-3.5" />
+                <span>📝 Algorithmic Pseudocode (Step-by-Step)</span>
+              </span>
+              {showPseudocode ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+
+            {showPseudocode && (
+              <pre className={`mt-2 p-3 rounded-lg border font-mono text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed ${
+                isDark ? 'bg-[#06080e] border-stone-800 text-sky-200' : 'bg-slate-100 border-slate-200 text-slate-800'
+              }`}>
+                {exercise.pseudocode}
+              </pre>
+            )}
+          </div>
+
+          {/* Progressive 4-Tier Hints */}
           {exercise.hints && exercise.hints.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-stone-800">
+            <div className="pt-2 border-t border-stone-800/80">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  Hints ({exercise.hints.length})
+                <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Progressive Hints ({exercise.hints.length})</span>
                 </span>
                 {revealedHintIndex < exercise.hints.length - 1 && (
                   <button
                     onClick={() => setRevealedHintIndex(prev => prev + 1)}
-                    className="text-[11px] text-amber-400/90 hover:text-amber-300 underline cursor-pointer"
+                    className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold underline cursor-pointer"
                   >
-                    Unlock next hint ({revealedHintIndex + 2}/{exercise.hints.length})
+                    Unlock Hint {revealedHintIndex + 2} / {exercise.hints.length} →
                   </button>
                 )}
               </div>
 
               <div className="space-y-1.5">
                 {exercise.hints.slice(0, revealedHintIndex + 1).map((h, i) => (
-                  <div key={i} className="p-2 rounded bg-amber-950/30 border border-amber-800/40 text-amber-200 text-xs">
-                    <span className="font-semibold mr-1.5">Hint {i + 1}:</span>
-                    {h}
+                  <div key={i} className={`p-2.5 rounded-lg border text-xs leading-relaxed ${
+                    isDark ? 'bg-amber-950/30 border-amber-800/50 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-900'
+                  }`}>
+                    <span className="font-bold mr-1.5 text-amber-400">
+                      {i === 0 ? '💡 Hint 1 (Concept):' : i === 1 ? '💡 Hint 2 (Approach):' : i === 2 ? '💡 Hint 3 (Pseudocode):' : '💡 Hint 4 (Edge Cases):'}
+                    </span>
+                    <span>{h}</span>
                   </div>
                 ))}
               </div>
@@ -155,15 +315,15 @@ export const CodingLab: React.FC<CodingLabProps> = ({
           )}
 
           {/* Reveal Solution Button */}
-          <div className="pt-2 border-t border-stone-800 flex items-center justify-between">
+          <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between">
             <button
               onClick={() => {
-                if (!showSolution && !window.confirm('Attempting the problem first yields the best placement learning! Are you sure you want to reveal the model solution?')) {
+                if (!showSolution && !window.confirm('Attempting the problem first provides the best placement interview retention! Are you sure you want to reveal the model solution?')) {
                   return;
                 }
                 setShowSolution(!showSolution);
               }}
-              className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-200 transition-colors cursor-pointer font-medium"
             >
               {showSolution ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               <span>{showSolution ? 'Hide Model Solution' : 'Reveal Model Solution'}</span>
@@ -171,11 +331,13 @@ export const CodingLab: React.FC<CodingLabProps> = ({
           </div>
 
           {showSolution && (
-            <div className="mt-1 p-3 rounded-lg bg-[#161b22] border border-stone-700">
-              <div className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider mb-1.5">
-                Reference Placement Solution:
+            <div className={`mt-1 p-3 rounded-xl border ${
+              isDark ? 'bg-[#080c14] border-emerald-900/60' : 'bg-emerald-50 border-emerald-200'
+            }`}>
+              <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1.5">
+                Placement Model Solution:
               </div>
-              <pre className="text-xs font-mono text-emerald-200 overflow-x-auto whitespace-pre-wrap">
+              <pre className="text-xs font-mono text-emerald-300 overflow-x-auto whitespace-pre-wrap leading-relaxed">
                 {exercise.solutionCode}
               </pre>
             </div>
@@ -185,49 +347,94 @@ export const CodingLab: React.FC<CodingLabProps> = ({
 
       {/* Right Column: Code Editor & Console Output (7 cols) */}
       <div className="lg:col-span-7 flex flex-col gap-3">
-        {/* Editor */}
-        <CodeEditor
-          value={code}
-          onChange={setCode}
-          language={exercise.language}
-          onRun={() => handleRunCode('sample')}
-          isRunning={isRunning && runMode === 'sample'}
-          onReset={() => setCode(exercise.starterCode)}
-          minHeight="300px"
-          showRunButton={false}
-          headerAction={
-            <div className="flex items-center gap-1.5">
+        {/* Editor with Multi-Language Selector */}
+        <div className="flex flex-col gap-2">
+          {/* Language selector bar */}
+          <div className={`p-2 rounded-xl border flex items-center justify-between ${
+            isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+          }`}>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-stone-400 font-medium px-2">Language:</span>
+              <button
+                onClick={() => handleLanguageChange('python')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  selectedLanguage === 'python'
+                    ? 'bg-sky-600 text-white shadow-sm'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                Python 3
+              </button>
+              <button
+                onClick={() => handleLanguageChange('cpp')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  selectedLanguage === 'cpp'
+                    ? 'bg-sky-600 text-white shadow-sm'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                C++
+              </button>
+              <button
+                onClick={() => handleLanguageChange('java')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  selectedLanguage === 'java'
+                    ? 'bg-sky-600 text-white shadow-sm'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                Java
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => handleRunCode('sample')}
                 disabled={isRunning}
-                className="flex items-center gap-1 px-2.5 py-1 rounded bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs font-semibold transition-colors cursor-pointer"
-                title="Run code against sample test cases"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold transition-colors cursor-pointer border border-stone-700"
               >
-                <Play className="w-3 h-3 fill-current" />
+                <Play className="w-3 h-3 fill-current text-sky-400" />
                 <span>Run Sample</span>
               </button>
 
               <button
                 onClick={() => handleRunCode('submit')}
                 disabled={isRunning}
-                className="flex items-center gap-1 px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
-                title="Submit solution against all test cases"
+                className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
               >
                 <Send className="w-3 h-3" />
-                <span>Submit Solution</span>
+                <span>Submit Code</span>
               </button>
             </div>
-          }
-        />
+          </div>
 
-        {/* Bottom Tab Bar (Test Cases / Output / Custom Input) */}
-        <div className="rounded-xl border border-stone-800 bg-[#0d1117] overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between px-3 py-2 bg-[#161b22] border-b border-stone-800 text-xs">
-            <div className="flex items-center gap-2">
+          {/* Actual Code Editor */}
+          <CodeEditor
+            value={code}
+            onChange={setCode}
+            language={exercise.language}
+            onRun={() => handleRunCode('sample')}
+            isRunning={isRunning && runMode === 'sample'}
+            onReset={() => setCode(exercise.starterCode)}
+            minHeight="320px"
+            showRunButton={false}
+          />
+        </div>
+
+        {/* Bottom Panel (Test Cases / Output / Custom Input / Approaches) */}
+        <div className={`rounded-xl border overflow-hidden flex flex-col ${
+          isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+        }`}>
+          <div className={`flex flex-wrap items-center justify-between px-3 py-2 border-b text-xs ${
+            isDark ? 'bg-[#161b22] border-stone-800' : 'bg-slate-100 border-slate-200'
+          }`}>
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setActiveBottomTab('testcases')}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  activeBottomTab === 'testcases' ? 'bg-stone-800 text-white' : 'text-stone-400 hover:text-stone-200'
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                  activeBottomTab === 'testcases'
+                    ? isDark ? 'bg-stone-800 text-white' : 'bg-white text-slate-800 shadow-sm'
+                    : 'text-stone-400 hover:text-stone-200'
                 }`}
               >
                 Test Cases ({exercise.testCases?.length || 0})
@@ -235,21 +442,37 @@ export const CodingLab: React.FC<CodingLabProps> = ({
 
               <button
                 onClick={() => setActiveBottomTab('output')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  activeBottomTab === 'output' ? 'bg-stone-800 text-white' : 'text-stone-400 hover:text-stone-200'
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                  activeBottomTab === 'output'
+                    ? isDark ? 'bg-stone-800 text-white' : 'bg-white text-slate-800 shadow-sm'
+                    : 'text-stone-400 hover:text-stone-200'
                 }`}
               >
                 <Terminal className="w-3 h-3" />
-                <span>Execution Console</span>
+                <span>Console Output</span>
                 {executionResult && (
                   <span className={`w-2 h-2 rounded-full ${executionResult.all_passed || executionResult.success ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                 )}
               </button>
 
               <button
+                onClick={() => setActiveBottomTab('approaches')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                  activeBottomTab === 'approaches'
+                    ? isDark ? 'bg-stone-800 text-white' : 'bg-white text-slate-800 shadow-sm'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                <Layers className="w-3 h-3 text-purple-400" />
+                <span>Approaches & Big-O</span>
+              </button>
+
+              <button
                 onClick={() => setActiveBottomTab('custom_input')}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  activeBottomTab === 'custom_input' ? 'bg-stone-800 text-white' : 'text-stone-400 hover:text-stone-200'
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                  activeBottomTab === 'custom_input'
+                    ? isDark ? 'bg-stone-800 text-white' : 'bg-white text-slate-800 shadow-sm'
+                    : 'text-stone-400 hover:text-stone-200'
                 }`}
               >
                 Custom Stdin
@@ -264,30 +487,32 @@ export const CodingLab: React.FC<CodingLabProps> = ({
             )}
           </div>
 
-          {/* Bottom Panel Content */}
-          <div className="p-3 max-h-56 overflow-y-auto text-xs font-mono">
+          {/* Panel Content */}
+          <div className="p-3 max-h-60 overflow-y-auto text-xs font-mono">
             {activeBottomTab === 'testcases' && (
               <div className="space-y-2">
                 {exercise.testCases && exercise.testCases.length > 0 ? (
                   exercise.testCases.map((tc, idx) => (
-                    <div key={idx} className="p-2.5 rounded-lg bg-[#161b22] border border-stone-800 flex flex-col gap-1">
+                    <div key={idx} className={`p-2.5 rounded-lg border flex flex-col gap-1 ${
+                      isDark ? 'bg-[#161b22] border-stone-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-stone-400 font-semibold">Test Case #{idx + 1} {tc.hidden && '(Hidden)'}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-1">
                         <div>
-                          <div className="text-[10px] text-stone-500 uppercase">Input:</div>
-                          <div className="text-stone-200 bg-[#0d1117] p-1.5 rounded">{tc.input || '(empty)'}</div>
+                          <div className="text-[10px] text-stone-500 uppercase font-sans font-bold">Input:</div>
+                          <div className="text-stone-200 bg-black/40 p-1.5 rounded">{tc.input || '(empty)'}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] text-stone-500 uppercase">Expected Output:</div>
-                          <div className="text-emerald-300 bg-[#0d1117] p-1.5 rounded">{tc.expected_output}</div>
+                          <div className="text-[10px] text-stone-500 uppercase font-sans font-bold">Expected Output:</div>
+                          <div className="text-emerald-300 bg-black/40 p-1.5 rounded">{tc.expected_output}</div>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-stone-500 text-center py-4">No specific test cases required. Output will be verified directly.</div>
+                  <div className="text-stone-500 text-center py-4 font-sans">No specific test cases required. Output will be verified directly.</div>
                 )}
               </div>
             )}
@@ -295,17 +520,17 @@ export const CodingLab: React.FC<CodingLabProps> = ({
             {activeBottomTab === 'output' && (
               <div>
                 {isRunning ? (
-                  <div className="py-6 text-center text-amber-400 flex items-center justify-center gap-2">
+                  <div className="py-6 text-center text-amber-400 flex items-center justify-center gap-2 font-sans">
                     <Clock className="w-4 h-4 animate-spin" />
-                    <span>Executing code in isolated Python sandbox...</span>
+                    <span>Executing code in isolated sandbox...</span>
                   </div>
                 ) : executionResult ? (
                   <div className="space-y-2">
                     {/* Status Badge */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between font-sans">
                       <div className="flex items-center gap-1.5">
                         {executionResult.all_passed ? (
-                          <div className="flex items-center gap-1 text-emerald-400 font-semibold">
+                          <div className="flex items-center gap-1 text-emerald-400 font-bold">
                             <CheckCircle2 className="w-4 h-4" />
                             <span>Accepted — All Test Cases Passed! 🎉</span>
                           </div>
@@ -317,7 +542,7 @@ export const CodingLab: React.FC<CodingLabProps> = ({
                         ) : (
                           <div className="flex items-center gap-1 text-rose-400 font-semibold">
                             <XCircle className="w-4 h-4" />
-                            <span>Execution Error</span>
+                            <span>Execution Error / Assertion Mismatch</span>
                           </div>
                         )}
                       </div>
@@ -326,8 +551,8 @@ export const CodingLab: React.FC<CodingLabProps> = ({
                     {/* Stdout Console */}
                     {executionResult.stdout && (
                       <div>
-                        <div className="text-[10px] text-stone-500 uppercase tracking-wider mb-1">Standard Output:</div>
-                        <pre className="p-2.5 rounded bg-[#161b22] text-stone-200 whitespace-pre-wrap border border-stone-800">
+                        <div className="text-[10px] text-stone-500 uppercase tracking-wider mb-1 font-sans font-bold">Standard Output:</div>
+                        <pre className="p-2.5 rounded bg-black/40 text-stone-200 whitespace-pre-wrap border border-stone-800">
                           {executionResult.stdout}
                         </pre>
                       </div>
@@ -336,7 +561,7 @@ export const CodingLab: React.FC<CodingLabProps> = ({
                     {/* Stderr / Error */}
                     {executionResult.stderr && (
                       <div>
-                        <div className="text-[10px] text-rose-400 uppercase tracking-wider mb-1">Standard Error:</div>
+                        <div className="text-[10px] text-rose-400 uppercase tracking-wider mb-1 font-sans font-bold">Standard Error:</div>
                         <pre className="p-2.5 rounded bg-rose-950/40 text-rose-300 whitespace-pre-wrap border border-rose-800/40">
                           {executionResult.stderr}
                         </pre>
@@ -348,53 +573,91 @@ export const CodingLab: React.FC<CodingLabProps> = ({
                         {executionResult.error}
                       </div>
                     )}
-
-                    {/* Test Case Evaluation Results */}
-                    {executionResult.test_results && (
-                      <div className="space-y-1.5 mt-2">
-                        <div className="text-[10px] text-stone-400 uppercase tracking-wider">Test Suite Breakdown:</div>
-                        {executionResult.test_results.map((tr: any, idx: number) => (
-                          <div
-                            key={tr.test_case_id || idx}
-                            className={`p-2 rounded border flex items-center justify-between ${
-                              tr.passed ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-200' : 'bg-rose-950/20 border-rose-800/40 text-rose-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              {tr.passed ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <XCircle className="w-3.5 h-3.5 text-rose-400" />}
-                              <span>Case #{tr.test_case_id || (idx + 1)}</span>
-                            </div>
-                            <div className="text-[11px] font-mono">
-                              Got: "{tr.actual_output}" {tr.passed ? '' : `(Expected: "${tr.expected_output}")`}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ) : (
-                  <div className="text-stone-500 text-center py-6">
-                    Click "Run Sample" or "Submit Solution" to run your code.
+                  <div className="text-stone-500 text-center py-6 font-sans text-xs">
+                    Hit "Run Sample" or "Submit Solution" to inspect compiler output and assertions.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeBottomTab === 'approaches' && (
+              <div className="space-y-3 font-sans">
+                <div className="flex items-center gap-2 border-b border-stone-800 pb-2">
+                  <button
+                    onClick={() => setSelectedApproachTab('optimal')}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      selectedApproachTab === 'optimal' ? 'bg-purple-600 text-white' : 'text-stone-400 hover:text-stone-200'
+                    }`}
+                  >
+                    Optimal Production Approach
+                  </button>
+                  <button
+                    onClick={() => setSelectedApproachTab('brute_force')}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      selectedApproachTab === 'brute_force' ? 'bg-purple-600 text-white' : 'text-stone-400 hover:text-stone-200'
+                    }`}
+                  >
+                    Direct / Brute Force Approach
+                  </button>
+                </div>
+
+                {selectedApproachTab === 'optimal' && exercise.optimalApproach && (
+                  <div className="space-y-2 text-xs">
+                    <h5 className="font-bold text-emerald-400">{exercise.optimalApproach.title}</h5>
+                    <p className="text-stone-300 leading-relaxed">{exercise.optimalApproach.explanation}</p>
+                    <div className="flex gap-4 text-xs font-mono text-purple-300">
+                      <span>Time: <strong>{exercise.optimalApproach.timeComplexity}</strong></span>
+                      <span>Space: <strong>{exercise.optimalApproach.spaceComplexity}</strong></span>
+                    </div>
+                  </div>
+                )}
+
+                {selectedApproachTab === 'brute_force' && exercise.bruteForceApproach && (
+                  <div className="space-y-2 text-xs">
+                    <h5 className="font-bold text-amber-400">{exercise.bruteForceApproach.title}</h5>
+                    <p className="text-stone-300 leading-relaxed">{exercise.bruteForceApproach.explanation}</p>
+                    <div className="flex gap-4 text-xs font-mono text-amber-300">
+                      <span>Time: <strong>{exercise.bruteForceApproach.timeComplexity}</strong></span>
+                      <span>Space: <strong>{exercise.bruteForceApproach.spaceComplexity}</strong></span>
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
             {activeBottomTab === 'custom_input' && (
-              <div className="flex flex-col gap-1.5">
-                <div className="text-[11px] text-stone-400">Provide custom standard input for testing:</div>
+              <div>
                 <textarea
                   value={customStdin}
                   onChange={(e) => setCustomStdin(e.target.value)}
-                  placeholder="Enter custom input lines here..."
+                  placeholder="Enter custom stdin string to feed your solution..."
                   rows={4}
-                  className="w-full p-2 bg-[#161b22] border border-stone-800 rounded text-stone-200 font-mono text-xs focus:outline-none focus:border-stone-600"
+                  className="w-full p-2.5 rounded-lg bg-black/40 border border-stone-800 text-stone-200 text-xs font-mono focus:outline-none focus:border-sky-500"
                 />
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <PracticeGuidanceModal
+        isOpen={guidanceModal.open}
+        onClose={() => setGuidanceModal({ open: false, type: 'dont_understand' })}
+        type={guidanceModal.type}
+        exercise={exercise}
+        isDark={isDark}
+      />
+
+      <InteractiveDryRunModal
+        isOpen={dryRunOpen}
+        onClose={() => setDryRunOpen(false)}
+        title={exercise.title}
+        steps={exercise.dryRunSteps || []}
+        isDark={isDark}
+      />
     </div>
   );
 };

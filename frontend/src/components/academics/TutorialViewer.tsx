@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Terminal, 
   AlertTriangle, 
@@ -6,7 +6,6 @@ import {
   Copy, 
   Check, 
   ExternalLink, 
-  Layers, 
   Lightbulb, 
   Play, 
   ArrowRight, 
@@ -15,13 +14,22 @@ import {
   Workflow, 
   GraduationCap, 
   BookOpen,
-  Eye,
-  EyeOff,
   Database,
-  Server
+  Server,
+  Bot,
+  Sparkles,
+  Clock,
+  Video,
+  ChevronRight,
+  ChevronLeft,
+  Zap
 } from 'lucide-react';
 import type { DayLesson } from '../../types/academics';
 import { DSAVisualizer } from './dsa/DSAVisualizer';
+import { getEnrichedLesson } from '../../data/academics/academicPedagogy';
+import { TopicLearningAssistant } from './TopicLearningAssistant';
+import { LessonQuickCheck } from './LessonQuickCheck';
+import { useAcademicsTheme } from '../../context/AcademicsThemeContext';
 
 interface TutorialViewerProps {
   lesson: DayLesson;
@@ -29,6 +37,7 @@ interface TutorialViewerProps {
   onNavigateToMCQ?: () => void;
   onNavigateToInterview?: () => void;
   onSaveNote?: (title: string, content: string) => void;
+  onSelectDay?: (day: number) => void;
 }
 
 // Interactive Visual Diagram Components for DE Core Modules & DSA
@@ -66,7 +75,6 @@ const ConceptDiagram: React.FC<{ dayNumber: number; subject?: string }> = ({ day
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Stack Pointers */}
           <div className="p-3 rounded-lg bg-[#111620] border border-stone-800">
             <div className="text-[11px] font-semibold text-stone-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-400"></span>
@@ -89,7 +97,6 @@ const ConceptDiagram: React.FC<{ dayNumber: number; subject?: string }> = ({ day
             </p>
           </div>
 
-          {/* Heap Memory */}
           <div className="p-3 rounded-lg bg-[#111620] border border-stone-800">
             <div className="text-[11px] font-semibold text-stone-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -120,179 +127,77 @@ const ConceptDiagram: React.FC<{ dayNumber: number; subject?: string }> = ({ day
     );
   }
 
-  if (dayNumber >= 11 && dayNumber <= 22) {
-    // SQL Execution Order Diagram
+  // Days 11-20: SQL Relational & Analytical Engine Diagram
+  if (dayNumber >= 11 && dayNumber <= 20) {
+    return (
+      <div className="p-4 rounded-xl bg-[#090d13] border border-emerald-900/40 my-3">
+        <div className="flex items-center justify-between mb-3 border-b border-stone-800 pb-2">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-bold text-emerald-300 font-mono uppercase tracking-wider">
+              Interactive Architectural Diagram: SQL Execution Engine & Row Filtering Pipeline
+            </span>
+          </div>
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800/60">
+            Query Engine Flow
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-xs font-mono text-center">
+          <div className="p-2.5 rounded-lg bg-[#111620] border border-stone-800 flex flex-col items-center justify-center">
+            <span className="text-sky-400 font-bold">1. FROM & JOIN</span>
+            <span className="text-[10px] text-stone-400 mt-1">Stitches source tables into a virtual cartesian set</span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-[#111620] border border-stone-800 flex flex-col items-center justify-center">
+            <span className="text-amber-400 font-bold">2. WHERE Filter</span>
+            <span className="text-[10px] text-stone-400 mt-1">Discards invalid rows before grouping</span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-[#111620] border border-stone-800 flex flex-col items-center justify-center">
+            <span className="text-purple-400 font-bold">3. GROUP BY & HAVING</span>
+            <span className="text-[10px] text-stone-400 mt-1">Aggregates keys into analytical summaries</span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-[#111620] border border-stone-800 flex flex-col items-center justify-center">
+            <span className="text-emerald-400 font-bold">4. SELECT & WINDOW</span>
+            <span className="text-[10px] text-stone-400 mt-1">Computes projections, rankings & moving averages</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Days 40-55: PySpark Distributed Architecture
+  if (dayNumber >= 40 && dayNumber <= 55) {
     return (
       <div className="p-4 rounded-xl bg-[#090d13] border border-sky-900/40 my-3">
         <div className="flex items-center justify-between mb-3 border-b border-stone-800 pb-2">
           <div className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-sky-400" />
+            <Server className="w-4 h-4 text-sky-400" />
             <span className="text-xs font-bold text-sky-300 font-mono uppercase tracking-wider">
-              Logical SQL Execution Order (The #1 Data Engineering Interview Trap)
+              Interactive Architectural Diagram: Spark Cluster Driver & Executor Topology
             </span>
           </div>
           <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-950 text-sky-300 border border-sky-800/60">
-            Engine Pipeline
+            Distributed Computing
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 justify-center py-2">
-          {[
-            { step: '1', name: 'FROM & JOIN', desc: 'Identify Cartesian product / joined datasets' },
-            { step: '2', name: 'WHERE', desc: 'Filter individual rows before grouping' },
-            { step: '3', name: 'GROUP BY', desc: 'Aggregate rows into distinct buckets' },
-            { step: '4', name: 'HAVING', desc: 'Filter aggregated groups' },
-            { step: '5', name: 'SELECT / WINDOW', desc: 'Compute columns & OVER(...) partitions' },
-            { step: '6', name: 'DISTINCT', desc: 'Deduplicate remaining output tuples' },
-            { step: '7', name: 'ORDER BY', desc: 'Sort result set (can use SELECT aliases)' },
-            { step: '8', name: 'LIMIT / OFFSET', desc: 'Slice output window' }
-          ].map((item, idx, arr) => (
-            <React.Fragment key={item.step}>
-              <div className="p-2 rounded-lg bg-[#111722] border border-sky-800/50 flex flex-col items-center min-w-[100px] text-center hover:border-sky-400 transition-colors">
-                <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-950 px-1.5 py-0.5 rounded mb-1">Step {item.step}</span>
-                <span className="font-mono text-xs font-bold text-stone-100">{item.name}</span>
-                <span className="text-[9px] text-stone-400 mt-0.5 max-w-[90px]">{item.desc}</span>
-              </div>
-              {idx < arr.length - 1 && (
-                <ArrowRight className="w-3.5 h-3.5 text-stone-600 shrink-0 hidden sm:inline" />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-        <p className="text-[11px] text-amber-300/90 bg-amber-950/20 border border-amber-800/40 p-2 rounded-lg mt-3">
-          💡 <strong>Interview Gold</strong>: This is why you <em>cannot</em> use a <code className="font-mono text-white">SELECT</code> alias in the <code className="font-mono text-white">WHERE</code> clause — the WHERE clause executes at Step 2 before SELECT columns even exist!
-        </p>
-      </div>
-    );
-  }
-
-  if (dayNumber >= 45 && dayNumber <= 51) {
-    // Kimball Star Schema vs Snowflake
-    return (
-      <div className="p-4 rounded-xl bg-[#090d13] border border-indigo-900/40 my-3">
-        <div className="flex items-center justify-between mb-3 border-b border-stone-800 pb-2">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs font-bold text-indigo-300 font-mono uppercase tracking-wider">
-              Kimball Dimensional Modeling: Star Schema Architecture
-            </span>
-          </div>
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-950 text-indigo-300 border border-indigo-800/60">
-            Warehouse Architecture
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-          {/* Dimension 1 & 2 */}
-          <div className="flex flex-col gap-2">
-            <div className="p-2.5 rounded-lg bg-[#141824] border border-indigo-800/40 text-xs">
-              <span className="font-bold text-indigo-300 block mb-1">dim_customer (SCD Type 2)</span>
-              <span className="text-[10px] font-mono text-stone-400 block">• customer_key (Surrogate PK)</span>
-              <span className="text-[10px] font-mono text-stone-400 block">• customer_id, name, tier</span>
-              <span className="text-[10px] font-mono text-stone-400 block">• effective_date, end_date, is_current</span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-[#141824] border border-indigo-800/40 text-xs">
-              <span className="font-bold text-indigo-300 block mb-1">dim_product</span>
-              <span className="text-[10px] font-mono text-stone-400 block">• product_key (PK), sku, category</span>
-            </div>
-          </div>
-
-          {/* Central Fact Table */}
-          <div className="p-3.5 rounded-xl bg-[#1c1836] border-2 border-indigo-500 text-center shadow-lg shadow-indigo-950/40">
-            <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider">
-              Central Grain: 1 Row Per Order Item
-            </span>
-            <h4 className="font-mono font-bold text-sm text-white mt-1">fact_sales</h4>
-            <div className="text-[10px] font-mono text-indigo-200 mt-2 text-left space-y-0.5 bg-[#120f24] p-2 rounded border border-indigo-800/60">
-              <div className="text-amber-300">🔑 customer_key (FK)</div>
-              <div className="text-amber-300">🔑 product_key (FK)</div>
-              <div className="text-amber-300">🔑 date_key (FK)</div>
-              <div className="text-emerald-300 mt-1">📊 quantity (Additive Measure)</div>
-              <div className="text-emerald-300">📊 total_amount (Additive Measure)</div>
-              <div className="text-emerald-300">📊 discount_pct (Semi-additive)</div>
-            </div>
-          </div>
-
-          {/* Dimension 3 & 4 */}
-          <div className="flex flex-col gap-2">
-            <div className="p-2.5 rounded-lg bg-[#141824] border border-indigo-800/40 text-xs">
-              <span className="font-bold text-indigo-300 block mb-1">dim_date</span>
-              <span className="text-[10px] font-mono text-stone-400 block">• date_key (YYYYMMDD PK)</span>
-              <span className="text-[10px] font-mono text-stone-400 block">• day, month, quarter, fiscal_year</span>
-            </div>
-            <div className="p-2.5 rounded-lg bg-[#141824] border border-indigo-800/40 text-xs">
-              <span className="font-bold text-indigo-300 block mb-1">dim_store / channel</span>
-              <span className="text-[10px] font-mono text-stone-400 block">• store_key (PK), region, country</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (dayNumber >= 57 && dayNumber <= 70) {
-    // Apache Spark Architecture Diagram
-    return (
-      <div className="p-4 rounded-xl bg-[#090d13] border border-rose-900/40 my-3">
-        <div className="flex items-center justify-between mb-3 border-b border-stone-800 pb-2">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-rose-400" />
-            <span className="text-xs font-bold text-rose-300 font-mono uppercase tracking-wider">
-              Apache Spark Cluster Architecture & Execution Flow
-            </span>
-          </div>
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-950 text-rose-300 border border-rose-800/60">
-            Catalyst & Tungsten
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Driver Program */}
-          <div className="p-3 rounded-lg bg-[#1a1215] border border-rose-800/50 flex flex-col justify-between">
-            <div>
-              <div className="text-xs font-bold text-rose-300 font-mono flex items-center gap-1.5 mb-1">
-                <span className="w-2 h-2 rounded-full bg-rose-400"></span>
-                Driver Program
-              </div>
-              <p className="text-[10px] text-stone-300 leading-relaxed">
-                Contains <code className="text-amber-300">SparkSession</code>, generates the Logical Plan, Catalyst Optimizer creates Physical Execution Plan, splits DAG into <strong>Stages</strong> at Wide Transformation boundaries.
-              </p>
-            </div>
-            <div className="mt-2 text-[9px] font-mono bg-[#281318] p-1.5 rounded text-rose-200 border border-rose-900/50">
-              DAGScheduler & TaskScheduler
-            </div>
-          </div>
-
-          {/* Cluster Manager */}
-          <div className="p-3 rounded-lg bg-[#14161f] border border-stone-800 flex flex-col justify-center items-center text-center">
-            <Server className="w-6 h-6 text-sky-400 mb-1" />
-            <span className="text-xs font-bold text-stone-100">Cluster Manager</span>
-            <span className="text-[10px] text-stone-400 mt-1 font-mono">YARN / Kubernetes / Standalone</span>
-            <p className="text-[10px] text-stone-400 mt-1">
-              Allocates CPU cores & RAM for worker executor containers.
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div className="p-3 rounded-lg bg-[#111724] border border-sky-900/40">
+            <div className="font-bold text-sky-400 font-mono mb-1">Driver Program</div>
+            <p className="text-[11px] text-stone-300 leading-relaxed">
+              Creates the SparkContext, builds the logical execution plan, translates transformations into Directed Acyclic Graphs (DAG), and coordinates tasks across workers.
             </p>
           </div>
-
-          {/* Worker Nodes & Executors */}
-          <div className="p-3 rounded-lg bg-[#131b18] border border-emerald-800/50 flex flex-col gap-2">
-            <div className="text-xs font-bold text-emerald-300 font-mono flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              Executors (Workers)
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono text-stone-300">
-              <div className="p-1.5 rounded bg-[#162720] border border-emerald-900/60 text-center">
-                <span className="block text-emerald-400 font-bold">Executor 1</span>
-                Task 1 | Task 2
-                <span className="block text-[8px] text-stone-400">RAM Cache + Off-Heap</span>
-              </div>
-              <div className="p-1.5 rounded bg-[#162720] border border-emerald-900/60 text-center">
-                <span className="block text-emerald-400 font-bold">Executor 2</span>
-                Task 3 | Task 4
-                <span className="block text-[8px] text-stone-400">RAM Cache + Off-Heap</span>
-              </div>
-            </div>
-            <p className="text-[9px] text-stone-400">
-              Wide transformations (e.g. <code className="text-amber-300">groupBy</code>, <code className="text-amber-300">join</code>) trigger network Shuffle across executors.
+          <div className="p-3 rounded-lg bg-[#111724] border border-sky-900/40">
+            <div className="font-bold text-emerald-400 font-mono mb-1">Cluster Manager (YARN/K8s)</div>
+            <p className="text-[11px] text-stone-300 leading-relaxed">
+              Allocates CPU cores and physical memory containers across the cluster machines to run executor processes.
+            </p>
+          </div>
+          <div className="p-3 rounded-lg bg-[#111724] border border-sky-900/40">
+            <div className="font-bold text-purple-400 font-mono mb-1">Worker Executors (1..N)</div>
+            <p className="text-[11px] text-stone-300 leading-relaxed">
+              Runs parallel tasks across data partitions, caches DataFrames in memory, and writes intermediate shuffle output to local disk blocks.
             </p>
           </div>
         </div>
@@ -300,180 +205,71 @@ const ConceptDiagram: React.FC<{ dayNumber: number; subject?: string }> = ({ day
     );
   }
 
-  if (dayNumber >= 78 && dayNumber <= 86) {
-    // Apache Kafka Architecture Diagram
-    return (
-      <div className="p-4 rounded-xl bg-[#090d13] border border-purple-900/40 my-3">
-        <div className="flex items-center justify-between mb-3 border-b border-stone-800 pb-2">
-          <div className="flex items-center gap-2">
-            <Workflow className="w-4 h-4 text-purple-400" />
-            <span className="text-xs font-bold text-purple-300 font-mono uppercase tracking-wider">
-              Apache Kafka Distributed Commit Log & Partitioning
-            </span>
-          </div>
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800/60">
-            Ordered Partitions
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 items-center">
-          {/* Producers */}
-          <div className="p-2.5 rounded-lg bg-[#181324] border border-purple-800/40 text-xs">
-            <span className="font-bold text-purple-300 block mb-1">Producers</span>
-            <p className="text-[10px] text-stone-300 leading-tight">
-              Publish events with key & value. Key hash determines partition:
-            </p>
-            <code className="text-[9px] font-mono text-amber-300 block mt-1 bg-[#100d1a] p-1 rounded">
-              hash(key) % num_partitions
-            </code>
-          </div>
-
-          {/* Topic Partitions (Center 2 cols) */}
-          <div className="md:col-span-2 p-3 rounded-xl bg-[#110e1f] border border-purple-700/60">
-            <div className="flex items-center justify-between text-[11px] font-bold text-purple-200 mb-2 font-mono">
-              <span>Topic: "customer_orders"</span>
-              <span className="text-[10px] text-stone-400">Replication Factor: 3</span>
-            </div>
-            <div className="space-y-1.5 font-mono text-xs">
-              <div className="p-1.5 rounded bg-[#1b1530] border border-purple-900 flex items-center justify-between">
-                <span className="text-amber-400 font-bold text-[10px]">Partition 0</span>
-                <div className="flex gap-1 text-[9px]">
-                  <span className="px-1 bg-stone-800 rounded">offset 0</span>
-                  <span className="px-1 bg-stone-800 rounded">1</span>
-                  <span className="px-1 bg-stone-800 rounded">2</span>
-                  <span className="px-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded font-bold">3 (Head)</span>
-                </div>
-              </div>
-              <div className="p-1.5 rounded bg-[#1b1530] border border-purple-900 flex items-center justify-between">
-                <span className="text-amber-400 font-bold text-[10px]">Partition 1</span>
-                <div className="flex gap-1 text-[9px]">
-                  <span className="px-1 bg-stone-800 rounded">offset 0</span>
-                  <span className="px-1 bg-stone-800 rounded">1</span>
-                  <span className="px-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded font-bold">2 (Head)</span>
-                </div>
-              </div>
-            </div>
-            <p className="text-[9px] text-stone-400 mt-2">
-              Strict ordering is guaranteed <strong>within a partition</strong>, NOT across multiple partitions.
-            </p>
-          </div>
-
-          {/* Consumer Group */}
-          <div className="p-2.5 rounded-lg bg-[#181324] border border-purple-800/40 text-xs">
-            <span className="font-bold text-purple-300 block mb-1">Consumer Group</span>
-            <p className="text-[10px] text-stone-300 leading-tight">
-              Each partition is consumed by exactly one consumer within the group.
-            </p>
-            <div className="mt-1 text-[9px] font-mono text-emerald-300 bg-[#100d1a] p-1 rounded">
-              Consumer A → Part 0<br/>Consumer B → Part 1
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Default clean pipeline flow diagram for other days
   return (
-    <div className="p-3.5 rounded-xl bg-[#090d13] border border-stone-800 my-3">
-      <div className="flex items-center justify-between mb-2 border-b border-stone-800 pb-2">
-        <div className="flex items-center gap-2">
-          <Workflow className="w-4 h-4 text-sky-400" />
-          <span className="text-xs font-bold text-stone-200 font-mono uppercase tracking-wider">
-            Production Pipeline Workflow Architecture
-          </span>
-        </div>
-        <span className="text-[10px] font-mono text-emerald-400">Zero-Data-Loss Pipeline</span>
+    <div className="p-3.5 rounded-xl bg-[#090d13] border border-stone-800 my-2 text-xs flex items-center justify-between">
+      <div className="flex items-center gap-2 text-sky-300 font-mono">
+        <Workflow className="w-4 h-4 text-sky-400" />
+        <span>Day {dayNumber}: Placement Architectural Execution Model</span>
       </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2 py-1 text-center font-mono text-xs">
-        <div className="p-2 rounded bg-[#131924] border border-sky-900/50 flex-1 min-w-[120px]">
-          <span className="text-[10px] text-sky-400 block font-bold">1. Ingestion</span>
-          <span className="text-stone-200 text-xs font-semibold">Source APIs / DB</span>
-        </div>
-        <ArrowRight className="w-3.5 h-3.5 text-stone-600 shrink-0 hidden sm:inline" />
-        <div className="p-2 rounded bg-[#1a1429] border border-purple-900/50 flex-1 min-w-[120px]">
-          <span className="text-[10px] text-purple-400 block font-bold">2. Transport</span>
-          <span className="text-stone-200 text-xs font-semibold">Kafka / Stream</span>
-        </div>
-        <ArrowRight className="w-3.5 h-3.5 text-stone-600 shrink-0 hidden sm:inline" />
-        <div className="p-2 rounded bg-[#1e1318] border border-rose-900/50 flex-1 min-w-[120px]">
-          <span className="text-[10px] text-rose-400 block font-bold">3. Processing</span>
-          <span className="text-stone-200 text-xs font-semibold">PySpark / Airflow</span>
-        </div>
-        <ArrowRight className="w-3.5 h-3.5 text-stone-600 shrink-0 hidden sm:inline" />
-        <div className="p-2 rounded bg-[#111e18] border border-emerald-900/50 flex-1 min-w-[120px]">
-          <span className="text-[10px] text-emerald-400 block font-bold">4. Serving</span>
-          <span className="text-stone-200 text-xs font-semibold">Warehouse & Tableau</span>
-        </div>
-      </div>
+      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800/60">
+        Enterprise Standard
+      </span>
     </div>
   );
 };
 
-// Helper to parse **bold** and `code` inline tokens
-const parseInlineMarkdown = (text: string) => {
-  const regex = /(\*\*.*?\*\*|`.*?`)/g;
-  const parts = text.split(regex);
+// Formatted lecture text renderer
+const renderFormattedText = (content: string) => {
+  const lines = content.split('\n');
 
-  return parts.map((part, idx) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      const boldText = part.slice(2, -2);
-      return (
-        <strong key={idx} className="font-semibold text-sky-200">
-          {boldText}
-        </strong>
-      );
-    }
-    if (part.startsWith('`') && part.endsWith('`')) {
-      const codeText = part.slice(1, -1);
-      return (
-        <code key={idx} className="px-1.5 py-0.5 mx-0.5 rounded bg-[#131b26] text-emerald-400 font-mono text-[11px] border border-emerald-900/40">
-          {codeText}
-        </code>
-      );
-    }
-    return part;
-  });
-};
+  const parseInlineMarkdown = (text: string): React.ReactNode => {
+    const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <code key={i} className="px-1.5 py-0.5 rounded bg-[#161f30] text-sky-300 font-mono text-xs border border-sky-900/40">
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <strong key={i} className="text-white font-bold">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return part;
+    });
+  };
 
-// Helper to render text with numbered/bullet lists into structured interactive cards
-const renderFormattedText = (raw: string) => {
-  const lines = raw.split('\n');
   return (
-    <div className="space-y-2 text-xs sm:text-sm leading-relaxed text-stone-200">
+    <div className="space-y-2.5">
       {lines.map((line, lIdx) => {
         const trimmed = line.trim();
-        if (!trimmed) return <div key={lIdx} className="h-0.5" />;
+        if (!trimmed) return null;
 
-        const isNumbered = /^\d+\.\s+/.test(trimmed);
-        const isBullet = /^[-*]\s+/.test(trimmed);
+        const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('* ');
+        const isNumbered = /^\d+\.\s/.test(trimmed);
 
-        const contentWithoutPrefix = trimmed.replace(/^(\d+\.\s+|[-*]\s+)/, '');
-        const parts = parseInlineMarkdown(contentWithoutPrefix);
-
-        if (isNumbered || isBullet) {
+        if (isBullet || isNumbered) {
+          const rawText = trimmed.replace(/^[-*]\s+|\d+\.\s+/, '');
           return (
-            <div 
-              key={lIdx} 
-              className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[#141a24]/90 border border-stone-800/90 hover:border-sky-800/50 transition-colors shadow-sm"
-            >
+            <div key={lIdx} className="flex items-start gap-2.5 pl-2">
               <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold shrink-0 mt-0.5 ${
-                isNumbered 
-                  ? 'bg-sky-950 text-sky-400 border border-sky-800/60' 
-                  : 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
+                isNumbered ? 'bg-sky-950 text-sky-400 border border-sky-800/60' : 'bg-emerald-950 text-emerald-400 border border-emerald-800/60'
               }`}>
                 {isNumbered ? trimmed.match(/^\d+/)?.[0] || '•' : '▸'}
               </span>
-              <div className="text-stone-200 leading-relaxed flex-1">
-                {parts}
+              <div className="leading-relaxed flex-1">
+                {parseInlineMarkdown(rawText)}
               </div>
             </div>
           );
         }
 
         return (
-          <p key={lIdx} className="text-stone-300 leading-relaxed">
+          <p key={lIdx} className="leading-relaxed">
             {parseInlineMarkdown(trimmed)}
           </p>
         );
@@ -483,16 +279,35 @@ const renderFormattedText = (raw: string) => {
 };
 
 export const TutorialViewer: React.FC<TutorialViewerProps> = ({
-  lesson,
+  lesson: rawLesson,
   onNavigateToPractice,
   onNavigateToMCQ,
   onNavigateToInterview,
-  onSaveNote
+  onSaveNote,
+  onSelectDay
 }) => {
-  const [learningMode, setLearningMode] = useState<'placement' | 'deep_dive'>('placement');
+  const { isDark } = useAcademicsTheme();
+
+  // Enrich lesson with analogies, external resources, videos, and quick checks
+  const lesson = useMemo(() => getEnrichedLesson(rawLesson), [rawLesson]);
+
+  // Mode: standard, beginner (explain like I'm a beginner), or deep_dive
+  const [learningMode, setLearningMode] = useState<'standard' | 'beginner' | 'deep_dive'>('standard');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [revealedQuiz, setRevealedQuiz] = useState<boolean>(false);
   const [noteSavedFeedback, setNoteSavedFeedback] = useState<boolean>(false);
+  const [assistantOpen, setAssistantOpen] = useState<boolean>(false);
+  const [checkedObjectives, setCheckedObjectives] = useState<Record<number, boolean>>({});
+  const [inlineExplains, setInlineExplains] = useState<Record<number, boolean>>({});
+
+  const handleToggleObjective = (index: number) => {
+    setCheckedObjectives(prev => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const progressPercent = useMemo(() => {
+    const total = lesson.learningObjectives.length || 1;
+    const completed = Object.values(checkedObjectives).filter(Boolean).length;
+    return Math.min(100, Math.round((completed / total) * 100));
+  }, [checkedObjectives, lesson.learningObjectives]);
 
   const handleCopy = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
@@ -504,7 +319,7 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
     if (onSaveNote) {
       onSaveNote(
         `Day ${lesson.dayNumber} Key Takeaways: ${lesson.title}`,
-        `### ${lesson.title}\n\n**Objectives:**\n${lesson.learningObjectives.map(o => `- ${o}`).join('\n')}\n\n**Key Concept Summary:**\n${lesson.learnContent.slice(0, 400)}...`
+        `### ${lesson.title}\n\n**Objectives:**\n${lesson.learningObjectives.map(o => `- ${o}`).join('\n')}\n\n**Analogy:**\n${lesson.realLifeAnalogy?.analogy || ''}\n\n**Key Concept Summary:**\n${lesson.learnContent.slice(0, 400)}...`
       );
       setNoteSavedFeedback(true);
       setTimeout(() => setNoteSavedFeedback(false), 2500);
@@ -533,7 +348,6 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
 
       if (line.startsWith('```')) {
         if (!inCode) {
-          // Flush pending text
           if (currentText.length > 0) {
             sections.push({
               type: 'text',
@@ -547,7 +361,6 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
           codeLang = line.replace('```', '').trim() || 'python';
           currentCode = [];
         } else {
-          // End of code block
           sections.push({
             type: 'code',
             language: codeLang,
@@ -564,7 +377,6 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
         continue;
       }
 
-      // Check headings
       if (line.startsWith('### ') || line.startsWith('#### ')) {
         if (currentText.length > 0) {
           sections.push({
@@ -594,83 +406,136 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
   const parsedSections = parseLectureContent(lesson.learnContent);
 
   return (
-    <div className="flex flex-col gap-5 text-stone-200 font-sans">
+    <div className={`flex flex-col gap-5 font-sans ${isDark ? 'text-stone-200' : 'text-slate-800'}`}>
       {/* 1. TOP HERO BAR: Objective & Mode Selector */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0d131f] via-[#111726] to-[#0d131f] border border-sky-800/40 shadow-xl flex flex-col gap-4">
+      <div className={`p-4 sm:p-5 rounded-2xl border shadow-xl flex flex-col gap-4 ${
+        isDark 
+          ? 'bg-gradient-to-r from-[#0d131f] via-[#111726] to-[#0d131f] border-sky-800/40' 
+          : 'bg-gradient-to-r from-sky-50 via-white to-sky-50 border-sky-200'
+      }`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30">
-              <GraduationCap className="w-4 h-4" />
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-sky-500 text-white shadow-md">
+              <GraduationCap className="w-5 h-5" />
             </span>
             <div>
-              <span className="text-xs font-mono font-bold text-sky-300 uppercase tracking-wider block">
-                M.Tech Placement Curriculum • Module {lesson.subject.toUpperCase()}
-              </span>
-              <h3 className="text-base sm:text-lg font-bold text-white leading-tight">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-sky-400 uppercase tracking-wider block">
+                  Day {lesson.dayNumber} • Module {lesson.subject.toUpperCase()}
+                </span>
+                {lesson.mrcetUnit && (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60 font-semibold">
+                    {lesson.mrcetUnit}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-base sm:text-xl font-bold leading-tight mt-0.5">
                 {lesson.title}
               </h3>
-              {lesson.mrcetUnit && (
-                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60 font-semibold flex items-center gap-1">
-                    <BookOpen className="w-3 h-3" />
-                    <span>{lesson.mrcetUnit}</span>
-                  </span>
-                  {lesson.academicLevel && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-800/40 font-semibold">
-                      {lesson.academicLevel}
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Level Switcher */}
-          <div className="flex items-center gap-1.5 bg-[#090d14] p-1 rounded-xl border border-stone-800">
+          {/* Mode Switcher: Standard vs Beginner vs Deep Dive */}
+          <div className={`flex items-center gap-1 p-1 rounded-xl border ${
+            isDark ? 'bg-[#090d14] border-stone-800' : 'bg-slate-100 border-slate-200'
+          }`}>
             <button
-              onClick={() => setLearningMode('placement')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                learningMode === 'placement'
-                  ? 'bg-sky-600 text-white font-semibold shadow-sm'
+              onClick={() => setLearningMode('standard')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                learningMode === 'standard'
+                  ? 'bg-sky-600 text-white shadow-sm'
                   : 'text-stone-400 hover:text-stone-200'
               }`}
             >
-              <Lightbulb className="w-3.5 h-3.5 text-amber-300" />
-              <span>Placement Core</span>
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Standard</span>
             </button>
+
+            <button
+              onClick={() => setLearningMode('beginner')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                learningMode === 'beginner'
+                  ? 'bg-rose-600 text-white shadow-sm'
+                  : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>❤️ Beginner Mode</span>
+            </button>
+
             <button
               onClick={() => setLearningMode('deep_dive')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 learningMode === 'deep_dive'
-                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-stone-400 hover:text-stone-200'
               }`}
             >
-              <Cpu className="w-3.5 h-3.5 text-indigo-300" />
-              <span>M.Tech Deep Dive</span>
+              <Cpu className="w-3.5 h-3.5" />
+              <span>🔬 Deep Dive</span>
             </button>
           </div>
         </div>
 
-        {/* Learning Objectives Structured Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-stone-800/80">
-          {lesson.learningObjectives.map((obj, i) => (
-            <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-[#161d2b]/60 border border-sky-900/30 text-xs text-sky-200/90">
-              <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
-              <span className="leading-snug">{obj}</span>
-            </div>
-          ))}
+        {/* Lesson Progress Indicator */}
+        <div className="space-y-1.5 pt-2 border-t border-stone-800/60">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold flex items-center gap-1.5">
+              <span>🎯 Lesson Objectives & Progress:</span>
+              <strong className="text-sky-400 font-mono">{progressPercent}%</strong>
+            </span>
+            <span className="text-[11px] opacity-75 font-mono">
+              {Object.values(checkedObjectives).filter(Boolean).length} of {lesson.learningObjectives.length} completed
+            </span>
+          </div>
+          <div className="w-full bg-stone-800/40 rounded-full h-2 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-sky-500 to-emerald-400 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
 
-        {/* Quick Action Navigation Bar */}
+        {/* Learning Objectives Checklist */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          {lesson.learningObjectives.map((obj, i) => {
+            const isChecked = !!checkedObjectives[i];
+            return (
+              <button
+                key={i}
+                onClick={() => handleToggleObjective(i)}
+                className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs text-left transition-all cursor-pointer ${
+                  isChecked
+                    ? isDark ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-200' : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                    : isDark ? 'bg-[#161d2b]/60 border-sky-900/30 text-sky-200/90 hover:bg-[#1c2538]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${isChecked ? 'text-emerald-400' : 'text-stone-500'}`} />
+                <span className="leading-snug">{obj}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Action Button Strip */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-800/60 text-xs">
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setAssistantOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-all cursor-pointer shadow-sm"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span>🤖 Ask About This Topic</span>
+            </button>
+
+            <button
               onClick={handleQuickSaveNote}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161f30] hover:bg-[#1f2d47] text-sky-300 border border-sky-800/50 transition-colors"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                isDark ? 'bg-[#161f30] hover:bg-[#1f2d47] text-sky-300 border-sky-800/50' : 'bg-white hover:bg-slate-100 text-sky-700 border-slate-300'
+              }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>{noteSavedFeedback ? 'Saved to My Notes! ✓' : 'Add to My Revision Book'}</span>
+              <span>{noteSavedFeedback ? 'Saved to Notes! ✓' : 'Save to Revision Notes'}</span>
             </button>
           </div>
 
@@ -678,7 +543,7 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
             {onNavigateToPractice && (
               <button
                 onClick={onNavigateToPractice}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-sm transition-all cursor-pointer"
               >
                 <Play className="w-3 h-3 fill-current" />
                 <span>Open Practice Lab</span>
@@ -687,15 +552,19 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
             {onNavigateToMCQ && (
               <button
                 onClick={onNavigateToMCQ}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600/30 hover:bg-purple-600/40 text-purple-200 border border-purple-500/40 transition-colors"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                  isDark ? 'bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border-purple-800/50' : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200'
+                }`}
               >
-                <span>Take Quiz</span>
+                <span>MCQs</span>
               </button>
             )}
             {onNavigateToInterview && (
               <button
                 onClick={onNavigateToInterview}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/40 text-amber-200 border border-amber-500/40 transition-colors"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                  isDark ? 'bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border-amber-800/50' : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200'
+                }`}
               >
                 <span>Interview Qs</span>
               </button>
@@ -704,10 +573,63 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
         </div>
       </div>
 
-      {/* 2. ARCHITECTURAL / WORKFLOW CONCEPT DIAGRAM */}
+      {/* 2. BEGINNER MODE HERO CARD (if enabled) */}
+      {learningMode === 'beginner' && lesson.beginnerExplanation && (
+        <div className={`p-4 sm:p-5 rounded-2xl border shadow-lg leading-relaxed ${
+          isDark ? 'bg-[#181119] border-rose-900/50 text-rose-100' : 'bg-rose-50 border-rose-200 text-rose-950'
+        }`}>
+          <div className="flex items-center justify-between mb-3 border-b border-rose-900/40 pb-2">
+            <span className="font-bold text-sm flex items-center gap-2 text-rose-400">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>❤️ Plain English & Beginner Explanation</span>
+            </span>
+            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-800/60">
+              Zero Technical Jargon
+            </span>
+          </div>
+          <div className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
+            {lesson.beginnerExplanation}
+          </div>
+        </div>
+      )}
+
+      {/* 3. REAL-LIFE INTUITION & METAPHOR CARD */}
+      {lesson.realLifeAnalogy && (
+        <div className={`p-4 sm:p-5 rounded-2xl border shadow-md ${
+          isDark 
+            ? 'bg-gradient-to-r from-[#1c140d] via-[#17121b] to-[#121620] border-amber-500/40 text-amber-100' 
+            : 'bg-amber-50/70 border-amber-200 text-amber-950'
+        }`}>
+          <div className="flex items-center justify-between text-amber-400 font-bold text-sm sm:text-base mb-2.5 border-b border-amber-800/40 pb-2">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{lesson.realLifeAnalogy.title}</span>
+            </div>
+            <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-600/40">
+              💡 Real-World Metaphor
+            </span>
+          </div>
+
+          <div className="space-y-2 text-xs sm:text-sm leading-relaxed">
+            <p className="font-medium">
+              {lesson.realLifeAnalogy.analogy}
+            </p>
+            <div className={`p-2.5 rounded-lg border text-xs ${
+              isDark ? 'bg-black/30 border-amber-900/40 text-amber-200' : 'bg-white border-amber-200 text-amber-900'
+            }`}>
+              <strong className="block text-[11px] uppercase tracking-wider text-amber-400 mb-0.5">
+                🏭 Real Data Engineering / Production Scenario:
+              </strong>
+              <span>{lesson.realLifeAnalogy.realWorldExample}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. ARCHITECTURAL / WORKFLOW CONCEPT DIAGRAM */}
       <ConceptDiagram dayNumber={lesson.dayNumber} subject={lesson.subject} />
 
-      {/* 3. PARSED & STRUCTURED LECTURE CONTENT SECTIONS */}
+      {/* 5. PARSED & STRUCTURED LECTURE CONTENT SECTIONS */}
       <div className="flex flex-col gap-4">
         {parsedSections.map((sec, idx) => {
           if (sec.type === 'warning') {
@@ -720,38 +642,8 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
                   <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>{sec.title || 'High-Frequency Placement Pitfall & Interview Trap'}</span>
                 </div>
-                <div className="pl-1">
+                <div className="pl-1 text-xs">
                   {renderFormattedText(sec.content)}
-                </div>
-              </div>
-            );
-          }
-
-          // Architectural Blueprint & Flowchart Block
-          const isDiagram = sec.type === 'code' && (
-            sec.language === 'text' || 
-            sec.content.includes('+---') || 
-            sec.content.includes('--->') ||
-            sec.content.includes('|')
-          );
-          if (isDiagram) {
-            return (
-              <div key={idx} className="rounded-xl border border-sky-800/60 bg-[#070b12] overflow-hidden shadow-xl">
-                <div className="px-4 py-2 bg-gradient-to-r from-[#0d1626] to-[#0a101c] border-b border-sky-900/60 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <Workflow className="w-4 h-4 text-sky-400" />
-                    <span className="font-mono text-sky-300 font-bold text-xs uppercase tracking-wider">
-                      📐 Architectural Blueprint & Flowchart
-                    </span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-950 text-sky-400 border border-sky-800/60">
-                    System Architecture
-                  </span>
-                </div>
-                <div className="p-4 overflow-x-auto bg-[#04060a]">
-                  <pre className="font-mono text-sky-300 text-xs sm:text-sm leading-relaxed whitespace-pre font-bold select-all">
-                    {sec.content}
-                  </pre>
                 </div>
               </div>
             );
@@ -760,7 +652,6 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
           if (sec.type === 'code') {
             return (
               <div key={idx} className="rounded-xl border border-stone-800 bg-[#0a0d14] overflow-hidden shadow-lg">
-                {/* IDE Window Title Bar */}
                 <div className="px-4 py-2 bg-[#121620] border-b border-stone-800 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1.5">
@@ -777,7 +668,7 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleCopy(sec.content, idx)}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#1c2333] hover:bg-[#252f44] text-stone-300 text-xs transition-colors"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#1c2333] hover:bg-[#252f44] text-stone-300 text-xs transition-colors cursor-pointer"
                     >
                       {copiedIndex === idx ? (
                         <>
@@ -795,7 +686,7 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
                     {onNavigateToPractice && (
                       <button
                         onClick={onNavigateToPractice}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/40 text-xs transition-colors"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/40 text-xs transition-colors cursor-pointer"
                       >
                         <Play className="w-2.5 h-2.5 fill-current" />
                         <span>Run in Lab</span>
@@ -804,7 +695,6 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
                   </div>
                 </div>
 
-                {/* Code Body with Line Numbers */}
                 <div className="p-3.5 overflow-x-auto bg-[#070a0f] flex font-mono text-xs leading-relaxed">
                   <div className="select-none text-stone-600 pr-4 text-right border-r border-stone-800">
                     {sec.content.split('\n').map((_, i) => (
@@ -819,75 +709,49 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
             );
           }
 
-          // Real-Life Intuition & Analogy Card
-          const isAnalogy = sec.title?.toLowerCase().includes('analogy') || sec.title?.toLowerCase().includes('intuition');
-          if (isAnalogy) {
-            return (
-              <div 
-                key={idx}
-                className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#1c140d] via-[#17121b] to-[#121620] border border-amber-500/40 shadow-lg"
-              >
-                <div className="flex items-center justify-between text-amber-300 font-bold text-sm sm:text-base mb-2.5 border-b border-amber-800/40 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>{sec.title}</span>
-                  </div>
-                  <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-600/40">
-                    💡 Real-Life Intuition
-                  </span>
-                </div>
-                <div className="text-amber-100/90 text-sm leading-relaxed">
-                  {renderFormattedText(sec.content)}
-                </div>
-              </div>
-            );
-          }
-
-          // Regular Conceptual Section Card with custom badges
-          const isWhat = sec.title?.toLowerCase().includes('what is') || sec.title?.toLowerCase().includes('what problem');
-          const isWhy = sec.title?.toLowerCase().includes('why') || sec.title?.toLowerCase().includes('need it') || sec.title?.toLowerCase().includes('under the hood');
-          const isKey = sec.title?.toLowerCase().includes('key') || sec.title?.toLowerCase().includes('concept') || sec.title?.toLowerCase().includes('gotchas') || sec.title?.toLowerCase().includes('placement');
-
+          // Regular Concept Card with inline 'Explain This' button
           return (
             <div 
               key={idx}
               className={`p-4 sm:p-5 rounded-xl border transition-all shadow-sm ${
-                isWhat 
-                  ? 'bg-gradient-to-r from-[#0d141e] via-[#0d121c] to-[#0d141e] border-sky-800/40' 
-                  : isWhy 
-                  ? 'bg-gradient-to-r from-[#0d1715] via-[#0d131a] to-[#0d1715] border-emerald-800/40' 
-                  : isKey
-                  ? 'bg-gradient-to-r from-[#141024] via-[#0f0d1a] to-[#141024] border-purple-800/40'
-                  : 'bg-[#0d1117] border-stone-800 hover:border-stone-700/80'
+                isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
               }`}
             >
               {sec.title && (
                 <div className="flex items-center justify-between text-stone-100 font-bold text-sm sm:text-base mb-3 border-b border-stone-800/80 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className={`w-1.5 h-4 rounded-full ${
-                      isWhat ? 'bg-sky-400' : isWhy ? 'bg-emerald-400' : isKey ? 'bg-indigo-400' : 'bg-sky-500'
-                    }`}></span>
-                    <span>{sec.title}</span>
+                    <span className="w-1.5 h-4 rounded-full bg-sky-500"></span>
+                    <span className={isDark ? 'text-white' : 'text-slate-900'}>{sec.title}</span>
                   </div>
 
-                  {isWhat && (
-                    <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800/60">
-                      💡 Core Definition
-                    </span>
-                  )}
-                  {isWhy && (
-                    <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/60">
-                      💼 Production Pipeline Need
-                    </span>
-                  )}
-                  {isKey && (
-                    <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800/60">
-                      🔑 Placement Essentials
-                    </span>
-                  )}
+                  <button
+                    onClick={() => setInlineExplains(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border transition-all cursor-pointer ${
+                      inlineExplains[idx]
+                        ? 'bg-amber-600 text-white border-amber-500 shadow-sm'
+                        : isDark ? 'bg-[#161f30] text-sky-300 border-sky-800/50 hover:bg-[#1e2a44]' : 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100'
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-300" />
+                    <span>{inlineExplains[idx] ? 'Close Explain' : '✨ Explain This'}</span>
+                  </button>
                 </div>
               )}
-              <div>
+
+              {inlineExplains[idx] && (
+                <div className={`mb-3 p-3 rounded-xl border text-xs leading-relaxed ${
+                  isDark ? 'bg-[#181320] border-purple-900/50 text-purple-200' : 'bg-purple-50 border-purple-200 text-purple-950'
+                }`}>
+                  <strong className="block text-purple-400 font-bold mb-1">
+                    ✨ Simple Intuition for: {sec.title || 'This Concept'}
+                  </strong>
+                  <p>
+                    Think of this concept like an assembly line checkpoint: before letting records travel down the pipeline, this step guarantees each record adheres to the required structure and invariants.
+                  </p>
+                </div>
+              )}
+
+              <div className="text-xs sm:text-sm">
                 {renderFormattedText(sec.content)}
               </div>
             </div>
@@ -895,100 +759,229 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
         })}
       </div>
 
-      {/* 4. M.TECH DEEP DIVE ACCORDION (If enabled) */}
+      {/* 6. M.TECH DEEP DIVE NOTES */}
       {learningMode === 'deep_dive' && (
-        <div className="p-4 sm:p-5 rounded-xl bg-[#100e1c] border border-indigo-800/60 shadow-lg">
+        <div className="p-4 sm:p-5 rounded-xl bg-[#100e1c] border border-indigo-800/60 shadow-lg text-xs leading-relaxed">
           <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm mb-2">
             <Cpu className="w-4 h-4 text-indigo-400" />
             <span>M.Tech Advanced Placement Nuances & Distributed Architecture Notes</span>
           </div>
-          <p className="text-xs text-stone-300 leading-relaxed">
-            In competitive placement rounds at FAANG/Tier-1 Data Platforms, interviewers probe beyond basic API usage:
+          <p className="text-stone-300">
+            In competitive placement rounds at FAANG and Tier-1 Data Platforms, interviewers test deep system invariants:
           </p>
-          <ul className="mt-2 space-y-1.5 text-xs text-indigo-200/90 list-disc list-inside">
-            <li><strong>Garbage Collection & Memory Pools:</strong> CPython handles small integers (-5 to 256) through an interned memory pool, whereas larger numbers allocate distinct heap objects.</li>
-            <li><strong>Idempotency in Data Pipelines:</strong> Pipeline retries must always be idempotent. In streaming or micro-batch ETL, stateful operators require checkpointing to object storage.</li>
-            <li><strong>Shuffle Cost:</strong> Network I/O is the #1 bottleneck in distributed compute. Always prefer Map-side filtering over post-shuffle filtering.</li>
+          <ul className="mt-2 space-y-1.5 text-indigo-200/90 list-disc list-inside">
+            <li><strong>Memory Allocation:</strong> CPython small integer caching (-5 to 256) vs brand-new PyLongObject heap allocations.</li>
+            <li><strong>Garbage Collection Overhead:</strong> Cyclical reference detection algorithms can trigger latency spikes in high-throughput streaming consumers.</li>
+            <li><strong>Network Shuffle Sharding:</strong> In PySpark, improper partition keys cause severe data skew where 99% of tasks complete instantly while 1 worker hangs for hours.</li>
           </ul>
         </div>
       )}
 
-      {/* 5. INTERACTIVE PLACEMENT CHECKPOINT */}
-      <div className="p-4 rounded-xl bg-[#0d141e] border border-sky-800/50 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sky-300 font-bold text-xs uppercase tracking-wider">
-            <Lightbulb className="w-4 h-4 text-amber-400" />
-            <span>Placement Concept Checkpoint</span>
+      {/* 7. RECOMMENDED LEARNING RESOURCES (W3Schools, TutorialsPoint, Official Docs) */}
+      {lesson.externalResources && lesson.externalResources.length > 0 && (
+        <div className={`p-4 sm:p-5 rounded-2xl border shadow-lg flex flex-col gap-3 ${
+          isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+        }`}>
+          <div className="flex items-center justify-between border-b pb-2.5 border-stone-800/70">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                <BookOpen className="w-4 h-4" />
+              </span>
+              <div>
+                <h4 className="font-bold text-xs sm:text-sm">📚 Recommended Learning Resources</h4>
+                <p className="text-[11px] opacity-75">
+                  Curated tutorials, official references, and interactive documentation.
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/50">
+              Verified Links
+            </span>
           </div>
-          <button
-            onClick={() => setRevealedQuiz(!revealedQuiz)}
-            className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors font-medium cursor-pointer"
-          >
-            {revealedQuiz ? (
-              <>
-                <EyeOff className="w-3.5 h-3.5" />
-                <span>Hide Senior DE Explanation</span>
-              </>
-            ) : (
-              <>
-                <Eye className="w-3.5 h-3.5" />
-                <span>Reveal Placement Answer</span>
-              </>
-            )}
-          </button>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {lesson.externalResources.map((res, i) => (
+              <div
+                key={i}
+                className={`p-3.5 rounded-xl border flex flex-col justify-between gap-2.5 transition-all hover:border-sky-500/60 ${
+                  isDark ? 'bg-[#111724] border-stone-800/80' : 'bg-slate-50 border-slate-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-bold text-sky-400">{res.name}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/40">
+                      {res.difficulty}
+                    </span>
+                  </div>
+                  <h5 className="font-semibold text-xs mb-1">{res.topic}</h5>
+                  <p className="text-[11px] opacity-80 leading-relaxed">{res.whyUseful}</p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-stone-800/40 text-[11px]">
+                  <span className="text-stone-400 flex items-center gap-1 font-mono">
+                    <Clock className="w-3 h-3 text-sky-400" />
+                    <span>{res.estimatedTime}</span>
+                  </span>
+
+                  <a
+                    href={res.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 text-sky-400 hover:text-sky-300 font-semibold hover:underline cursor-pointer"
+                  >
+                    <span>Open Resource</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+      )}
 
-        <p className="text-xs sm:text-sm text-stone-200 font-medium">
-          Q: If you pass a mutable object like a dictionary or list as a default parameter in a Python batch processing function, why does it corrupt subsequent pipeline invocations?
-        </p>
-
-        {revealedQuiz && (
-          <div className="p-3 rounded-lg bg-[#142033] border border-sky-600/40 text-xs text-sky-100 leading-relaxed">
-            <strong className="text-emerald-400">Answer:</strong> In Python, default arguments are evaluated <strong>once</strong> when the function definition is loaded into memory, NOT each time the function is called! Therefore, mutating the default argument mutates that single shared object across all invocations in the worker process. The enterprise standard is <code className="bg-black/40 px-1 py-0.5 rounded text-amber-300">param=None</code> and assigning <code className="bg-black/40 px-1 py-0.5 rounded text-amber-300">param = []</code> inside the function scope.
+      {/* 8. WATCH BEFORE YOU PRACTICE (Video Resources) */}
+      {lesson.videoResources && lesson.videoResources.length > 0 && (
+        <div className={`p-4 sm:p-5 rounded-2xl border shadow-lg flex flex-col gap-3 ${
+          isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+        }`}>
+          <div className="flex items-center justify-between border-b pb-2.5 border-stone-800/70">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                <Video className="w-4 h-4" />
+              </span>
+              <div>
+                <h4 className="font-bold text-xs sm:text-sm">🎥 Watch Before You Practice</h4>
+                <p className="text-[11px] opacity-75">
+                  Educational video lessons and visual coding demonstrations.
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800/50">
+              HD Tutorials
+            </span>
           </div>
-        )}
-      </div>
 
-      {/* 6. DOCUMENTATION & NEXT STEPS */}
-      {lesson.docLinks && lesson.docLinks.length > 0 && (
-        <div className="p-3.5 rounded-xl bg-[#0d1117] border border-stone-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-stone-400 font-semibold">
-            <BookOpen className="w-3.5 h-3.5 text-sky-400" />
-            <span>Official Placement References:</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {lesson.docLinks.map((doc, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {lesson.videoResources.map((vid, i) => (
               <a
-                key={idx}
-                href={doc.url}
+                key={i}
+                href={vid.url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1 text-sky-400 hover:text-sky-300 hover:underline"
+                className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all cursor-pointer group ${
+                  isDark ? 'bg-[#13121d] border-stone-800 hover:border-rose-500/60' : 'bg-slate-50 border-slate-200 hover:border-rose-300'
+                }`}
               >
-                <span>{doc.title}</span>
-                <ExternalLink className="w-3 h-3" />
+                <div className="flex items-center gap-3">
+                  <span className="p-2.5 rounded-xl bg-rose-600 text-white shadow-md group-hover:scale-105 transition-transform">
+                    <Play className="w-4 h-4 fill-current" />
+                  </span>
+                  <div>
+                    <h5 className="font-bold text-xs group-hover:text-rose-400 transition-colors">
+                      {vid.title}
+                    </h5>
+                    <div className="flex items-center gap-2 text-[11px] opacity-75 mt-0.5">
+                      <span>{vid.channel}</span>
+                      <span>•</span>
+                      <span className="font-mono">{vid.duration}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <ExternalLink className="w-4 h-4 text-stone-500 group-hover:text-rose-400 shrink-0 transition-colors" />
               </a>
             ))}
           </div>
         </div>
       )}
 
-      {/* Bottom CTA to practice */}
-      <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-emerald-950/30 to-sky-950/30 border border-emerald-800/40">
-        <div>
-          <h4 className="font-bold text-white text-xs sm:text-sm">Ready to put this concept into code?</h4>
-          <p className="text-[11px] text-stone-400 mt-0.5">Solve today's hands-on exercise with live assertions in the Practice Lab.</p>
+      {/* 9. MINI QUIZ / QUICK CHECK */}
+      {lesson.miniQuiz && lesson.miniQuiz.length > 0 && (
+        <LessonQuickCheck
+          questions={lesson.miniQuiz}
+          topicTitle={lesson.title}
+          dayNumber={lesson.dayNumber}
+          isDark={isDark}
+        />
+      )}
+
+      {/* 10. ⚡ 60-SECOND REVISION SUMMARY */}
+      {lesson.oneMinuteRevision && lesson.oneMinuteRevision.length > 0 && (
+        <div className={`p-4 sm:p-5 rounded-2xl border shadow-md flex flex-col gap-2.5 ${
+          isDark ? 'bg-[#10141e] border-sky-900/50 text-stone-200' : 'bg-sky-50 border-sky-200 text-sky-950'
+        }`}>
+          <div className="flex items-center justify-between border-b pb-2 border-sky-900/40">
+            <span className="font-bold text-xs sm:text-sm flex items-center gap-1.5 text-sky-400">
+              <Zap className="w-4 h-4 text-amber-400" />
+              <span>⚡ 60-Second Revision Summary</span>
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/40">
+              Quick Recall
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            {lesson.oneMinuteRevision.map((rev, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 shrink-0"></span>
+                <span className="leading-relaxed">{rev}</span>
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      {/* 11. BOTTOM CTA & NAVIGATION CONTROLS */}
+      <div className={`flex flex-wrap items-center justify-between p-4 rounded-xl border gap-3 ${
+        isDark ? 'bg-gradient-to-r from-emerald-950/30 to-sky-950/30 border-emerald-800/40' : 'bg-gradient-to-r from-emerald-50 to-sky-50 border-emerald-200'
+      }`}>
+        <div className="flex items-center gap-2">
+          {onSelectDay && (
+            <>
+              <button
+                onClick={() => onSelectDay(Math.max(1, lesson.dayNumber - 1))}
+                disabled={lesson.dayNumber <= 1}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold disabled:opacity-30 cursor-pointer transition-colors ${
+                  isDark ? 'bg-stone-800 hover:bg-stone-700 text-stone-200 border-stone-700' : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                }`}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Previous Day</span>
+              </button>
+
+              <button
+                onClick={() => onSelectDay(Math.min(130, lesson.dayNumber + 1))}
+                disabled={lesson.dayNumber >= 130}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-semibold disabled:opacity-30 cursor-pointer transition-colors ${
+                  isDark ? 'bg-stone-800 hover:bg-stone-700 text-stone-200 border-stone-700' : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                }`}
+              >
+                <span>Next Day</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+
         {onNavigateToPractice && (
           <button
             onClick={onNavigateToPractice}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all shrink-0 cursor-pointer"
           >
-            <span>Start Practice Lab</span>
+            <span>Proceed to Practice Lab</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
+
+      {/* In-Lesson AI Learning Assistant Modal */}
+      <TopicLearningAssistant
+        lesson={lesson}
+        isOpen={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        isDark={isDark}
+      />
     </div>
   );
 };

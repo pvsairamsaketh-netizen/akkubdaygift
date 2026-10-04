@@ -46,6 +46,22 @@ export interface CodingExercise {
   expectedSQL?: string;
   timeComplexity?: string;
   spaceComplexity?: string;
+  // World-class Pedagogical Fields
+  goal?: string;
+  realLifeScenario?: string;
+  sampleInputExplanation?: string;
+  sampleOutputExplanation?: string;
+  sampleExampleInput?: string;
+  sampleExampleOutput?: string;
+  howToThinkSteps?: string[];
+  breakdownSteps?: string[];
+  pseudocode?: string;
+  skillsTested?: string[];
+  estimatedMinutes?: number;
+  bruteForceApproach?: { title: string; explanation: string; code: string; timeComplexity: string; spaceComplexity: string };
+  betterApproach?: { title: string; explanation: string; code: string; timeComplexity: string; spaceComplexity: string };
+  optimalApproach?: { title: string; explanation: string; code: string; timeComplexity: string; spaceComplexity: string };
+  dryRunSteps?: { line: number; code: string; variables: Record<string, string>; explanation: string }[];
 }
 
 export interface CheatSheetData {
@@ -54,6 +70,23 @@ export interface CheatSheetData {
   syntaxSnippets: { label: string; language: string; code: string }[];
   commonMistakes: string[];
   interviewTips: string[];
+}
+
+export interface ExternalResourceItem {
+  name: string;
+  topic: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  estimatedTime: string;
+  whyUseful: string;
+  url: string;
+}
+
+export interface VideoResourceItem {
+  title: string;
+  channel: string;
+  duration: string;
+  url: string;
+  embedUrl?: string;
 }
 
 export interface DayLesson {
@@ -80,6 +113,15 @@ export interface DayLesson {
   visualType?: string;
   videoUrl?: string;
   videoTitle?: string;
+  // World-class Learning Extensions
+  realLifeAnalogy?: { title: string; analogy: string; realWorldExample: string };
+  beginnerExplanation?: string;
+  deepDiveExplanation?: string;
+  externalResources?: ExternalResourceItem[];
+  videoResources?: VideoResourceItem[];
+  miniQuiz?: { question: string; options: string[]; correctIndex: number; explanation: string }[];
+  oneMinuteRevision?: string[];
+  whyItMattersInPlacements?: string;
 }
 
 export interface AcademicNoteItem {
