@@ -40,43 +40,43 @@ const PHOTO_STORIES: PhotoStory[] = [
   {
     chapter: "Chapter I",
     title: "Where It All Began",
-    quote: "“Loving you became the easiest and most natural thing in the world.”",
-    reflection: "From everyday college conversations to the moment our smiles aligned, I realized home isn't a location—it's standing right next to you.",
+    quote: "“Somehow, meeting you turned ordinary days into memories I never want to forget. ❤️”",
+    reflection: "From everyday conversations to the moment our smiles aligned, I realized home isn't a place—it's standing right next to you.",
     photo: MEMORY_PHOTOS[0]
   },
   {
     chapter: "Chapter II",
     title: "Campus Walks & Endless Laughs",
-    quote: "“Walking beside you, wishing the path would never end.”",
-    reflection: "Those afternoons on campus, sharing inside jokes and talking about our future. Every second with you felt like pure magic.",
+    quote: "“Your smile has a way of making even my toughest days feel lighter.”",
+    reflection: "Those campus afternoons sharing inside jokes and talking about our dreams. Every second with you felt like pure magic.",
     photo: MEMORY_PHOTOS[1]
   },
   {
     chapter: "Chapter III",
     title: "Elegance Personified",
-    quote: "“You shine with a grace that took my breath away.”",
-    reflection: "Seeing you in traditional elegance, proud and radiant with your medal. I fell in love with your quiet strength and dazzling beauty all over again.",
+    quote: "“If I could keep one thing forever, it would be these little moments with you.”",
+    reflection: "Seeing you in traditional grace and elegance. I fell in love with your quiet strength and dazzling beauty all over again.",
     photo: MEMORY_PHOTOS[2]
   },
   {
     chapter: "Chapter IV",
     title: "My Precious Sweetheart",
-    quote: "“Your innocent laugh melts away every worry in my life.”",
+    quote: "“Every picture with you holds a story that my heart never gets tired of remembering.”",
     reflection: "Hugging that giant pink teddy bear with that pure, genuine smile—this is the sweet soul I promise to protect and cherish forever.",
     photo: MEMORY_PHOTOS[3]
   },
   {
     chapter: "Chapter V",
     title: "My Safe Haven & Peace",
-    quote: "“Resting on your shoulder, I found my sanctuary.”",
+    quote: "“You are not just a beautiful part of my life — you are one of my favorite reasons to smile.”",
     reflection: "In this quiet embrace, all the noise of the world faded. Knowing I have you by my side gives me the courage to conquer anything.",
     photo: MEMORY_PHOTOS[4]
   },
   {
     chapter: "Chapter VI",
     title: "From Sweet Past to Forever",
-    quote: "“I love every single piece of who you are—past, present, and always.”",
-    reflection: "From the precious little girl in cherished memories to the brilliant, hardworking woman preparing for placements today. I am forever proud of you.",
+    quote: "“And if I had to choose you all over again, I'd choose you every single time. ❤️”",
+    reflection: "From the precious memories of the past to the brilliant, hardworking woman preparing for placements today. I am forever proud of you.",
     photo: MEMORY_PHOTOS[5]
   },
 ];

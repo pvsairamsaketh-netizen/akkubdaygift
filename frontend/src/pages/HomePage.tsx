@@ -12,7 +12,6 @@ import {
 import type { NavTab } from '../components/Navbar';
 import { api } from '../services/api';
 import confetti from 'canvas-confetti';
-import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 interface HomePageProps {
   onNavigate: (tab: NavTab) => void;
@@ -29,7 +28,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const [memoryCount, setMemoryCount] = useState<number>(0);
   const [docCount, setDocCount] = useState<number>(1);
-  const { triggerMemoryPhoto } = useMemoryPhotos();
 
   useEffect(() => {
     api.getMemories().then(res => setMemoryCount(res.total_memories || 0)).catch(() => {});
@@ -80,7 +78,6 @@ export const HomePage: React.FC<HomePageProps> = ({
           <button
             id="hero-open-surprise-btn"
             onClick={() => {
-              triggerMemoryPhoto('surprise');
               onOpenSurprise();
             }}
             className="group relative w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:via-pink-600 hover:to-rose-700 text-white font-medium text-base shadow-xl shadow-rose-200/90 hover:shadow-2xl hover:shadow-rose-400/50 hover:scale-105 active:scale-95 transition-all overflow-hidden cursor-pointer"

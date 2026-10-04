@@ -16,7 +16,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { RomanticAudioPlayer } from './RomanticAudioPlayer';
-import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 export type NavTab = 'home' | 'chat' | 'birthday' | 'memories' | 'library' | 'voice' | 'academics' | 'settings';
 
@@ -50,7 +49,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
-  const { triggerMemoryPhoto } = useMemoryPhotos();
 
   // Close "More" dropdown when clicking outside
   useEffect(() => {
@@ -68,7 +66,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, [moreDropdownOpen]);
 
   const handleSurpriseClick = () => {
-    triggerMemoryPhoto('surprise');
     if (onOpenSurprise) {
       onOpenSurprise();
     } else if (onOpenEnvelope) {

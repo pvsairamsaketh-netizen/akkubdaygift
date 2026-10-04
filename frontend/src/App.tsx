@@ -16,7 +16,6 @@ import { AcademicsPage } from './pages/AcademicsPage';
 import { api } from './services/api';
 import type { BirthdayConfig } from './types/memories';
 import { MemoryPhotoProvider } from './context/MemoryPhotoContext';
-import { FloatingMemoryPhoto } from './components/FloatingMemoryPhoto';
 
 const getInitialTab = (): NavTab => {
   try {
@@ -195,9 +194,6 @@ export function App() {
               isUnlocked={true}
               autoOpenFlap={true}
             />
-
-            {/* Romantic Floating Memory Photo Reveal */}
-            <FloatingMemoryPhoto reduceMotion={reduceMotion} />
           </div>
         )}
       </div>

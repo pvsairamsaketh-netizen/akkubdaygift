@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { NavTab } from '../components/Navbar';
-import { useMemoryPhotos } from '../context/MemoryPhotoContext';
+import { RomanticPhotoReveal } from '../components/RomanticPhotoReveal';
 
 interface BirthdayPageProps {
   onNavigate: (tab: NavTab) => void;
@@ -26,7 +26,6 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
   isUnlocked = false,
   onRequestUnlock
 }) => {
-  const { triggerMemoryPhoto } = useMemoryPhotos();
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
 
@@ -34,7 +33,6 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
   const creator = birthdayConfig?.creator_name || 'Saki';
   const greeting = birthdayConfig?.greeting_title || `Happy Birthday, ${recipient}! ❤️`;
   const letter = birthdayConfig?.love_letter || `Happy Birthday to the most special person in my life. Every little moment, message, and memory we have shared means the world to me. I made this little world just for you.`;
-  const surprise = birthdayConfig?.surprise_message || `You are my favorite journey, my dearest Akku. Every day with you is a gift. Happy Birthday!`;
   const bdayDate = birthdayConfig?.birthday_date || 'October 20';
 
   const triggerCelebration = () => {
@@ -45,13 +43,12 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
     }
 
     setIsRevealed(true);
-    triggerMemoryPhoto('surprise');
-    // Burst of hearts and golden sparkles
+    // Burst of celebratory rose petals and golden sparkles
     confetti({
       particleCount: 80,
       spread: 100,
       origin: { y: 0.5 },
-      colors: ['#f43f5e', '#fda4af', '#f472b6', '#fde047', '#e11d48']
+      colors: ['#e11d48', '#f43f5e', '#fda4af', '#f472b6', '#fde047', '#ffffff']
     });
 
     setTimeout(() => {
@@ -98,7 +95,6 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
       <div 
         className="w-full max-w-lg perspective-1000 mb-8 sm:mb-10 cursor-pointer group" 
         onClick={() => {
-          triggerMemoryPhoto('surprise');
           setIsFlipped(!isFlipped);
         }}
       >
@@ -149,68 +145,64 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
               </div>
             </div>
 
-            <div className="pt-4 border-t border-rose-100/80 flex items-center justify-between text-xs text-stone-500">
+            <div className="pt-4 border-t border-rose-100/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
               <span className="font-semibold text-rose-900 font-serif">Forever & Always, {creator}</span>
-              <span className="text-[11px] text-stone-400">Tap to flip back</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerCelebration();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-md shadow-rose-300/40 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                  <span>Reveal Photo Surprise ✨</span>
+                </button>
+                <span className="text-[11px] text-stone-400">Tap to flip back</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Surprise Reveal Section */}
-      <div className="w-full max-w-lg bg-white/85 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-rose-200/80 shadow-md text-center space-y-4 mb-8">
+      {/* Surprise Reveal Section: Centered Romantic Photo Reveal */}
+      <div id="birthday-surprise-section" className="w-full flex justify-center mb-8">
         {!isRevealed ? (
-          <div className="space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 mx-auto shadow-inner border border-rose-100">
-              <Sparkles className="w-7 h-7 animate-pulse" />
-            </div>
-            <h3 className="font-serif text-2xl font-bold text-stone-900">A Secret Surprise Just for You</h3>
-            <p className="text-xs sm:text-sm text-stone-600 max-w-sm mx-auto font-light leading-relaxed">
-              I have prepared a special secret birthday message inside. Click below when you are ready.
-            </p>
-            <div className="pt-2">
-              <button
-                onClick={triggerCelebration}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:via-pink-600 hover:to-rose-700 text-white font-medium shadow-lg shadow-rose-200 hover:shadow-xl hover:scale-105 active:scale-95 transition-all text-sm flex items-center justify-center gap-2.5 mx-auto cursor-pointer"
-              >
-                {!isUnlocked ? (
-                  <>
-                    <Lock className="w-4 h-4 text-rose-200" />
-                    <span>Unlock Birthday Surprise ✨</span>
-                  </>
-                ) : (
-                  <>
-                    <Gift className="w-4 h-4" />
-                    <span>Reveal Birthday Surprise ✨</span>
-                  </>
-                )}
-              </button>
+          <div className="w-full max-w-lg bg-white/85 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-rose-200/80 shadow-md text-center space-y-4">
+            <div className="space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 mx-auto shadow-inner border border-rose-100">
+                <Sparkles className="w-7 h-7 animate-pulse" />
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-stone-900">A Secret Surprise Just for You</h3>
+              <p className="text-xs sm:text-sm text-stone-600 max-w-sm mx-auto font-light leading-relaxed">
+                I have prepared our special romantic photo memories and love story inside. Click below when you are ready.
+              </p>
+              <div className="pt-2">
+                <button
+                  onClick={triggerCelebration}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:via-pink-600 hover:to-rose-700 text-white font-medium shadow-lg shadow-rose-200 hover:shadow-xl hover:scale-105 active:scale-95 transition-all text-sm flex items-center justify-center gap-2.5 mx-auto cursor-pointer"
+                >
+                  {!isUnlocked ? (
+                    <>
+                      <Lock className="w-4 h-4 text-rose-200" />
+                      <span>Unlock Birthday Surprise ✨</span>
+                    </>
+                  ) : (
+                    <>
+                      <Gift className="w-4 h-4" />
+                      <span>Reveal Birthday Surprise ✨</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="animate-scale-up space-y-4 py-2">
-            <div className="inline-flex p-3.5 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-300/50">
-              <Heart className="w-8 h-8 fill-white text-white animate-bounce" />
-            </div>
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-rose-100 text-rose-700 text-xs font-semibold">
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>Special Memory</span>
-              </div>
-              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-rose-950">You Unlocked the Surprise! ❤️</h3>
-              <p className="text-stone-800 text-base sm:text-lg leading-relaxed max-w-md mx-auto italic font-serif bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
-                "{surprise}"
-              </p>
-            </div>
-            <div className="pt-1">
-              <button
-                onClick={triggerCelebration}
-                className="text-xs text-rose-600 hover:text-rose-800 font-medium underline transition-colors cursor-pointer"
-              >
-                Trigger Sparkles Again ✨
-              </button>
-            </div>
-          </div>
+          <RomanticPhotoReveal
+            onClose={() => setIsRevealed(false)}
+            recipientName={recipient}
+            creatorName={creator}
+          />
         )}
       </div>
 
