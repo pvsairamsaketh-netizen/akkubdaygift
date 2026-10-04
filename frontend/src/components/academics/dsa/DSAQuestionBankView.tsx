@@ -7,10 +7,6 @@ import {
   BookmarkCheck, 
   ChevronDown, 
   ChevronUp, 
-  Copy, 
-  Check, 
-  ExternalLink, 
-  Play, 
   Filter, 
   Clock, 
   Building2, 
@@ -19,12 +15,12 @@ import {
   ChevronLeft, 
   ChevronRight,
   BrainCircuit,
-  MessageSquareCode,
   Award,
-  Terminal
+  Code2,
+  ExternalLink
 } from 'lucide-react';
-import { DSA_QUESTION_BANK, type DSAQuestion } from '../../../data/academics/dsaQuestionBank';
-import { api } from '../../../services/api';
+import { DSA_QUESTION_BANK } from '../../../data/academics/dsaQuestionBank';
+import { DSACodingIDE } from './DSACodingIDE';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -37,11 +33,10 @@ export const DSAQuestionBankView: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'unsolved' | 'solved' | 'bookmarked' | 'mistakes'>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [selectedLang, setSelectedLang] = useState<'python' | 'cpp' | 'java'>('python');
   const [revealedHintSteps, setRevealedHintSteps] = useState<Record<string, number>>({});
   const [stuckModeId, setStuckModeId] = useState<string | null>(null);
   const [stuckStep, setStuckStep] = useState<number>(1);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Note: setCopiedId removed (now handled inside DSACodingIDE)
 
   // Solved, Bookmarked, and Mistakes persisted locally
   const [solvedIds, setSolvedIds] = useState<string[]>(() => {
@@ -68,11 +63,6 @@ export const DSAQuestionBankView: React.FC = () => {
     return [];
   });
 
-  // Code runner state for expanded question
-  const [userCode, setUserCode] = useState<string>('');
-  const [isRunningCode, setIsRunningCode] = useState<boolean>(false);
-  const [runResult, setRunResult] = useState<any>(null);
-
   const handleToggleSolved = (id: string) => {
     setSolvedIds(prev => {
       const updated = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
@@ -89,34 +79,13 @@ export const DSAQuestionBankView: React.FC = () => {
     });
   };
 
-  const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const handleRunUserCode = async (q: DSAQuestion) => {
-    setIsRunningCode(true);
-    setRunResult(null);
-    try {
-      const res = await api.academics.runCode(
-        userCode || q.pythonSolution,
-        "",
-        undefined,
-        5.0
-      );
-      setRunResult(res);
-      if (res.exit_code !== 0 && !mistakeIds.includes(q.id)) {
-        // Track as mistake for "My Mistakes" notebook
-        const updated = [...mistakeIds, q.id];
-        setMistakeIds(updated);
-        try { localStorage.setItem('akku_dsa_mistakes', JSON.stringify(updated)); } catch {}
-      }
-    } catch (err: any) {
-      setRunResult({ error: err.message || 'Execution failed' });
-    } finally {
-      setIsRunningCode(false);
-    }
+  const handleAddMistake = (id: string) => {
+    setMistakeIds(prev => {
+      if (prev.includes(id)) return prev;
+      const updated = [...prev, id];
+      try { localStorage.setItem('akku_dsa_mistakes', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
   };
 
   // Extract unique filter dropdown values
@@ -525,17 +494,15 @@ export const DSAQuestionBankView: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => {
-                        if (isExpanded) {
-                          setExpandedId(null);
-                        } else {
-                          setExpandedId(q.id);
-                          setUserCode(q.pythonSolution);
-                        }
-                      }}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 text-xs font-semibold transition-colors cursor-pointer"
+                      onClick={() => setExpandedId(isExpanded ? null : q.id)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                        isExpanded
+                          ? 'bg-stone-700/40 text-stone-300 hover:bg-stone-700/60'
+                          : 'bg-sky-600/20 hover:bg-sky-600/30 text-sky-300'
+                      }`}
                     >
-                      <span>{isExpanded ? 'Hide Code' : 'Solve & Solution'}</span>
+                      <Code2 className="w-3.5 h-3.5" />
+                      <span>{isExpanded ? 'Close IDE' : 'Open IDE'}</span>
                       {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
                   </div>
@@ -668,141 +635,15 @@ export const DSAQuestionBankView: React.FC = () => {
                   </div>
                 )}
 
-                {/* Expanded Drawer: Multi-Language Code & Execution Lab */}
+                {/* Expanded Drawer: Full DSA Coding IDE */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 pt-3 border-t border-stone-800 bg-[#121722]/60 flex flex-col gap-3 text-xs">
-                    {/* Approaches breakdown */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      <div className="p-2.5 rounded-xl bg-[#141a24] border border-stone-800">
-                        <span className="text-[10px] font-bold text-stone-400 uppercase block mb-1">Brute Force</span>
-                        <p className="text-stone-300 text-[11px] leading-snug">{q.bruteForce}</p>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-[#141a24] border border-stone-800">
-                        <span className="text-[10px] font-bold text-sky-400 uppercase block mb-1">Better Approach</span>
-                        <p className="text-stone-300 text-[11px] leading-snug">{q.betterApproach}</p>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-[#141a24] border border-emerald-900/50">
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase block mb-1">Optimal Solution</span>
-                        <p className="text-stone-300 text-[11px] leading-snug">{q.optimalApproach}</p>
-                      </div>
-                    </div>
-
-                    {/* Language Switcher Bar */}
-                    <div className="flex items-center justify-between border-b border-stone-800 pb-2">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => setSelectedLang('python')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
-                            selectedLang === 'python'
-                              ? 'bg-emerald-600 text-white shadow-sm'
-                              : 'bg-[#161c28] text-stone-400 hover:text-stone-200'
-                          }`}
-                        >
-                          Python 3
-                        </button>
-                        <button
-                          onClick={() => setSelectedLang('cpp')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
-                            selectedLang === 'cpp'
-                              ? 'bg-sky-600 text-white shadow-sm'
-                              : 'bg-[#161c28] text-stone-400 hover:text-stone-200'
-                          }`}
-                        >
-                          C++ (STL)
-                        </button>
-                        <button
-                          onClick={() => setSelectedLang('java')}
-                          className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
-                            selectedLang === 'java'
-                              ? 'bg-purple-600 text-white shadow-sm'
-                              : 'bg-[#161c28] text-stone-400 hover:text-stone-200'
-                          }`}
-                        >
-                          Java
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const codeToCopy = selectedLang === 'python' 
-                              ? q.pythonSolution 
-                              : selectedLang === 'cpp' 
-                              ? q.cppSolution 
-                              : q.javaSolution;
-                            handleCopy(q.id, codeToCopy);
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#161c28] text-stone-300 hover:text-white border border-stone-800 text-xs transition-colors cursor-pointer"
-                        >
-                          {copiedId === q.id ? (
-                            <>
-                              <Check className="w-3 h-3 text-emerald-400" />
-                              <span className="text-emerald-400 font-semibold">Copied</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3" />
-                              <span>Copy Solution</span>
-                            </>
-                          )}
-                        </button>
-
-                        {selectedLang === 'python' && (
-                          <button
-                            onClick={() => handleRunUserCode(q)}
-                            disabled={isRunningCode}
-                            className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer"
-                          >
-                            <Play className="w-3 h-3 fill-current" />
-                            <span>{isRunningCode ? 'Executing...' : 'Run Python'}</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Code Display / Editor */}
-                    <div className="rounded-xl border border-stone-800 overflow-hidden bg-[#07090e]">
-                      <pre className="p-3.5 font-mono text-xs text-emerald-300 overflow-x-auto whitespace-pre leading-relaxed select-all">
-                        {selectedLang === 'python' 
-                          ? q.pythonSolution 
-                          : selectedLang === 'cpp' 
-                          ? q.cppSolution 
-                          : q.javaSolution}
-                      </pre>
-                    </div>
-
-                    {/* Run output panel */}
-                    {runResult && (
-                      <div className="p-3 rounded-xl bg-[#090d14] border border-stone-800 font-mono text-xs flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between text-stone-400 border-b border-stone-800/80 pb-1 text-[11px]">
-                          <span className="flex items-center gap-1">
-                            <Terminal className="w-3 h-3 text-emerald-400" /> Execution Console
-                          </span>
-                          <span className="text-emerald-400 font-bold">{runResult.execution_time_ms} ms</span>
-                        </div>
-                        {runResult.stdout && (
-                          <div className="text-stone-200 whitespace-pre">{runResult.stdout}</div>
-                        )}
-                        {runResult.error && (
-                          <div className="text-rose-400 whitespace-pre">{runResult.error}</div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Follow-up interview questions */}
-                    {q.interviewQuestions && q.interviewQuestions.length > 0 && (
-                      <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-800/30 text-xs">
-                        <span className="font-semibold text-purple-300 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
-                          <MessageSquareCode className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Senior Interviewer Follow-Up Questions:</span>
-                        </span>
-                        <ul className="space-y-1 text-stone-300 list-disc list-inside">
-                          {q.interviewQuestions.map((iq, i) => (
-                            <li key={i}>{iq}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                  <div className="p-3 border-t border-stone-800 bg-[#080c12]">
+                    <DSACodingIDE
+                      question={q}
+                      isSolved={isSolved}
+                      onMarkSolved={handleToggleSolved}
+                      onAddMistake={handleAddMistake}
+                    />
                   </div>
                 )}
               </div>
