@@ -16,7 +16,10 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
-  AlertTriangle
+  AlertTriangle,
+  Play,
+  Video,
+  X
 } from 'lucide-react';
 import { 
   DSA_SOURCES, 
@@ -25,6 +28,8 @@ import {
   DSA_INTERVIEW_MASTER_QUESTIONS, 
   DSA_MASTER_CHEAT_SHEETS, 
   PATTERN_QUIZ_QUESTIONS,
+  DSA_VIDEO_MASTERCLASSES,
+  type DSAVideoMasterclass,
   type DSAPatternDetail,
   type DSACheatSheetDetail
 } from '../../../data/academics/dsaResourcesData';
@@ -34,13 +39,15 @@ interface DSAResourcesKnowledgeHubProps {
   onSelectDay?: (dayNumber: number) => void;
 }
 
-type HubTab = 'sources' | 'complexity' | 'patterns' | 'interview' | 'cheatsheets' | 'rapid_prep';
+type HubTab = 'sources' | 'videos' | 'complexity' | 'patterns' | 'interview' | 'cheatsheets' | 'rapid_prep';
 
 export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> = ({ onSelectDay }) => {
   const { isDark } = useAcademicsTheme();
   const [activeTab, setActiveTab] = useState<HubTab>('sources');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedComplexityCase, setSelectedComplexityCase] = useState<'avg' | 'worst'>('avg');
+  const [selectedSourceCategory, setSelectedSourceCategory] = useState<string>('All');
+  const [embeddedVideo, setEmbeddedVideo] = useState<DSAVideoMasterclass | null>(null);
 
   // Pattern Quiz State
   const [quizIdx, setQuizIdx] = useState(0);
@@ -86,14 +93,14 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
               <Sparkles className="w-3 h-3" /> Master Knowledge Hub
             </span>
             <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-              10 Verified Master Sources
+              14 Verified Master Sources & Video Masterclasses
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
             🧠 DSA Placement Knowledge Hub & Master Resources
           </h2>
           <p className="text-xs sm:text-sm opacity-80 max-w-3xl">
-            Unified single study center consolidating <strong>Code & Debug</strong>, <strong>Zero To Mastery</strong>, <strong>Striver A2Z</strong>, <strong>Love Babbar 450</strong>, <strong>NeetCode</strong>, <strong>GFG</strong>, and <strong>Apna College</strong> with verified links, Big-O tables, interview pitch guides, and pattern diagnostics.
+            Unified single study center consolidating <strong>Code & Debug</strong>, <strong>CampusX</strong>, <strong>Striver A2Z</strong>, <strong>Love Babbar 450</strong>, <strong>NeetCode</strong>, <strong>Zero To Mastery</strong>, and <strong>Curated Video Playlists</strong> with verified links, Big-O tables, interview pitch guides, and pattern diagnostics.
           </p>
         </div>
 
@@ -102,7 +109,7 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 opacity-50" />
           <input
             type="text"
-            placeholder="Search topic, pattern, complexity..."
+            placeholder="Search topic, video, pattern..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={`w-full pl-9 pr-3 py-2 text-xs rounded-xl border outline-none transition-all ${
@@ -126,7 +133,20 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
         >
           <BookOpen className="w-3.5 h-3.5" />
           <span>Master Sources & Sheets</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">10</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">14</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('videos')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
+            activeTab === 'videos'
+              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20'
+              : isDark ? 'hover:bg-stone-800 text-stone-300' : 'hover:bg-slate-100 text-slate-700'
+          }`}
+        >
+          <Play className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
+          <span>Video Masterclasses & Playlists</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">5</span>
         </button>
 
         <button
@@ -194,19 +214,39 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
       {/* TAB 1: MASTER SOURCES & SHEETS                                            */}
       {/* ========================================================================= */}
       {activeTab === 'sources' && (
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-base flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Verified External Source Mappings & Direct Sheets
-            </h3>
-            <span className="text-xs opacity-75">
-              100% genuine attribution • No broken links
-            </span>
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                Verified External Source Mappings & Direct Sheets
+              </h3>
+              <p className="text-xs opacity-75 mt-0.5">
+                100% genuine attribution • Direct access to all sheets, roadmaps, and videos
+              </p>
+            </div>
+
+            {/* Category Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              {['All', 'Video', 'Roadmap', 'Cheat Sheet', 'Master Index', 'GitHub', 'Spreadsheet'].map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedSourceCategory(cat)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    selectedSourceCategory === cat
+                      ? 'bg-purple-600 text-white font-bold'
+                      : isDark ? 'bg-stone-900 border border-stone-800 text-stone-300 hover:border-stone-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {cat} {cat === 'All' ? `(${DSA_SOURCES.length})` : `(${DSA_SOURCES.filter(s => s.category === cat).length})`}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {DSA_SOURCES
+              .filter(s => selectedSourceCategory === 'All' || s.category === selectedSourceCategory)
               .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.description.toLowerCase().includes(searchQuery.toLowerCase()))
               .map(source => (
                 <div 
@@ -290,6 +330,115 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB: VIDEO MASTERCLASSES & PLAYLISTS                                      */}
+      {/* ========================================================================= */}
+      {activeTab === 'videos' && (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-base flex items-center gap-2">
+                <Play className="w-4 h-4 text-rose-400 fill-rose-400" />
+                Featured DSA Video Masterclasses & Placement Playlists
+              </h3>
+              <p className="text-xs opacity-75 mt-0.5">
+                Top curated video playlists and comprehensive courses from CampusX, FreeCodeCamp, TUF (Striver), and placement mentors.
+              </p>
+            </div>
+            <span className="text-xs font-mono font-bold text-rose-400 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20">
+              5 Masterclass Courses
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {DSA_VIDEO_MASTERCLASSES
+              .filter(v => v.title.toLowerCase().includes(searchQuery.toLowerCase()) || v.channel.toLowerCase().includes(searchQuery.toLowerCase()) || v.description.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map(video => (
+                <div
+                  key={video.id}
+                  className={`rounded-2xl border flex flex-col justify-between overflow-hidden shadow-md transition-all hover:scale-[1.01] ${
+                    isDark ? 'bg-stone-900/80 border-stone-800 hover:border-rose-600/40' : 'bg-white border-slate-200 hover:border-rose-300'
+                  }`}
+                >
+                  {/* Thumbnail / Header with Play Overlay */}
+                  <div className="relative aspect-video w-full overflow-hidden bg-black/80 group">
+                    <img 
+                      src={video.thumbnailUrl || 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=500&q=80'} 
+                      alt={video.title}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-95 transition-opacity"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    
+                    {/* Duration badge */}
+                    {video.duration && (
+                      <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-black/80 text-white border border-white/10">
+                        {video.duration}
+                      </span>
+                    )}
+
+                    {/* Level badge */}
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600/90 text-white">
+                      {video.level}
+                    </span>
+
+                    {/* Play button overlay */}
+                    <button
+                      onClick={() => setEmbeddedVideo(video)}
+                      className="absolute inset-0 m-auto w-12 h-12 rounded-full bg-rose-600/90 hover:bg-rose-500 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 cursor-pointer"
+                      title="Watch Preview"
+                    >
+                      <Play className="w-5 h-5 fill-white ml-0.5" />
+                    </button>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-4 flex flex-col gap-2.5 flex-1 justify-between">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-[11px] font-bold text-rose-400 flex items-center gap-1.5">
+                        <Video className="w-3.5 h-3.5" />
+                        <span>{video.channel}</span>
+                      </div>
+                      <h4 className="font-bold text-sm leading-snug line-clamp-2">{video.title}</h4>
+                      <p className="text-xs opacity-75 line-clamp-3 leading-relaxed">{video.description}</p>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-2">
+                      <div className="flex flex-wrap gap-1">
+                        {video.topics.map((t, i) => (
+                          <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${
+                            isDark ? 'bg-stone-800 text-stone-300' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2 border-t border-stone-800/40">
+                        <button
+                          onClick={() => setEmbeddedVideo(video)}
+                          className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                          <span>Watch Here</span>
+                        </button>
+                        <a
+                          href={video.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg text-xs font-semibold bg-stone-800 hover:bg-stone-700 text-stone-200 transition-all flex items-center justify-center cursor-pointer"
+                          title="Open on YouTube"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
         </div>
       )}
 
@@ -1017,6 +1166,82 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Embedded Video Player Modal */}
+      {embeddedVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className={`relative w-full max-w-4xl rounded-2xl border shadow-2xl overflow-hidden flex flex-col ${
+            isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+          }`}>
+            {/* Modal Header */}
+            <div className="p-4 flex items-center justify-between border-b border-stone-800/40">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-rose-600/20 text-rose-400">
+                  <Play className="w-4 h-4 fill-current" />
+                </span>
+                <div>
+                  <h4 className="font-bold text-sm line-clamp-1">{embeddedVideo.title}</h4>
+                  <p className="text-[11px] opacity-75">{embeddedVideo.channel} • {embeddedVideo.duration}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEmbeddedVideo(null)}
+                className="p-1.5 rounded-lg hover:bg-stone-800/60 text-stone-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Video Iframe Container (16:9) */}
+            <div className="relative aspect-video w-full bg-black">
+              {embeddedVideo.videoId ? (
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${embeddedVideo.videoId}?autoplay=1`}
+                  title={embeddedVideo.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : embeddedVideo.playlistId ? (
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/videoseries?list=${embeddedVideo.playlistId}`}
+                  title={embeddedVideo.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center text-stone-300">
+                  <p className="text-sm">This video playlist opens directly on YouTube.</p>
+                  <a
+                    href={embeddedVideo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-2"
+                  >
+                    <span>Open YouTube Playlist</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 px-4 flex items-center justify-between text-xs border-t border-stone-800/40">
+              <span className="opacity-75 line-clamp-1">{embeddedVideo.description}</span>
+              <a
+                href={embeddedVideo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-stone-800 hover:bg-stone-700 text-stone-200 flex items-center gap-1.5 shrink-0 ml-3"
+              >
+                <span>Open in YouTube</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
         </div>
       )}
     </div>

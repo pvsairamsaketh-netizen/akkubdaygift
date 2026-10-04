@@ -98,6 +98,83 @@ export interface DSACheatSheetDetail {
   relatedTopics: string[];
 }
 
+export interface DSAVideoMasterclass {
+  id: string;
+  title: string;
+  channel: string;
+  url: string;
+  videoId?: string;
+  playlistId?: string;
+  description: string;
+  duration?: string;
+  topics: string[];
+  thumbnailUrl?: string;
+  level: 'Beginner' | 'All Levels' | 'Intermediate';
+}
+
+export const DSA_VIDEO_MASTERCLASSES: DSAVideoMasterclass[] = [
+  {
+    id: 'campusx-python-dsa',
+    title: 'Data Structures and Algorithms in Python — Full Course',
+    channel: 'CampusX (Nitish Singh)',
+    url: 'https://www.youtube.com/watch?v=f9Aje_cN_CY',
+    videoId: 'f9Aje_cN_CY',
+    description: 'The celebrated 10+ hour comprehensive masterclass teaching DSA in Python from absolute fundamentals, memory management, OOP pointers, to advanced algorithms.',
+    duration: '10h 30m',
+    topics: ['Python DSA', 'OOP in Python', 'Linked Lists', 'Stacks & Queues', 'Searching & Sorting', 'Trees'],
+    thumbnailUrl: 'https://img.youtube.com/vi/f9Aje_cN_CY/hqdefault.jpg',
+    level: 'Beginner'
+  },
+  {
+    id: 'python-dsa-playlist-vkdzt',
+    title: 'Python Data Structures & Algorithms Complete Playlist',
+    channel: 'Python DSA Master Series',
+    url: 'https://www.youtube.com/playlist?list=PLVkDztYhxUGH9AubH9hLy_JYam8EZ9VKs',
+    playlistId: 'PLVkDztYhxUGH9AubH9hLy_JYam8EZ9VKs',
+    description: 'Structured multi-part Python video playlist covering essential placement concepts with clean code walk-throughs and complexity breakdowns.',
+    duration: 'Full Playlist',
+    topics: ['Arrays', 'Strings', 'Linked Lists', 'Stacks', 'Recursion', 'Binary Trees'],
+    thumbnailUrl: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=500&q=80',
+    level: 'Beginner'
+  },
+  {
+    id: 'dsa-placement-playlist-hp5rs',
+    title: 'Complete DSA & Placement Problem Solving Playlist',
+    channel: 'Placement DSA Series',
+    url: 'https://www.youtube.com/playlist?list=PLhP5RsB7fhE3eB5L3KXR7CH7tyP1NP7yL',
+    playlistId: 'PLhP5RsB7fhE3eB5L3KXR7CH7tyP1NP7yL',
+    description: 'Curated problem-solving video playlist detailing high-frequency interview questions, pattern recognition, and step-by-step whiteboard explanations.',
+    duration: 'Full Playlist',
+    topics: ['Two Pointers', 'Sliding Window', 'Dynamic Programming', 'Graph Algorithms'],
+    thumbnailUrl: 'https://images.unsplash.com/photo-1516116211227-bbc6114ebce6?w=500&q=80',
+    level: 'Intermediate'
+  },
+  {
+    id: 'freecodecamp-python-dsa',
+    title: 'Data Structures and Algorithms in Python — Full Course for Beginners',
+    channel: 'freeCodeCamp / Jovian',
+    url: 'https://www.youtube.com/watch?v=-PPCDEOOYF0',
+    videoId: '-PPCDEOOYF0',
+    description: 'In-depth 12+ hour practical walkthrough covering Binary Search, Balanced BSTs, Hash Tables, Dynamic Programming, Subarray optimizations, and Graph traversals.',
+    duration: '12h 45m',
+    topics: ['Binary Search', 'BST & Traversals', 'Hash Tables', 'Divide & Conquer', 'Dynamic Programming', 'Graphs'],
+    thumbnailUrl: 'https://img.youtube.com/vi/-PPCDEOOYF0/hqdefault.jpg',
+    level: 'All Levels'
+  },
+  {
+    id: 'youtube-striver-tuf',
+    title: 'Take U Forward / Striver Complete SDE DSA Playlist',
+    channel: 'take U forward (Striver)',
+    url: 'https://www.youtube.com/playlist?list=PLgUwDviBIf0oF6QL8m22w1hIDC1vJ_BHz',
+    playlistId: 'PLgUwDviBIf0oF6QL8m22w1hIDC1vJ_BHz',
+    description: 'Detailed, whiteboard-driven video explanations for algorithmic problem solving, recursion trees, and optimal data structure design for FAANG placement.',
+    duration: 'Complete Playlist',
+    topics: ['Recursion Trees', 'Dynamic Programming', 'Graphs', 'Trees', 'Arrays & Strings'],
+    thumbnailUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&q=80',
+    level: 'All Levels'
+  }
+];
+
 export const DSA_SOURCES: DSASourceItem[] = [
   {
     id: 'code-and-debug',
@@ -177,6 +254,61 @@ export const DSA_SOURCES: DSASourceItem[] = [
     verified: true
   },
   {
+    id: 'campusx-python',
+    name: 'CampusX Python DSA Masterclass',
+    category: 'Video',
+    url: 'https://www.youtube.com/watch?v=f9Aje_cN_CY',
+    description: 'The celebrated 10+ hour comprehensive masterclass by Nitish Singh teaching DSA in Python from scratch, memory models, OOP, to full implementation.',
+    highlights: ['10+ Hour deep-dive course', 'Python memory & pointer models', 'Step-by-step DS implementation', 'Placement-focused assignments'],
+    coveragePercent: 100,
+    mappedDays: 'Days 101–115 Python Video Core',
+    verified: true
+  },
+  {
+    id: 'python-dsa-playlist',
+    name: 'Python DSA Masterclass Playlist',
+    category: 'Video',
+    url: 'https://www.youtube.com/playlist?list=PLVkDztYhxUGH9AubH9hLy_JYam8EZ9VKs',
+    description: 'Complete Python Data Structures & Algorithms video series with dedicated modules on Arrays, Linked Lists, Stacks, Queues, Trees, and Sorting.',
+    highlights: ['Full curated playlist', 'Topic-by-topic video drills', 'Python code implementation', 'Beginner-friendly pace'],
+    coveragePercent: 100,
+    mappedDays: 'Days 102–112 Video Lessons',
+    verified: true
+  },
+  {
+    id: 'placement-dsa-mastery',
+    name: 'DSA Placement Problem Solving Series',
+    category: 'Video',
+    url: 'https://www.youtube.com/playlist?list=PLhP5RsB7fhE3eB5L3KXR7CH7tyP1NP7yL',
+    description: 'Complete video playlist dedicated to solving standard placement coding problems across Two Pointers, Sliding Window, Trees, and Dynamic Programming.',
+    highlights: ['Campus interview questions', 'Detailed whiteboard dry-runs', 'Pattern-based problem solving', 'Optimal solution walkthroughs'],
+    coveragePercent: 100,
+    mappedDays: 'Days 121–130 Video Walkthroughs',
+    verified: true
+  },
+  {
+    id: 'freecodecamp-dsa-full',
+    name: 'Python DSA Full Course for Beginners',
+    category: 'Video',
+    url: 'https://www.youtube.com/watch?v=-PPCDEOOYF0',
+    description: '12-hour practical video masterclass covering Binary Search, Balanced BSTs, Hash Tables, Dynamic Programming, and Graph Traversals with clean Python code.',
+    highlights: ['12+ Hour comprehensive course', 'Interactive Jupyter notebooks', 'Binary Search & BST mastery', 'Dynamic Programming classics'],
+    coveragePercent: 100,
+    mappedDays: 'Days 104, 110–111, 117–118',
+    verified: true
+  },
+  {
+    id: 'youtube-striver-tuf',
+    name: 'TUF / Striver Complete DSA Playlist',
+    category: 'Video',
+    url: 'https://www.youtube.com/playlist?list=PLgUwDviBIf0oF6QL8m22w1hIDC1vJ_BHz',
+    description: 'Detailed, whiteboard-driven video explanations for algorithmic problem solving, recursion trees, and optimal data structure design.',
+    highlights: ['Complete whiteboard walkthroughs', 'Dry-runs of complex algorithms', 'Optimal vs brute-force visual diffs'],
+    coveragePercent: 100,
+    mappedDays: 'All Days 101–130 Video Lessons',
+    verified: true
+  },
+  {
     id: 'apna-college-1',
     name: 'Apna College DSA Sheet #1',
     category: 'Spreadsheet',
@@ -196,17 +328,6 @@ export const DSA_SOURCES: DSASourceItem[] = [
     highlights: ['Advanced DSA problem sets', 'Tree & Graph interview classics', 'DP state transition practice'],
     coveragePercent: 100,
     mappedDays: 'Days 110–120',
-    verified: true
-  },
-  {
-    id: 'youtube-striver-tuf',
-    name: 'TUF / Striver Complete DSA Playlist',
-    category: 'Video',
-    url: 'https://www.youtube.com/playlist?list=PLgUwDviBIf0oF6QL8m22w1hIDC1vJ_BHz',
-    description: 'Detailed, whiteboard-driven video explanations for algorithmic problem solving, recursion trees, and optimal data structure design.',
-    highlights: ['Complete whiteboard walkthroughs', 'Dry-runs of complex algorithms', 'Optimal vs brute-force visual diffs'],
-    coveragePercent: 100,
-    mappedDays: 'All Days 101–130 Video Lessons',
     verified: true
   }
 ];
