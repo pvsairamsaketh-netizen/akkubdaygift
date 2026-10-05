@@ -82,6 +82,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             <SourceCitation citations={citations} />
           )}
 
+          {/* Personal Memory Provenance Indicator */}
+          {!isUser && message.metadata?.personal_memories && message.metadata.personal_memories.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-rose-50/80">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50/90 text-rose-700 font-medium text-[10.5px] border border-rose-100">
+                <Heart className="w-2.5 h-2.5 fill-rose-500 text-rose-500" />
+                <span>Based on saved memory ❤️</span>
+              </span>
+            </div>
+          )}
+
           {/* Footer Actions / Telemetry Bar (ChatGPT/Gemini style) */}
           {!isUser && (
             <div className="flex items-center justify-between mt-3 pt-2 border-t border-rose-100/70 text-[11px] text-stone-400">

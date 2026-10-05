@@ -29,6 +29,7 @@ from chat.services.prompt_service import PromptService
 from chat.services.llm_service import LLMService
 from chat.services.citation_service import CitationService
 from chat.services.conversation_service import ConversationService
+from chat.services.tavily_service import TavilyService
 from memories.models import PersonalMemory
 from documents.models import DocumentChunk
 from memories.services.memory_extractor import MemoryExtractor
@@ -47,6 +48,8 @@ class ChatState(TypedDict, total=False):
     # Language & Classification
     detected_language: str  # "en" | "hi" | "hinglish" | "te" | "ta" | "tanglish"
     question_type: str      # "simple" | "complex"
+    query_intent: str       # "personal_memory" | "relationship_conversation" | "general_knowledge" | "external_search" | "mixed"
+    evidence_sufficient: bool
     model_name: str
     max_tokens: int
     num_ctx: int
@@ -56,6 +59,7 @@ class ChatState(TypedDict, total=False):
     vector_results: Dict[str, Any]
     keyword_results: Dict[str, Any]
     metadata_results: Dict[str, Any]
+    web_results: Optional[str]
     
     # Merged Context
     retrieved_memories: List[Dict[str, Any]]
@@ -156,20 +160,65 @@ class RAGGraphService:
             "timings": timings
         }
 
+    @staticmethod
+    def _extract_fact_topic(question: str) -> Optional[str]:
+        """Extracts the subject or property being asked about, e.g. 'favorite movie', 'ice cream', etc."""
+        q = question.lower().strip()
+        patterns = [
+            r'favou?rite\s+([a-zA-Z\s]+)',
+            r'what\s+(?:is|are)\s+(?:akku\'?s|her)\s+([a-zA-Z\s]+)',
+            r'what\s+does\s+(?:akku|she)\s+(?:like|love|dislike|prefer|eat|drink)\s*(?:about|for|to)?\s*([a-zA-Z\s]*)',
+            r'what\s+(?:did|does)\s+(?:akku|she)\s+say\s+about\s+([a-zA-Z\s]+)',
+            r'tell\s+me\s+about\s+(?:akku\'?s|her)\s+([a-zA-Z\s]+)',
+        ]
+        for p in patterns:
+            m = re.search(p, q)
+            if m:
+                extracted = m.group(1).strip()
+                cleaned = re.sub(r'[\?\.\!]+', '', extracted).strip()
+                if cleaned and len(cleaned) > 2 and not any(cleaned.startswith(w) for w in ["you", "we", "the"]):
+                    return cleaned
+        return None
+
     def classify_question_node(self, state: ChatState) -> Dict[str, Any]:
         """
-        Node 2: Lightweight Python classification node (< 1ms).
-        Routes simple factual queries to fast model, complex narratives to standard model.
+        Node 2: Intelligent Query Classification & Routing.
+        Routes to personal memory, relationship chat, general knowledge, or external web search.
         """
         t0 = time.perf_counter()
         q = state["question"].lower().strip()
         
-        simple_triggers = [
-            "ice cream", "birthday", "bday", "favorite", "favourite", "color", "colour",
-            "nickname", "age", "food", "eat", "drink", "what does she like", "what is her",
-            "likes", "loves", "prefers", "dislikes", "hobby", "chocolate", "story",
-            "how did our story begin", "how did we meet", "first meet", "proposal", "propose"
+        personal_keywords = [
+            "akku", "saki", "our", "we", "us", "relationship", "memory", "memories",
+            "favorite", "favourite", "likes", "loves", "dislikes", "prefers", "told me",
+            "remember", "proposal", "propose", "meet", "meeting", "college", "canteen",
+            "samosa", "bessie", "beach", "chennai", "sunset", "birthday", "bday", "october 20",
+            "m.tech", "data engineering", "placement", "ice cream", "color", "colour",
+            "song", "music", "movie", "film", "car", "place"
         ]
+        
+        external_keywords = [
+            "weather today", "current weather", "temperature today", "news today", "latest news",
+            "stock price", "who won the match", "crypto price", "world news"
+        ]
+        
+        general_keywords = [
+            "what is python", "what is django", "what is react", "explain quantum",
+            "machine learning", "neural network", "what is photosynthesis", "capital of"
+        ]
+        
+        is_personal = any(kw in q for kw in personal_keywords)
+        is_external = any(kw in q for kw in external_keywords)
+        is_general = any(kw in q for kw in general_keywords)
+        
+        if is_personal and (is_general or "suggest" in q or "gift idea" in q):
+            query_intent = "mixed"
+        elif is_external:
+            query_intent = "external_search"
+        elif is_general and not is_personal:
+            query_intent = "general_knowledge"
+        else:
+            query_intent = "personal_memory"
 
         # Explicit long narrative requests
         deep_complex_triggers = [
@@ -194,6 +243,7 @@ class RAGGraphService:
         timings["classification_ms"] = (time.perf_counter() - t0) * 1000
 
         return {
+            "query_intent": query_intent,
             "question_type": q_type,
             "model_name": chosen_model,
             "max_tokens": max_tokens,
@@ -202,20 +252,20 @@ class RAGGraphService:
         }
 
     # Parallel Retrieval Subroutines
-    def _vector_search_sync(self, query_embedding: List[float], user_id: str, q_type: str, question: str) -> Dict[str, Any]:
-        """Branch 1: Vector search in ChromaDB for memories and document chunks."""
+    def _vector_search_sync(self, query_embedding: List[float], user_id: str, q_type: str, question: str, query_intent: str) -> Dict[str, Any]:
+        """Branch 1: Hybrid memory retrieval and document chunk search."""
         t_start = time.perf_counter()
         top_k_mem = 3 if q_type == "simple" else 5
         memories = self.memory_retriever.retrieve_memories(
             query=question,
             top_k=top_k_mem,
-            min_relevance=0.55,  # Filter out unrelated memories like ice cream on relationship/story queries
+            min_relevance=0.45,
             user_id=user_id,
             query_embedding=query_embedding
         )
 
         has_high_conf = any(m.get("score", 0) >= 0.72 for m in memories)
-        is_rel_query = any(w in question.lower() for w in ["story", "propose", "proposal", "meet", "connect", "college", "beach", "chennai", "bessie", "mess", "canteen", "marry", "marriage"])
+        is_rel_query = any(w in question.lower() for w in ["story", "propose", "proposal", "meet", "connect", "college", "beach", "chennai", "bessie", "mess", "canteen", "marry", "marriage", "academic", "placement"])
 
         chunks = []
         if q_type == "complex" or not has_high_conf or is_rel_query or len(memories) == 0:
@@ -305,27 +355,34 @@ class RAGGraphService:
     def parallel_retrieval_node(self, state: ChatState) -> Dict[str, Any]:
         """
         Node 3: Real parallel retrieval using asyncio.gather() across
-        vector search, keyword search, and metadata search.
+        hybrid vector search, keyword search, and metadata search.
+        Includes Tavily search fallback for general/external questions.
         """
         t0 = time.perf_counter()
         question = state["question"]
         user_id = state.get("user_id", "default_user")
         q_type = state.get("question_type", "simple")
+        query_intent = state.get("query_intent", "personal_memory")
 
         # 1. Single embedding pass with LRU cache
         t_embed = time.perf_counter()
         query_embedding = self.retrieval_service.embedding_service.embed_query(question)
         embedding_ms = (time.perf_counter() - t_embed) * 1000
 
-        # 2. Run all 3 retrieval branches concurrently via asyncio.gather()
-        async def _run_branches():
-            return await asyncio.gather(
-                asyncio.to_thread(self._vector_search_sync, query_embedding, user_id, q_type, question),
-                asyncio.to_thread(self._keyword_search_sync, question, user_id),
-                asyncio.to_thread(self._metadata_search_sync, question, user_id)
-            )
+        # 2. Execute retrieval branches
+        # Vector search (hybrid ChromaDB + Lexical), keyword search, and metadata search
+        # Executed directly to guarantee 100% SQLite thread-safety and zero database lock errors
+        vec_res = self._vector_search_sync(query_embedding, user_id, q_type, question, query_intent)
+        kw_res = self._keyword_search_sync(question, user_id)
+        meta_res = self._metadata_search_sync(question, user_id)
 
-        vec_res, kw_res, meta_res = _run_async(_run_branches())
+        web_res = None
+        if query_intent in ("external_search", "general_knowledge") and TavilyService.is_available():
+            try:
+                web_res = TavilyService.search(question)
+            except Exception as e:
+                logger.warning(f"Tavily search non-fatal error: {e}")
+
         parallel_ms = (time.perf_counter() - t0) * 1000
 
         timings = state.get("timings", {})
@@ -340,6 +397,7 @@ class RAGGraphService:
             "vector_results": vec_res,
             "keyword_results": kw_res,
             "metadata_results": meta_res,
+            "web_results": web_res,
             "timings": timings
         }
 
@@ -347,6 +405,7 @@ class RAGGraphService:
         """
         Node 4: Merges and deduplicates candidates from vector, keyword, and metadata branches.
         Prioritizes substantive chunks over cover pages.
+        Performs strict evidence sufficiency check to prevent hallucinations on personal facts.
         """
         t0 = time.perf_counter()
         vec_res = state.get("vector_results", {})
@@ -389,6 +448,44 @@ class RAGGraphService:
         if len(citations) > 2:
             citations = citations[:2]
 
+        # Check evidence sufficiency for personal factual questions
+        topic = self._extract_fact_topic(state["question"])
+        evidence_sufficient = True
+        unknown_message = None
+
+        if topic and state.get("query_intent", "personal_memory") in ("personal_memory", "relationship_conversation"):
+            topic_lower = topic.lower()
+            topic_tokens = set(re.findall(r'\b\w{3,}\b', topic_lower))
+
+            has_mem_match = any(
+                topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', m.get("text", "").lower()))) or
+                m.get("score", 0) >= 0.70
+                for m in final_memories
+            )
+            has_chunk_match = any(
+                topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', c.get("text", "").lower()))) or
+                c.get("score", 0) >= 0.60
+                for c in final_chunks
+            )
+            is_core_anchor = any(w in topic_lower for w in [
+                "proposal", "propose", "canteen", "samosa", "meet", "meeting", "beach", "bessie",
+                "birthday", "bday", "october 20", "m.tech", "data engineering", "placement", "chennai"
+            ])
+
+            if not has_mem_match and not has_chunk_match and not is_core_anchor:
+                evidence_sufficient = False
+                lang = state.get("detected_language", "en")
+                if lang == "hi":
+                    unknown_message = f"मेरे पास अभी अक्कू की {topic} से जुड़ी कोई याद सहेजी नहीं गई है ❤️। अगर आप मुझे बताएंगे, तो मैं इसे हमेशा के लिए याद रखूंगी!"
+                elif lang == "hinglish":
+                    unknown_message = f"Mere paas abhi Akku ki {topic} ke baare mein saved memory nahi hai ❤️. Agar aap mujhe batayenge, toh main ise yaad rakhungi!"
+                elif lang == "te":
+                    unknown_message = f"నా దగ్గర అక్కు {topic} గురించిన జ్ఞాపకం ఇంకా భద్రపరచలేదు ❤️. మీరు చెబితే, నేను భవిష్యత్తు కోసం గుర్తుంచుకుంటాను!"
+                elif lang == "ta":
+                    unknown_message = f"அக்குவின் {topic} பற்றிய நினைவு என்னிடம் இன்னும் சேமிக்கப்படவில்லை ❤️. நீங்கள் சொன்னால், நான் நினைவில் வைத்துக் கொள்வேன்!"
+                else:
+                    unknown_message = f"I don't have Akku's {topic} saved in my memories yet ❤️. If you tell me, I can remember it for next time!"
+
         timings = state.get("timings", {})
         timings["merge_rank_ms"] = (time.perf_counter() - t0) * 1000
 
@@ -396,6 +493,8 @@ class RAGGraphService:
             "retrieved_memories": final_memories,
             "retrieved_chunks": final_chunks,
             "citations": citations,
+            "evidence_sufficient": evidence_sufficient,
+            "unknown_message": unknown_message,
             "timings": timings
         }
 
@@ -425,10 +524,23 @@ class RAGGraphService:
         }
 
     def generate_answer_node(self, state: ChatState) -> Dict[str, Any]:
-        """Node 6: Synchronous generation node."""
+        """Node 6: Synchronous generation node with anti-hallucination short-circuit."""
         t0 = time.perf_counter()
         timings = state.get("timings", {})
+
+        # Strict anti-hallucination: If personal fact is unevidenced, do not let LLM guess!
+        if state.get("evidence_sufficient") is False and state.get("unknown_message"):
+            timings["llm_total_ms"] = (time.perf_counter() - t0) * 1000
+            timings["llm_first_token_ms"] = timings["llm_total_ms"]
+            return {
+                "raw_answer": state["unknown_message"],
+                "timings": timings
+            }
+
         messages = state["messages"]
+        if state.get("web_results"):
+            messages.insert(1, {"role": "system", "content": f"EXTERNAL WEB CONTEXT (FOR GENERAL KNOWLEDGE ONLY):\n{state['web_results']}"})
+
         model = state.get("model_name", "qwen2.5:3b")
         max_tokens = state.get("max_tokens", 256)
         num_ctx = state.get("num_ctx", 1536)
@@ -488,10 +600,11 @@ class RAGGraphService:
                     "Those everyday conversations soon blossomed into a deep, beautiful bond that led to our canteen walks "
                     "and May 4th proposal! ❤️"
                 )
-            elif "ice cream" in q:
-                answer = "Akku loves vanilla flavor ice cream the most! It's one of her favorite treats. ❤️"
             elif "birthday" in q:
                 answer = "Akku's birthday is on October 20! Saki created this entire memory world as a special birthday gift for her. 🎂✨"
+            elif state.get("retrieved_memories"):
+                top_m = state["retrieved_memories"][0].get("text", "")
+                answer = f"According to our saved memory, {top_m}. ❤️"
             else:
                 answer = "I remember our beautiful moments together, grounded right here in our relationship memories! ❤️"
 
@@ -554,7 +667,45 @@ class RAGGraphService:
             content=question
         )
 
-        # 3. Check instant response cache if no prior conversation turns in session
+        # 3. Intercept explicit "remember this" commands directly
+        explicit_remember = re.search(
+            r'\b(?:remember|note|save|don\'t\s+forget|please\s+remember)\s+(?:that\s+)?([^.\n]+)',
+            question.strip(),
+            re.IGNORECASE
+        )
+        if explicit_remember:
+            new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
+            self.clear_cache()
+            saved_fact = explicit_remember.group(1).strip()
+            answer = f"Got it, Saki! ❤️ I've saved that memory to my heart: '{saved_fact}'. I'll remember it forever!"
+            total_sec = round(time.perf_counter() - start_time, 2)
+            asst_msg = self.conversation_service.add_message(
+                conversation=conversation,
+                role="assistant",
+                content=answer,
+                metadata={
+                    "citations": [],
+                    "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
+                    "new_memories_saved": [m.memory_text for m in new_memories],
+                    "latency_seconds": total_sec,
+                    "model": "memory_agent"
+                }
+            )
+            return {
+                "conversation_id": str(conversation.id),
+                "user_message_id": str(user_msg.id),
+                "assistant_message_id": str(asst_msg.id),
+                "question": question,
+                "answer": answer,
+                "citations": [],
+                "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
+                "new_memories_saved": [m.memory_text for m in new_memories],
+                "latency": total_sec,
+                "timings": {"total_ms": total_sec * 1000},
+                "model": "memory_agent"
+            }
+
+        # 4. Check instant response cache if no prior conversation turns in session
         if not history and cache_key in self._answer_cache:
             cached = self._answer_cache[cache_key]
             total_latency = round(time.perf_counter() - start_time, 3)
@@ -583,14 +734,14 @@ class RAGGraphService:
                 "cached": True
             }
 
-        # 4. Extract personal memories from user statement (fast regex only)
+        # 5. Extract personal memories from user statement (if declarative and non-question)
         new_memories = []
         try:
             new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
         except Exception as e:
             logger.warning(f"Memory extraction non-fatal error: {e}")
 
-        # 5. Run LangGraph StateGraph
+        # 6. Run LangGraph StateGraph
         initial_state: ChatState = {
             "question": question,
             "user_id": user_id,
@@ -618,7 +769,7 @@ class RAGGraphService:
         personal_memories = final_state.get("retrieved_memories", [])
         latency_sec = round(total_ms / 1000, 2)
 
-        # 6. Persist assistant message
+        # 7. Persist assistant message
         asst_msg = self.conversation_service.add_message(
             conversation=conversation,
             role="assistant",
@@ -680,6 +831,59 @@ class RAGGraphService:
             content=question
         )
 
+        # Check explicit "remember this" command
+        explicit_remember = re.search(
+            r'\b(?:remember|note|save|don\'t\s+forget|please\s+remember)\s+(?:that\s+)?([^.\n]+)',
+            question.strip(),
+            re.IGNORECASE
+        )
+        if explicit_remember:
+            new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
+            self.clear_cache()
+            saved_fact = explicit_remember.group(1).strip()
+            answer = f"Got it, Saki! ❤️ I've saved that memory to my heart: '{saved_fact}'. I'll remember it forever!"
+            total_sec = round(time.perf_counter() - start_time, 2)
+            asst_msg = self.conversation_service.add_message(
+                conversation=conversation,
+                role="assistant",
+                content=answer,
+                metadata={
+                    "citations": [],
+                    "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
+                    "new_memories_saved": [m.memory_text for m in new_memories],
+                    "latency_seconds": total_sec,
+                    "model": "memory_agent"
+                }
+            )
+            yield {
+                "event": "context",
+                "data": {
+                    "conversation_id": str(conversation.id),
+                    "citations": [],
+                    "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
+                    "new_memories_saved": [m.memory_text for m in new_memories],
+                    "model": "memory_agent"
+                }
+            }
+            yield {
+                "event": "token",
+                "data": {"token": answer}
+            }
+            yield {
+                "event": "done",
+                "data": {
+                    "conversation_id": str(conversation.id),
+                    "assistant_message_id": str(asst_msg.id),
+                    "answer": answer,
+                    "citations": [],
+                    "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
+                    "new_memories_saved": [m.memory_text for m in new_memories],
+                    "latency": total_sec,
+                    "model": "memory_agent"
+                }
+            }
+            return
+
         # Check instant response cache
         if not history and cache_key in self._answer_cache:
             cached = self._answer_cache[cache_key]
@@ -728,7 +932,7 @@ class RAGGraphService:
             }
             return
 
-        # Fast regex extraction of new memories (if any)
+        # Fast regex extraction of new memories (if declarative and non-question)
         new_memories = []
         try:
             new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
@@ -768,8 +972,47 @@ class RAGGraphService:
             }
         }
 
+        # If personal fact has no supporting evidence in memory, short circuit with honest unknown response
+        if state.get("evidence_sufficient") is False and state.get("unknown_message"):
+            unknown_text = state["unknown_message"]
+            yield {
+                "event": "token",
+                "data": {"token": unknown_text}
+            }
+            total_pipeline_ms = (time.perf_counter() - start_time) * 1000
+            latency_sec = round(total_pipeline_ms / 1000, 2)
+            asst_msg = self.conversation_service.add_message(
+                conversation=conversation,
+                role="assistant",
+                content=unknown_text,
+                metadata={
+                    "citations": [],
+                    "personal_memories": [],
+                    "new_memories_saved": [],
+                    "latency_seconds": latency_sec,
+                    "model": "grounding_guard"
+                }
+            )
+            yield {
+                "event": "done",
+                "data": {
+                    "conversation_id": str(conversation.id),
+                    "assistant_message_id": str(asst_msg.id),
+                    "answer": unknown_text,
+                    "citations": [],
+                    "personal_memories": [],
+                    "new_memories_saved": [],
+                    "latency": latency_sec,
+                    "model": "grounding_guard"
+                }
+            }
+            return
+
         # Stream tokens directly from LLM
         messages = state["messages"]
+        if state.get("web_results"):
+            messages.insert(1, {"role": "system", "content": f"EXTERNAL WEB CONTEXT (FOR GENERAL KNOWLEDGE ONLY):\n{state['web_results']}"})
+
         chosen_model = state.get("model_name", "qwen2.5:3b")
         max_tokens = state.get("max_tokens", 256)
         num_ctx = state.get("num_ctx", 1536)

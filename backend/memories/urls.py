@@ -3,6 +3,10 @@ from memories.views import (
     PersonalMemoryListView,
     PersonalMemoryDetailView,
     PersonalMemoryClearView,
+    MemorySearchView,
+    MemoryStatsView,
+    MemoryReindexView,
+    MemoryDetectView,
     PersonalVocabularyView,
     PersonalVocabularyDetailView,
     BirthdayConfigView
@@ -10,6 +14,10 @@ from memories.views import (
 
 urlpatterns = [
     path('memories/', PersonalMemoryListView.as_view(), name='memory-list-create'),
+    path('memories/search/', MemorySearchView.as_view(), name='memory-search'),
+    path('memories/stats/', MemoryStatsView.as_view(), name='memory-stats'),
+    path('memories/reindex/', MemoryReindexView.as_view(), name='memory-reindex'),
+    path('memories/detect/', MemoryDetectView.as_view(), name='memory-detect'),
     path('memories/<uuid:mem_id>/', PersonalMemoryDetailView.as_view(), name='memory-detail'),
     path('memories/clear/', PersonalMemoryClearView.as_view(), name='memory-clear'),
     path('vocabulary/', PersonalVocabularyView.as_view(), name='vocabulary-list-create'),

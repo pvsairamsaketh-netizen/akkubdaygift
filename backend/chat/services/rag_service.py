@@ -40,7 +40,12 @@ class RAGService:
     def clear_cache(cls):
         """Clears the query response cache when memories or documents are modified."""
         cls._answer_cache.clear()
-        logger.info("Cleared RAGService answer cache")
+        try:
+            from chat.services.rag_graph import RAGGraphService
+            RAGGraphService._answer_cache.clear()
+        except Exception:
+            pass
+        logger.info("Cleared RAGService and RAGGraphService answer cache")
 
     def _cache_key(self, user_id: str, question: str) -> str:
         norm = " ".join(question.lower().strip().split())

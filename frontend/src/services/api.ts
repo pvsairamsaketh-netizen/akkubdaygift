@@ -313,6 +313,44 @@ export const api = {
     return res.json();
   },
 
+  async searchMemories(query: string, category?: string) {
+    const res = await fetch(`${API_BASE}/memories/search/`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ query, category, user_id: getUserId() })
+    });
+    if (!res.ok) throw new Error("Failed to search memories");
+    return res.json();
+  },
+
+  async getMemoryStats() {
+    const res = await fetch(`${API_BASE}/memories/stats/`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error("Failed to load memory statistics");
+    return res.json();
+  },
+
+  async reindexMemories() {
+    const res = await fetch(`${API_BASE}/memories/reindex/`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ user_id: getUserId() })
+    });
+    if (!res.ok) throw new Error("Failed to reindex memories");
+    return res.json();
+  },
+
+  async detectMemories(text: string) {
+    const res = await fetch(`${API_BASE}/memories/detect/`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ text, user_id: getUserId() })
+    });
+    if (!res.ok) throw new Error("Failed to detect memories");
+    return res.json();
+  },
+
   // Personal Vocabulary
   async getVocabulary(): Promise<any[]> {
     const res = await fetch(`${API_BASE}/memories/vocabulary/`);

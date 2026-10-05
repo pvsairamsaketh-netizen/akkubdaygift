@@ -7,9 +7,10 @@ class PersonalMemorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonalMemory
         fields = [
-            'id', 'user_id', 'memory_text', 'original_input', 'category', 'subject',
-            'source', 'confidence', 'event_date', 'conversation_timestamp',
-            'timestamp_formatted', 'is_active', 'metadata'
+            'id', 'user_id', 'memory_text', 'summary', 'original_input', 'category', 'subject',
+            'speaker', 'source', 'source_type', 'source_reference', 'confidence', 'importance',
+            'version', 'status', 'is_user_confirmed', 'content_hash',
+            'event_date', 'conversation_timestamp', 'timestamp_formatted', 'is_active', 'metadata'
         ]
 
     def get_timestamp_formatted(self, obj):

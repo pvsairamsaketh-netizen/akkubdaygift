@@ -307,9 +307,22 @@ export const MemoriesPage: React.FC = () => {
                   )}
                   <span>{new Date(mem.conversation_timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
-                <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">
-                  ChromaDB
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {mem.source_type === 'initial_pdf' ? (
+                    <span className="text-[10px] text-amber-700 font-medium bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-full">
+                      Initial Knowledge Base 📖
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-rose-700 font-medium bg-rose-50 border border-rose-200/80 px-2 py-0.5 rounded-full">
+                      Saved Memory ❤️
+                    </span>
+                  )}
+                  {mem.version && mem.version > 1 && (
+                    <span className="text-[10px] text-stone-500 font-mono bg-stone-100 px-1 py-0.5 rounded" title="Memory Version">
+                      v{mem.version}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

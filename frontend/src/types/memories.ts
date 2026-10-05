@@ -4,8 +4,14 @@ export interface PersonalMemory {
   original_input?: string;
   category: string;
   subject?: string;
+  speaker?: string;
   source: string;
+  source_type?: string;
+  source_reference?: string;
   confidence: number;
+  importance?: number;
+  version?: number;
+  status?: string;
   event_date?: string;
   conversation_timestamp: string;
   updated_at: string;

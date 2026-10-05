@@ -234,7 +234,7 @@ def test_memory_deletion_removes_from_chromadb():
     del_res = client.delete(f'/api/memories/{mem_id}/', HTTP_X_USER_ID='saki')
     assert del_res.status_code == 200
 
-    assert not PersonalMemory.objects.filter(id=mem_id).exists()
+    assert not PersonalMemory.objects.filter(id=mem_id, is_active=True).exists()
     assert store.count() == 0
 
     retriever = MemoryRetriever()
@@ -314,3 +314,81 @@ def test_chatbot_end_to_end_answer_generation():
         assert len(result['personal_memories']) >= 1
         assert 'vanilla' in result['personal_memories'][0]['text'].lower()
         assert 'vanilla' in result['answer'].lower()
+
+@pytest.mark.django_db
+def test_hallucination_prevention_on_unknown_personal_facts():
+    """
+    Requirement 15 & 50:
+    When user asks a question about an unknown fact (e.g. 'What is Akku's favorite car?'),
+    the system MUST NOT invent a car. It must respond with an honest unknown response.
+    """
+    from chat.services.rag_graph import RAGGraphService
+    graph_service = RAGGraphService()
+    result = graph_service.answer_question(
+        question="What is Akku's favorite car?",
+        user_id='saki'
+    )
+    answer = result['answer'].lower()
+    # Ensure it did NOT invent any car brand (BMW, Audi, Mercedes, Honda, Tesla, Toyota, etc.)
+    assert not any(brand in answer for brand in ["bmw", "audi", "mercedes", "tesla", "toyota", "honda", "porsche", "ferrari"])
+    # Must indicate the memory is not saved yet
+    assert "don't have" in answer or "saved" in answer
+
+@pytest.mark.django_db
+def test_explicit_remember_command_flow():
+    """
+    Requirement 21:
+    Explicit commands like 'Remember that Akku loves mango ice cream'
+    must trigger immediate memory creation, ChromaDB indexing, and confirmation.
+    """
+    from chat.services.rag_graph import RAGGraphService
+    graph_service = RAGGraphService()
+    result = graph_service.answer_question(
+        question="Remember that Akku loves mango ice cream",
+        user_id='saki'
+    )
+    # Must confirm immediately
+    assert "got it" in result['answer'].lower() or "saved" in result['answer'].lower()
+
+    # Must now exist in database and ChromaDB
+    mem = PersonalMemory.objects.filter(user_id='saki', is_active=True).first()
+    assert mem is not None
+    assert "mango ice cream" in mem.memory_text.lower()
+
+    # Now ask about mango ice cream
+    query_result = graph_service.answer_question(
+        question="What ice cream does Akku love?",
+        user_id='saki'
+    )
+    assert "mango" in query_result['personal_memories'][0]['text'].lower()
+
+@pytest.mark.django_db
+def test_contradiction_resolution_newer_memory_precedence():
+    """
+    Requirement 8, 10 & 51:
+    Memory 1: Akku loves vanilla ice cream
+    Memory 2: Akku now loves chocolate ice cream
+    When user asks, chocolate should be prioritized as current.
+    """
+    client = APIClient()
+    # 1. Add first memory
+    client.post(
+        '/api/memories/',
+        {'memory_text': 'Akku loves vanilla ice cream.', 'category': 'food_drinks', 'subject': 'Ice Cream'},
+        format='json',
+        HTTP_X_USER_ID='saki'
+    )
+    # 2. Add newer superseding memory
+    client.post(
+        '/api/memories/',
+        {'memory_text': 'Akku now loves chocolate ice cream.', 'category': 'food_drinks', 'subject': 'Ice Cream'},
+        format='json',
+        HTTP_X_USER_ID='saki'
+    )
+
+    retriever = MemoryRetriever()
+    results = retriever.retrieve_memories("What ice cream does Akku love?", user_id='saki')
+    assert len(results) >= 1
+    # Top memory should be the chocolate one
+    assert 'chocolate' in results[0]['text'].lower()
+

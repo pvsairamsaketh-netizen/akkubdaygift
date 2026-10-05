@@ -47,60 +47,134 @@ class MemoryExtractor:
         (r'\bwe\s+had\s+([^.\n]+)\s+together', 'shared_experiences', 'Shared Moment'),
     ]
 
+    @staticmethod
+    def is_question(text: str) -> bool:
+        """Determines if the text is asking a question rather than stating a fact."""
+        clean = text.strip().lower()
+        if "?" in clean:
+            return True
+        question_starters = (
+            "what", "when", "where", "why", "who", "whom", "whose", "which",
+            "how", "is", "are", "do", "does", "did", "can", "could", "would",
+            "will", "shall", "should", "tell me", "do you know", "kya", "kab",
+            "kahan", "kyun", "kaise", "kaun"
+        )
+        return any(clean.startswith(starter + " ") or clean == starter for starter in question_starters)
+
     def extract_memories_from_text(self, text: str, source: str = "text", user_id: str = "default_user") -> List[PersonalMemory]:
         """
         Extracts relevant facts about Akku from user input and saves them to SQLite + ChromaDB
-        associated with the specific user_id.
+        associated with the specific user_id. Strictly avoids extracting questions as facts.
         """
         if not text or len(text.strip()) < 5:
             return []
 
         cleaned_input = text.strip()
+        is_q = self.is_question(cleaned_input)
+
+        # 1. Explicit Remember Commands (e.g. "Remember that Akku loves chocolate ice cream")
+        explicit_match = re.search(
+            r'\b(?:remember|note|save|don\'t\s+forget|please\s+remember)\s+(?:that\s+)?([^.\n]+)',
+            cleaned_input,
+            re.IGNORECASE
+        )
+
         extracted_facts = []
+        is_explicit = bool(explicit_match)
 
-        # 1. Run pattern matching
-        for pattern, category, subject_template in self.PATTERNS:
-            matches = re.finditer(pattern, cleaned_input, re.IGNORECASE)
-            for match in matches:
-                groups = match.groups()
-                if len(groups) == 1:
-                    detail = groups[0].strip()
-                    subject = subject_template
-                    fact_text = f"Akku: {match.group(0).strip()}"
-                elif len(groups) == 2:
-                    arg1, arg2 = groups[0].strip(), groups[1].strip()
-                    subject = subject_template.format(arg1) if '{0}' in subject_template else f"{subject_template} ({arg1})"
-                    fact_text = f"Akku: {match.group(0).strip()}"
-                else:
-                    fact_text = f"Akku: {match.group(0).strip()}"
-                    subject = subject_template
+        if explicit_match:
+            raw_fact = explicit_match.group(1).strip()
+            # Determine category from keywords
+            raw_lower = raw_fact.lower()
+            if any(w in raw_lower for w in ["ice cream", "chocolate", "food", "eat", "drink", "sweet", "tea", "coffee"]):
+                cat = "food_drinks"
+                subj = "Food Preference"
+            elif any(w in raw_lower for w in ["beach", "chennai", "place", "travel", "city"]):
+                cat = "places_travel"
+                subj = "Place"
+            elif any(w in raw_lower for w in ["song", "music", "movie", "book", "film"]):
+                cat = "entertainment"
+                subj = "Favorite Media"
+            else:
+                cat = "personal_preferences"
+                subj = "Remembered Fact"
 
-                extracted_facts.append({
-                    "memory_text": fact_text,
-                    "category": category,
-                    "subject": subject,
-                    "original_input": cleaned_input
-                })
-
-        # 2. If user mentions "Remember that..." or "Note that..."
-        explicit_match = re.search(r'\b(?:remember|note|save|don\'t\s+forget)\s+(?:that\s+)?([^.\n]+)', cleaned_input, re.IGNORECASE)
-        if explicit_match and not extracted_facts:
+            fact_text = raw_fact if raw_fact.lower().startswith("akku") else f"Akku: {raw_fact}"
             extracted_facts.append({
-                "memory_text": f"Akku: {explicit_match.group(1).strip()}",
-                "category": "personal_preferences",
-                "subject": "Noted Fact",
-                "original_input": cleaned_input
+                "memory_text": fact_text,
+                "category": cat,
+                "subject": subj,
+                "original_input": cleaned_input,
+                "source_type": "user_memory",
+                "importance": 0.9,
+                "confidence": 1.0
             })
+        elif not is_q:
+            # Only run passive heuristic extraction if it is NOT a question
+            for pattern, category, subject_template in self.PATTERNS:
+                matches = re.finditer(pattern, cleaned_input, re.IGNORECASE)
+                for match in matches:
+                    groups = match.groups()
+                    if len(groups) == 1:
+                        detail = groups[0].strip()
+                        subject = subject_template
+                        fact_text = f"Akku: {match.group(0).strip()}"
+                    elif len(groups) == 2:
+                        arg1, arg2 = groups[0].strip(), groups[1].strip()
+                        subject = subject_template.format(arg1) if '{0}' in subject_template else f"{subject_template} ({arg1})"
+                        fact_text = f"Akku: {match.group(0).strip()}"
+                    else:
+                        fact_text = f"Akku: {match.group(0).strip()}"
+                        subject = subject_template
+
+                    extracted_facts.append({
+                        "memory_text": fact_text,
+                        "category": category,
+                        "subject": subject,
+                        "original_input": cleaned_input,
+                        "source_type": "conversation",
+                        "importance": 0.7,
+                        "confidence": 0.85
+                    })
 
         saved_memories = []
         for fact in extracted_facts:
-            # Check for contradiction / update on same subject for THIS user
-            existing = PersonalMemory.objects.filter(
+            # Check SHA-256 deduplication
+            import hashlib
+            norm_content = " ".join(fact["memory_text"].lower().strip().split())
+            content_hash = hashlib.sha256(norm_content.encode("utf-8")).hexdigest()
+
+            dup = PersonalMemory.objects.filter(
                 user_id=user_id,
-                is_active=True,
-                category=fact["category"],
-                subject=fact["subject"]
+                content_hash=content_hash,
+                is_active=True
             ).first()
+            if dup:
+                logger.info(f"Skipping exact duplicate memory (ID: {dup.id})")
+                continue
+
+            # Check semantic similarity conflict on same user & category
+            emb = self.embedding_service.embed_query(fact["memory_text"])
+            similar_mem = self.vector_store.find_similar_memory(
+                query_embedding=emb,
+                user_id=user_id,
+                threshold=0.88,
+                category=fact["category"]
+            )
+
+            version = 1
+            if similar_mem:
+                try:
+                    old_mem = PersonalMemory.objects.get(id=int(similar_mem["memory_id"]))
+                    old_mem.status = "historical"
+                    old_mem.is_active = False
+                    old_mem.save(update_fields=["status", "is_active", "updated_at"])
+                    # Update vector store status for old memory
+                    self.vector_store.update_memory_status(str(old_mem.id), "historical")
+                    version = old_mem.version + 1
+                    logger.info(f"Superseding memory {old_mem.id} with version {version}")
+                except Exception as e:
+                    logger.warning(f"Failed to supersede old memory: {e}")
 
             # Create new memory
             mem = PersonalMemory.objects.create(
@@ -110,26 +184,28 @@ class MemoryExtractor:
                 category=fact["category"],
                 subject=fact["subject"],
                 source=source,
-                confidence=1.0
+                source_type=fact["source_type"],
+                importance=fact["importance"],
+                confidence=fact["confidence"],
+                content_hash=content_hash,
+                version=version,
+                status="current",
+                is_active=True
             )
-
-            # If superseding previous information
-            if existing and existing.id != mem.id:
-                existing.is_active = False
-                existing.superseded_by = mem
-                existing.save(update_fields=['is_active', 'superseded_by'])
-                # Remove old memory from vector index
-                self.vector_store.delete_memory(str(existing.id))
-                logger.info(f"Memory {existing.id} superseded by new memory {mem.id}")
 
             # Embed and save to ChromaDB
             try:
-                emb = self.embedding_service.embed_query(mem.memory_text)
                 meta = {
                     "memory_id": str(mem.id),
                     "user_id": str(mem.user_id),
                     "category": mem.category,
                     "subject": str(mem.subject or ""),
+                    "speaker": mem.speaker,
+                    "source_type": mem.source_type,
+                    "status": mem.status,
+                    "version": mem.version,
+                    "importance": mem.importance,
+                    "confidence": mem.confidence,
                     "date": mem.conversation_timestamp.strftime("%Y-%m-%d"),
                     "original_text": mem.memory_text,
                     "source": mem.source,
@@ -140,7 +216,7 @@ class MemoryExtractor:
                     metadata=meta,
                     embedding=emb
                 )
-                logger.info(f"Memory Created (ID: {mem.id}, User: {mem.user_id}) → Embedding Generated → ChromaDB Stored")
+                logger.info(f"Memory Created (ID: {mem.id}, User: {mem.user_id}) → ChromaDB Indexed")
             except Exception as e:
                 logger.error(f"Error vectorizing memory {mem.id}: {e}", exc_info=True)
 

@@ -37,17 +37,23 @@ class MemoryVectorStore:
 
     def upsert_memory(self, memory_id: str, text: str, metadata: Dict[str, Any], embedding: List[float]) -> None:
         """
-        Stores or updates a memory embedding in ChromaDB with complete metadata:
-        memory_id, user_id, category, subject, date, original_text, source.
+        Stores or updates a memory embedding in ChromaDB with complete agent metadata:
+        memory_id, user_id, category, subject, speaker, source_type, status, version, importance, confidence.
         """
         clean_metadata = {
             "memory_id": str(metadata.get("memory_id", memory_id)),
             "user_id": str(metadata.get("user_id", "default_user")),
             "category": str(metadata.get("category", "personal_preferences")),
             "subject": str(metadata.get("subject", "") or ""),
+            "speaker": str(metadata.get("speaker", "Akku") or "Akku"),
+            "source_type": str(metadata.get("source_type", "user_memory")),
+            "source": str(metadata.get("source", "text")),
+            "status": str(metadata.get("status", "current")),
+            "version": int(metadata.get("version", 1)),
+            "importance": float(metadata.get("importance", 0.8)),
+            "confidence": float(metadata.get("confidence", 1.0)),
             "date": str(metadata.get("date", "") or ""),
             "original_text": str(metadata.get("original_text", text) or text),
-            "source": str(metadata.get("source", "text")),
         }
         self.collection.upsert(
             ids=[str(memory_id)],
@@ -55,7 +61,7 @@ class MemoryVectorStore:
             documents=[text],
             metadatas=[clean_metadata]
         )
-        logger.info(f"Memory Record (ID: {memory_id}, User: {clean_metadata['user_id']}) → Embedding Generated → ChromaDB Stored")
+        logger.info(f"Memory Record (ID: {memory_id}, User: {clean_metadata['user_id']}, Status: {clean_metadata['status']}) → ChromaDB Stored")
 
     def search_memories(
         self,
@@ -63,10 +69,12 @@ class MemoryVectorStore:
         top_k: int = 5,
         min_relevance: float = 0.25,
         user_id: Optional[str] = None,
-        category: Optional[str] = None
+        category: Optional[str] = None,
+        status_filter: Optional[str] = "current",
+        source_type: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Searches ChromaDB for memories with strict user-level isolation and cosine similarity filtering.
+        Searches ChromaDB for memories with strict user-level isolation, status filtering, and cosine similarity.
         """
         total = self.collection.count()
         if total == 0:
@@ -79,6 +87,10 @@ class MemoryVectorStore:
             conditions.append({"user_id": str(user_id)})
         if category:
             conditions.append({"category": str(category)})
+        if status_filter:
+            conditions.append({"status": str(status_filter)})
+        if source_type:
+            conditions.append({"source_type": str(source_type)})
 
         if len(conditions) == 1:
             where_filter = conditions[0]
@@ -112,14 +124,45 @@ class MemoryVectorStore:
             similarity = max(0.0, 1.0 - distance)
             if similarity >= min_relevance:
                 retrieved.append({
+                    "id": ids[i],
                     "memory_id": ids[i],
                     "text": docs[i],
                     "metadata": metas[i],
+                    "category": metas[i].get("category", ""),
+                    "subject": metas[i].get("subject", ""),
+                    "speaker": metas[i].get("speaker", "Akku"),
+                    "source_type": metas[i].get("source_type", "user_memory"),
+                    "status": metas[i].get("status", "current"),
+                    "version": metas[i].get("version", 1),
+                    "importance": metas[i].get("importance", 0.8),
+                    "confidence": metas[i].get("confidence", 1.0),
                     "score": round(similarity, 3),
                     "distance": distance
                 })
 
         return retrieved
+
+    def find_similar_memory(
+        self,
+        query_embedding: List[float],
+        min_similarity: float = 0.85,
+        threshold: Optional[float] = None,
+        user_id: Optional[str] = None,
+        category: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Finds the single most semantically similar memory above threshold for deduplication or conflict updates.
+        """
+        cutoff = threshold if threshold is not None else min_similarity
+        matches = self.search_memories(
+            query_embedding=query_embedding,
+            top_k=1,
+            min_relevance=cutoff,
+            user_id=user_id,
+            category=category,
+            status_filter=None
+        )
+        return matches[0] if matches else None
 
     def delete_memory(self, memory_id: str) -> None:
         try:
