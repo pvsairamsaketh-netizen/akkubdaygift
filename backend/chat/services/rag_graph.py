@@ -50,6 +50,7 @@ class ChatState(TypedDict, total=False):
     question_type: str      # "simple" | "complex"
     query_intent: str       # "personal_memory" | "relationship_conversation" | "general_knowledge" | "external_search" | "mixed"
     evidence_sufficient: bool
+    unknown_message: Optional[str]
     model_name: str
     max_tokens: int
     num_ctx: int
@@ -170,12 +171,16 @@ class RAGGraphService:
             r'what\s+does\s+(?:akku|she)\s+(?:like|love|dislike|prefer|eat|drink)\s*(?:about|for|to)?\s*([a-zA-Z\s]*)',
             r'what\s+(?:did|does)\s+(?:akku|she)\s+say\s+about\s+([a-zA-Z\s]+)',
             r'tell\s+me\s+about\s+(?:akku\'?s|her)\s+([a-zA-Z\s]+)',
+            r'(?:akku|uski|unka)\s+(?:ki|ka)\s+favou?rite\s+([a-zA-Z\s]+)',
+            r'favou?rite\s+([a-zA-Z\s]+?)(?:\s+kaun|\s+kya|\s+hai|\s*\?)',
+            r'akku\s+oda\s+favou?rite\s+([a-zA-Z\s]+)',
         ]
         for p in patterns:
             m = re.search(p, q)
             if m:
                 extracted = m.group(1).strip()
                 cleaned = re.sub(r'[\?\.\!]+', '', extracted).strip()
+                cleaned = re.sub(r'\b(hai|kya|kaun|kaunsi|kaunsa|hogi|hoga|tha|thi|the)\b', '', cleaned).strip()
                 if cleaned and len(cleaned) > 2 and not any(cleaned.startswith(w) for w in ["you", "we", "the"]):
                     return cleaned
         return None
@@ -455,16 +460,17 @@ class RAGGraphService:
 
         if topic and state.get("query_intent", "personal_memory") in ("personal_memory", "relationship_conversation"):
             topic_lower = topic.lower()
-            topic_tokens = set(re.findall(r'\b\w{3,}\b', topic_lower))
+            topic_tokens = set(re.findall(r'\b\w{3,}\b', topic_lower)) - {
+                "akku", "her", "she", "what", "favorite", "favourite", "brand", "type", "hai", "kya", "kaun"
+            }
 
             has_mem_match = any(
-                topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', m.get("text", "").lower()))) or
-                m.get("score", 0) >= 0.70
+                bool(topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', m.get("text", "").lower())))) or
+                bool(topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', m.get("subject", "").lower()))))
                 for m in final_memories
             )
             has_chunk_match = any(
-                topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', c.get("text", "").lower()))) or
-                c.get("score", 0) >= 0.60
+                bool(topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', c.get("text", "").lower()))))
                 for c in final_chunks
             )
             is_core_anchor = any(w in topic_lower for w in [
@@ -481,8 +487,16 @@ class RAGGraphService:
                     unknown_message = f"Mere paas abhi Akku ki {topic} ke baare mein saved memory nahi hai ❤️. Agar aap mujhe batayenge, toh main ise yaad rakhungi!"
                 elif lang == "te":
                     unknown_message = f"నా దగ్గర అక్కు {topic} గురించిన జ్ఞాపకం ఇంకా భద్రపరచలేదు ❤️. మీరు చెబితే, నేను భవిష్యత్తు కోసం గుర్తుంచుకుంటాను!"
+                elif lang == "teluglish":
+                    unknown_message = f"Naaku inka Akku {topic} gurinchi saved memory ledu ❤️. Meeru chepthe, nenu kandippa gurthupettukuntaanu!"
                 elif lang == "ta":
                     unknown_message = f"அக்குவின் {topic} பற்றிய நினைவு என்னிடம் இன்னும் சேமிக்கப்படவில்லை ❤️. நீங்கள் சொன்னால், நான் நினைவில் வைத்துக் கொள்வேன்!"
+                elif lang == "tanglish":
+                    unknown_message = f"Enakku innum Akku oda {topic} pathi saved memory illa ❤️. Neenga sonna, naan kandippa nyabagam vechikuren!"
+                elif lang == "es":
+                    unknown_message = f"Todavía no tengo guardado ese recuerdo sobre {topic} de Akku ❤️. ¡Si me lo dices, lo recordaré siempre!"
+                elif lang == "fr":
+                    unknown_message = f"Je n'ai pas encore de souvenir enregistré concernant {topic} d'Akku ❤️. Si tu me le dis, je m'en souviendrai !"
                 else:
                     unknown_message = f"I don't have Akku's {topic} saved in my memories yet ❤️. If you tell me, I can remember it for next time!"
 
@@ -801,6 +815,7 @@ class RAGGraphService:
             "answer": answer,
             "citations": citations,
             "personal_memories": personal_memories,
+            "evidence_sufficient": final_state.get("evidence_sufficient", True),
             "new_memories_saved": [m.memory_text for m in new_memories],
             "latency": latency_sec,
             "timings": timings,

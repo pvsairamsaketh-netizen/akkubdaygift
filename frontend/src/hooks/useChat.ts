@@ -31,7 +31,8 @@ export function useChat(activeConversationId: string | null) {
   const sendMessage = async (
     question: string,
     autoSpeak: boolean = false,
-    onSpeechReady?: (audioUrl: string) => void
+    onSpeechReady?: (audioUrl: string) => void,
+    onAnswerReady?: (answer: string) => void
   ) => {
     if (!question.trim() || loading) return;
 
@@ -115,8 +116,13 @@ export function useChat(activeConversationId: string | null) {
               return updated;
             });
 
-            if (autoSpeak && (data.answer || accumulatedContent)) {
-              api.speakText(data.answer || accumulatedContent)
+            const finalAnswer = data.answer || accumulatedContent;
+            if (onAnswerReady && finalAnswer) {
+              onAnswerReady(finalAnswer);
+            }
+
+            if (autoSpeak && finalAnswer) {
+              api.speakText(finalAnswer)
                 .then(ttsRes => {
                   if (ttsRes?.audio_url && onSpeechReady) {
                     onSpeechReady(ttsRes.audio_url);
@@ -147,6 +153,9 @@ export function useChat(activeConversationId: string | null) {
           }
         };
         setMessages(prev => [...prev.filter(m => m.id !== tempAsstId), assistantMsg]);
+        if (onAnswerReady && res.answer) {
+          onAnswerReady(res.answer);
+        }
         if (autoSpeak && res.answer && onSpeechReady) {
           api.speakText(res.answer).then(ttsRes => {
             if (ttsRes?.audio_url) onSpeechReady(ttsRes.audio_url);

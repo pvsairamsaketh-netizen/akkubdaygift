@@ -5,12 +5,14 @@ interface HeaderProps {
   onOpenSettings: () => void;
   voiceEnabled: boolean;
   totalVectors?: number;
+  voiceAssistantSlot?: React.ReactNode;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   voiceEnabled,
-  totalVectors = 8
+  totalVectors = 8,
+  voiceAssistantSlot
 }) => {
   return (
     <header className="h-16 border-b border-rose-200/60 bg-white/80 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between z-20 sticky top-0 shadow-xs">
@@ -80,6 +82,9 @@ export const Header: React.FC<HeaderProps> = ({
           <Volume2 className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">{voiceEnabled ? 'Voice Ready' : 'Voice Off'}</span>
         </div>
+
+        {/* Voice Assistant Widget */}
+        {voiceAssistantSlot}
 
         {/* Settings Button */}
         <button

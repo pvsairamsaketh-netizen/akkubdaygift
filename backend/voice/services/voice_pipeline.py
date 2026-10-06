@@ -12,7 +12,7 @@ from django.conf import settings
 from voice.services.audio_validation import AudioValidator
 from voice.services.asr_service import ASRService
 from voice.services.tts_service import TTSService
-from chat.services.rag_service import RAGService
+from chat.services.rag_graph import RAGGraphService
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class VoicePipeline:
         self.validator = AudioValidator()
         self.asr_service = ASRService.get_instance()
         self.tts_service = TTSService.get_instance()
-        self.rag_service = RAGService()
+        self.rag_service = RAGGraphService()
         self.temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_audio')
         os.makedirs(self.temp_dir, exist_ok=True)
 

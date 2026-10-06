@@ -15,6 +15,8 @@ import { useVoice } from '../hooks/useVoice';
 import { api } from '../services/api';
 import { QuickAddMemoryModal } from '../components/QuickAddMemoryModal';
 import { useMemoryPhotos } from '../context/MemoryPhotoContext';
+import { HeyAkkuAssistant } from '../components/HeyAkkuAssistant';
+import { wakeWordAssistant } from '../services/wakeWordService';
 
 export const ChatPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -71,7 +73,7 @@ export const ChatPage: React.FC = () => {
     scrollToBottom();
   }, [messages, chatLoading]);
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, isFromVoice: boolean = false) => {
     if (!text || !text.trim() || chatLoading) return;
 
     // Trigger photo immediately before starting async LLM streaming
@@ -82,9 +84,18 @@ export const ChatPage: React.FC = () => {
       // useChat will react to activeId change and we can send message
       setActiveId(newConv.id);
     }
-    await sendMessage(text, autoSpeak, (audioUrl) => {
-      playAudio(audioUrl);
-    });
+    await sendMessage(
+      text,
+      autoSpeak && !isFromVoice,
+      (audioUrl) => {
+        playAudio(audioUrl);
+      },
+      async (answer) => {
+        if (isFromVoice || autoSpeak) {
+          await wakeWordAssistant.speakAnswer(answer);
+        }
+      }
+    );
     refreshConversations();
   };
 
@@ -123,7 +134,10 @@ export const ChatPage: React.FC = () => {
             <Header
               onOpenSettings={() => setSettingsOpen(true)}
               voiceEnabled={true}
-              totalVectors={7}
+              totalVectors={13}
+              voiceAssistantSlot={
+                <HeyAkkuAssistant onQuestionCaptured={(q) => handleSendMessage(q, true)} />
+              }
             />
           </div>
         </div>

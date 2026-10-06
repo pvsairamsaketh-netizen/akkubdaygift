@@ -104,6 +104,49 @@ export const VoiceSettingsPage: React.FC = () => {
         </div>
       )}
 
+      {/* Siri-Like "Hey Akku" Hands-Free Assistant Settings */}
+      <div className="bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-rose-400/10 backdrop-blur rounded-3xl p-6 border border-rose-200/80 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-rose-100/80 pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-2xl bg-rose-500 text-white shadow-xs">
+              <Mic className="w-5 h-5 animate-pulse" />
+            </span>
+            <div>
+              <h3 className="font-serif text-lg font-bold text-stone-900">
+                Siri-Style "Hey Akku" Voice Assistant
+              </h3>
+              <p className="text-xs text-stone-600">
+                Continuous hands-free wake word detection & multilingual conversation
+              </p>
+            </div>
+          </div>
+          <span className="text-xs px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-semibold border border-rose-200">
+            Active Everywhere
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="p-3.5 bg-white/90 rounded-2xl border border-rose-100/80 shadow-2xs">
+            <span className="font-semibold text-rose-700 block mb-1">🎙️ Wake Word</span>
+            <p className="text-stone-600">
+              Say <strong className="text-stone-900">"Hey Akku"</strong> aloud anytime to wake her up. Akku replies with <em>"Yes Saki? ❤️"</em>
+            </p>
+          </div>
+          <div className="p-3.5 bg-white/90 rounded-2xl border border-rose-100/80 shadow-2xs">
+            <span className="font-semibold text-rose-700 block mb-1">🌍 Any World Language</span>
+            <p className="text-stone-600">
+              Speak in English, Tamil, Telugu, Hindi, Tanglish, or any language. Akku answers in the same language and authentic voice!
+            </p>
+          </div>
+          <div className="p-3.5 bg-white/90 rounded-2xl border border-rose-100/80 shadow-2xs">
+            <span className="font-semibold text-rose-700 block mb-1">⚡ Interruption & Follow-up</span>
+            <p className="text-stone-600">
+              Interrupt her anytime by speaking, or ask follow-ups without repeating "Hey Akku". Shortcut: <kbd className="px-1 py-0.5 bg-stone-100 border border-stone-300 rounded font-mono text-[10px]">⌘⇧A</kbd>
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Voice Output Configuration */}
       <div className="bg-white/80 backdrop-blur rounded-3xl p-6 border border-rose-100 shadow-sm space-y-6">
         <div className="flex items-center justify-between border-b border-rose-50 pb-3">

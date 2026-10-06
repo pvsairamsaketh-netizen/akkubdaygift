@@ -58,12 +58,63 @@ class TTSService:
         # Check Tamil
         if any('\u0b80' <= char <= '\u0bff' for char in text):
             return "ta-IN-PallaviNeural"
+        # Check Kannada
+        if any('\u0c80' <= char <= '\u0cff' for char in text):
+            return "kn-IN-SapnaNeural"
+        # Check Malayalam
+        if any('\u0d00' <= char <= '\u0d7f' for char in text):
+            return "ml-IN-SobhanaNeural"
+        # Check Bengali
+        if any('\u0980' <= char <= '\u09ff' for char in text):
+            return "bn-IN-TanishaaNeural"
+        # Check Gujarati
+        if any('\u0a80' <= char <= '\u0aff' for char in text):
+            return "gu-IN-DhwaniNeural"
+        # Check Arabic
+        if any('\u0600' <= char <= '\u06ff' for char in text):
+            return "ar-SA-ZariyahNeural"
+        # Check Cyrillic (Russian)
+        if any('\u0400' <= char <= '\u04ff' for char in text):
+            return "ru-RU-SvetlanaNeural"
+        # Check Japanese
+        if any('\u3040' <= char <= '\u30ff' for char in text):
+            return "ja-JP-NanamiNeural"
+        # Check Chinese
+        if any('\u4e00' <= char <= '\u9fff' for char in text):
+            return "zh-CN-XiaoxiaoNeural"
+        # Check Korean
+        if any('\uac00' <= char <= '\ud7af' for char in text):
+            return "ko-KR-SunHiNeural"
         
-        # Check common Romanized Hindi / Hinglish keywords
+        # Check Romanized Indian languages (Tanglish, Teluglish, Hinglish)
         lower_words = set(text.lower().split())
-        hinglish_markers = {"aap", "aapko", "tum", "maine", "hum", "kaise", "kab", "kyun", "kya", "tha", "the", "thi", "hai", "hain", "ke", "ki", "ko", "se", "mein", "bhi", "aur"}
+        hinglish_markers = {"aap", "aapko", "tum", "maine", "hum", "kaise", "kab", "kyun", "kya", "tha", "the", "thi", "hai", "hain", "ke", "ki", "ko", "se", "mein", "bhi", "aur", "yaad"}
+        tanglish_markers = {"namma", "story", "eppadi", "start", "aachu", "romba", "pidikkum", "irukku", "unaku", "enakku", "nyabagam", "kalisam"}
+        teluglish_markers = {"mana", "story", "ekkada", "start", "ayyindi", "kalisam", "meeru", "nenu", "ela", "unnaru", "istam", "gurthu"}
+
         if len(lower_words.intersection(hinglish_markers)) >= 2:
             return "hi-IN-SwaraNeural"
+        if len(lower_words.intersection(tanglish_markers)) >= 1 or len(lower_words.intersection(teluglish_markers)) >= 1:
+            return "en-IN-NeerjaNeural"
+
+        # Check European languages
+        spanish_markers = {"como", "donde", "cuando", "nuestra", "historia", "amor", "recuerdo"}
+        french_markers = {"comment", "notre", "histoire", "quand", "avec", "amour", "souviens"}
+        german_markers = {"unsere", "geschichte", "warum", "liebe", "erinnerst"}
+        italian_markers = {"nostra", "quando", "dove", "perche", "amore", "ricordi"}
+
+        if len(lower_words.intersection(spanish_markers)) >= 2:
+            return "es-ES-ElviraNeural"
+        if len(lower_words.intersection(french_markers)) >= 2:
+            return "fr-FR-DeniseNeural"
+        if len(lower_words.intersection(german_markers)) >= 2:
+            return "de-DE-KatjaNeural"
+        if len(lower_words.intersection(italian_markers)) >= 2:
+            return "it-IT-ElsaNeural"
+
+        # Indian English voice default for Saki & Akku love story context
+        if any(name in text.lower() for name in ["saki", "akku", "besant nagar", "samosa", "chennai"]):
+            return "en-IN-NeerjaNeural"
             
         return default_voice
 
@@ -88,21 +139,11 @@ class TTSService:
         audio_filename = f"tts_{uuid.uuid4().hex[:12]}.wav"
         output_path = os.path.join(self.output_dir, audio_filename)
 
-        # Detect if text is Hindi, Telugu, Tamil or Indic script
-        is_indic = any(
-            ('\u0900' <= char <= '\u097f') or  # Devanagari
-            ('\u0c00' <= char <= '\u0c7f') or  # Telugu
-            ('\u0b80' <= char <= '\u0bff')     # Tamil
-            for char in clean_text
-        )
-        lower_words = set(clean_text.lower().split())
-        hinglish_markers = {"aap", "aapko", "tum", "maine", "hum", "kaise", "kab", "kyun", "kya", "tha", "the", "thi", "hai", "hain", "ke", "ki", "ko", "se", "mein", "bhi", "aur"}
-        is_hinglish = len(lower_words.intersection(hinglish_markers)) >= 2
-
-        # For Indic / Hindi languages, use high-fidelity neural voices directly
-        if is_indic or is_hinglish:
-            indic_voice = self._detect_language_voice(clean_text)
-            return self._synthesize_edge_tts(clean_text, output_path, audio_filename, voice_override=indic_voice)
+        # Detect native language voice
+        detected_voice = self._detect_language_voice(clean_text, default_voice="en-US-JennyNeural")
+        if detected_voice != "en-US-JennyNeural" or voice:
+            target_voice = voice or detected_voice
+            return self._synthesize_edge_tts(clean_text, output_path, audio_filename, voice_override=target_voice)
 
         selected_voice = voice or self.default_voice
 

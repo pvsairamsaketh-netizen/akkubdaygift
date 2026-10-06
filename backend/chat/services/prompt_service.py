@@ -53,49 +53,99 @@ RULES:
     @classmethod
     def detect_language(cls, question: str) -> str:
         """
-        Lightweight deterministic language detector.
-        Returns: 'en', 'hi', 'hinglish', 'te', 'ta', or 'tanglish'.
+        Robust universal language detector for Indian and global world languages.
+        Supports:
+        - Devanagari (Hindi/Marathi) -> 'hi'
+        - Telugu script -> 'te'
+        - Tamil script -> 'ta'
+        - Kannada -> 'kn', Malayalam -> 'ml', Bengali -> 'bn', Gujarati -> 'gu', Punjabi -> 'pa'
+        - Arabic/Urdu -> 'ar', Cyrillic/Russian -> 'ru', Japanese -> 'ja', Chinese -> 'zh', Korean -> 'ko'
+        - Romanized dialects: Tanglish -> 'tanglish', Teluglish -> 'teluglish', Hinglish -> 'hinglish'
+        - European languages: Spanish -> 'es', French -> 'fr', German -> 'de', Italian -> 'it'
+        - English -> 'en' (default for English text)
         """
         if not question or not question.strip():
             return "en"
 
-        # 1. Devanagari script -> Hindi
+        # 1. Non-Latin Script Detection
         if any('\u0900' <= char <= '\u097f' for char in question):
             return "hi"
-
-        # 2. Telugu script
         if any('\u0c00' <= char <= '\u0c7f' for char in question):
             return "te"
-
-        # 3. Tamil script
         if any('\u0b80' <= char <= '\u0bff' for char in question):
             return "ta"
+        if any('\u0c80' <= char <= '\u0cff' for char in question):
+            return "kn"
+        if any('\u0d00' <= char <= '\u0d7f' for char in question):
+            return "ml"
+        if any('\u0980' <= char <= '\u09ff' for char in question):
+            return "bn"
+        if any('\u0a80' <= char <= '\u0aff' for char in question):
+            return "gu"
+        if any('\u0a00' <= char <= '\u0a7f' for char in question):
+            return "pa"
+        if any('\u0600' <= char <= '\u06ff' for char in question):
+            return "ar"
+        if any('\u0400' <= char <= '\u04ff' for char in question):
+            return "ru"
+        if any('\u3040' <= char <= '\u30ff' for char in question):
+            return "ja"
+        if any('\u4e00' <= char <= '\u9fff' for char in question):
+            return "zh"
+        if any('\uac00' <= char <= '\ud7af' for char in question):
+            return "ko"
 
-        # 4. Check for Romanized Indian languages (Hinglish / Tanglish)
+        # 2. Romanized Dialects & International Latin scripts
         words = set(re.findall(r'\b[a-zA-Z]+\b', question.lower()))
+
+        # Teluglish markers
+        teluglish_markers = {
+            "mana", "ekkada", "kalisam", "meeru", "nenu", "ela", "unnaru", "chesavu",
+            "cheppava", "enti", "eppudu", "chala", "bagundi", "istam", "cheppu",
+            "gurthu", "undha", "cheyyi", "chepandi", "emiti", "katha", "modalaindi", "ayyindi"
+        }
+        # Tanglish markers
+        tanglish_markers = {
+            "namma", "eppadi", "aachu", "romba", "pidikkum", "nalla",
+            "solla", "irukku", "panreenga", "theriyuma", "unaku", "enakku", "eppo",
+            "enga", "kalisam", "sollunga", "pathu", "yenna", "enna", "kathai"
+        }
+        # Hinglish markers
         hinglish_markers = {
-            "aap", "aapko", "tum", "tumhe", "maine", "hum", "kaise", "kab", "kyun",
-            "kya", "kahan", "tha", "the", "thi", "hai", "hain", "ke", "ki", "ko",
+            "aap", "aapko", "tum", "tumhe", "maine", "hum", "humari", "hamari", "kaise", "kab", "kyun",
+            "kya", "kahan", "kaha", "tha", "the", "thi", "hai", "hain", "ke", "ki", "ko",
             "se", "mein", "bhi", "aur", "batao", "bolo", "hoga", "hogi", "karein",
             "karo", "diya", "kiya", "mera", "meri", "mere", "uska", "uski", "uske",
-            "janamdin", "janmadin", "shadi", "shaadi", "yaad", "kaun", "si", "sa"
+            "janamdin", "janmadin", "shadi", "shaadi", "yaad", "kaun", "si", "sa", "kahani",
+            "shuru", "hui", "kaunsi", "kaunsa"
         }
-        tanglish_markers = {
-            "enna", "eppadi", "eppo", "enga", "romba", "pidikkum", "nalla", "solla",
-            "irukku", "panreenga", "theriyuma", "unaku", "enakku"
-        }
+        # European languages
+        spanish_markers = {"como", "donde", "cuando", "nuestra", "historia", "amor", "favor", "quien", "hola", "nuestro", "empezo", "recuerdo"}
+        french_markers = {"comment", "notre", "histoire", "quand", "pourquoi", "avec", "amour", "bonjour", "souviens", "commence"}
+        german_markers = {"unsere", "geschichte", "warum", "liebe", "hallo", "erinnerst", "angefangen"}
+        italian_markers = {"nostra", "quando", "dove", "perche", "amore", "ciao", "ricordi", "iniziata"}
 
-        if len(words.intersection(hinglish_markers)) >= 2:
-            return "hinglish"
+        if len(words.intersection(teluglish_markers)) >= 1:
+            return "teluglish"
         if len(words.intersection(tanglish_markers)) >= 1:
             return "tanglish"
+        if len(words.intersection(hinglish_markers)) >= 2:
+            return "hinglish"
+        if len(words.intersection(spanish_markers)) >= 2:
+            return "es"
+        if len(words.intersection(french_markers)) >= 2:
+            return "fr"
+        if len(words.intersection(german_markers)) >= 2:
+            return "de"
+        if len(words.intersection(italian_markers)) >= 2:
+            return "it"
 
-        # 5. Default is strictly English
+        # 3. Default to English for general Latin text
         return "en"
 
     @classmethod
     def get_language_directive(cls, lang: str) -> str:
-        """Generates strict language enforcement directive based on detected language."""
+        """Generates strict language enforcement directive matching Saki's exact language."""
         if lang == "hi":
             return (
                 "[अनिवार्य भाषा निर्देश: साकी ने यह प्रश्न शुद्ध हिंदी में पूछा है। "
@@ -112,13 +162,51 @@ RULES:
             )
         elif lang == "te":
             return (
-                "[Language Directive: Saki asked in Telugu script. Respond completely in fluent, natural Telugu script. "
+                "[Language Directive: Saki asked in Telugu script. Respond completely in fluent, natural Telugu script (తెలుగు). "
                 "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection, not a question mark.]"
             )
-        elif lang == "ta" or lang == "tanglish":
+        elif lang == "teluglish":
             return (
-                "[Language Directive: Saki asked in Tamil/Tanglish. Respond naturally in matching Tamil/Tanglish. "
+                "[Language Directive: Saki asked in Teluglish (Telugu written in English/Latin letters). "
+                "You MUST respond naturally in fluent, sweet Teluglish (conversational Telugu using Latin script). "
+                "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection and emoji (❤️/✨/😊).]"
+            )
+        elif lang == "ta":
+            return (
+                "[Language Directive: Saki asked in Tamil script. Respond completely in fluent, natural Tamil script (தமிழ்). "
                 "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection, not a question mark.]"
+            )
+        elif lang == "tanglish":
+            return (
+                "[Language Directive: Saki asked in Tanglish (Tamil written in English/Latin letters). "
+                "You MUST respond naturally in sweet, natural Tanglish (conversational Tamil using Latin script). "
+                "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection and emoji (❤️/✨/😊).]"
+            )
+        elif lang == "es":
+            return (
+                "[Language Directive: Saki asked in Spanish. You MUST respond completely in natural, warm, romantic Spanish. "
+                "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection and emoji (❤️/✨/😊).]"
+            )
+        elif lang == "fr":
+            return (
+                "[Language Directive: Saki asked in French. You MUST respond completely in natural, warm, romantic French. "
+                "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection and emoji (❤️/✨/😊).]"
+            )
+        elif lang == "de":
+            return (
+                "[Language Directive: Saki asked in German. You MUST respond completely in natural, warm German. "
+                "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection and emoji (❤️/✨/😊).]"
+            )
+        elif lang == "it":
+            return (
+                "[Language Directive: Saki asked in Italian. You MUST respond completely in natural, warm, romantic Italian. "
+                "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection and emoji (❤️/✨/😊).]"
+            )
+        elif lang in ("kn", "ml", "bn", "gu", "pa", "ar", "ru", "ja", "zh", "ko"):
+            return (
+                f"[Language Directive: Saki asked his question in language '{lang}'. "
+                f"You MUST respond naturally, warmly, and fluently in the EXACT SAME LANGUAGE and script. "
+                "Akku is Saki's beloved girlfriend. Do not ask questions back. End with a loving reflection and emoji (❤️/✨/😊).]"
             )
         else:
             # Strictly ENGLISH
