@@ -72,12 +72,17 @@ class ChromaVectorStore(BaseVectorStore):
             {
                 "document_id": str(chunk.get("document_id", "")),
                 "filename": str(chunk.get("filename", "")),
+                "source_name": str(chunk.get("source_name", "Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf")),
                 "page_number": int(chunk.get("page_number", 0)),
+                "section": str(chunk.get("section", chunk.get("email_subject", ""))),
+                "chunk_id": str(chunk.get("chunk_id", "")),
                 "chunk_index": int(chunk.get("chunk_index", 0)),
                 "email_subject": str(chunk.get("email_subject", "")),
                 "email_date": str(chunk.get("email_date", "")),
                 "token_count": int(chunk.get("token_count", 0)),
-                "source_type": str(chunk.get("source_type", "pdf"))
+                "source_type": str(chunk.get("source_type", "pdf")),
+                "version": str(chunk.get("version", "1.0")),
+                "created_at": str(chunk.get("created_at", ""))
             }
             for chunk in chunks
         ]

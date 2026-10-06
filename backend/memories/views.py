@@ -106,31 +106,46 @@ class PersonalMemoryListView(APIView):
         version = 1
         previous_mem = None
         try:
-            similar = store.find_similar_memory(emb, min_similarity=0.88, user_id=user_id)
+            # Check for existing memory on same topic/subject/category
+            similar = store.find_similar_memory(emb, min_similarity=0.75, user_id=user_id, category=category)
+            if not similar:
+                similar = store.find_similar_memory(emb, min_similarity=0.78, user_id=user_id)
+            
+            prev_db = None
             if similar:
                 sim_id = similar.get("id") or similar.get("memory_id")
                 prev_db = PersonalMemory.objects.filter(id=sim_id, user_id=user_id, is_active=True).first()
-                if prev_db:
-                    # If same subject/category or updating preference: version it!
-                    logger.info(f"Conflict / Versioning: Memory '{cleaned_text[:40]}' updates existing memory '{prev_db.memory_text[:40]}'")
-                    prev_db.status = 'historical'
-                    prev_db.is_active = False
-                    prev_db.save(update_fields=['status', 'is_active'])
-                    # Update previous vector status in ChromaDB
-                    store.upsert_memory(
-                        memory_id=str(prev_db.id),
-                        text=prev_db.memory_text,
-                        metadata={
-                            "memory_id": str(prev_db.id),
-                            "user_id": user_id,
-                            "category": prev_db.category,
-                            "status": "historical",
-                            "version": prev_db.version
-                        },
-                        embedding=emb_svc.embed_query(prev_db.memory_text)
-                    )
-                    version = prev_db.version + 1
-                    previous_mem = prev_db
+            elif subject and subject != "Manual Entry":
+                # Fallback to subject / topic keyword match for user
+                subj_kw = subject.split()[0].lower()
+                prev_db = PersonalMemory.objects.filter(
+                    user_id=user_id,
+                    is_active=True
+                ).filter(
+                    Q(subject__icontains=subj_kw) | Q(memory_text__icontains=subj_kw)
+                ).first()
+
+            if prev_db:
+                # If updating preference: version it!
+                logger.info(f"Conflict / Versioning: Memory '{cleaned_text[:40]}' updates existing memory '{prev_db.memory_text[:40]}'")
+                prev_db.status = 'historical'
+                prev_db.is_active = False
+                prev_db.save(update_fields=['status', 'is_active'])
+                # Update previous vector status in ChromaDB
+                store.upsert_memory(
+                    memory_id=str(prev_db.id),
+                    text=prev_db.memory_text,
+                    metadata={
+                        "memory_id": str(prev_db.id),
+                        "user_id": user_id,
+                        "category": prev_db.category,
+                        "status": "historical",
+                        "version": prev_db.version
+                    },
+                    embedding=emb_svc.embed_query(prev_db.memory_text)
+                )
+                version = prev_db.version + 1
+                previous_mem = prev_db
         except Exception as e:
             logger.warning(f"Semantic similarity check non-fatal error: {e}")
 
@@ -187,6 +202,11 @@ class PersonalMemoryListView(APIView):
             logger.info(f"Memory Created (ID: {mem.id}, User: {mem.user_id}, v{mem.version}) → ChromaDB Stored")
         except Exception as e:
             logger.error(f"Error vectorizing memory {mem.id}: {e}", exc_info=True)
+            mem.delete()
+            return Response(
+                {"error": f"Failed to persist memory to vector store: {str(e)}. Please retry."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         # 5. Invalidate chatbot response cache so new memory is instantly searchable
         try:
@@ -445,6 +465,27 @@ class MemoryReindexView(APIView):
             "success": True,
             "message": f"Successfully reindexed {reindexed_count} memories into ChromaDB.",
             "reindexed_count": reindexed_count
+        })
+
+
+class MemoryExportView(APIView):
+    """
+    Exports structured memories, categories, and PDF document metadata.
+    Ensures structured DB remains the permanent source of truth for backup and disaster recovery.
+    """
+    def get(self, request):
+        from django.utils import timezone
+        from documents.models import Document
+        user_id = get_user_id(request)
+        memories = PersonalMemory.objects.filter(user_id=user_id)
+        docs = Document.objects.all().values('filename', 'content_hash', 'status', 'total_pages', 'total_chunks', 'last_ingested_at')
+        serializer = PersonalMemorySerializer(memories, many=True)
+        return Response({
+            "export_timestamp": timezone.now().isoformat(),
+            "user_id": user_id,
+            "total_memories": memories.count(),
+            "documents": list(docs),
+            "memories": serializer.data
         })
 
 

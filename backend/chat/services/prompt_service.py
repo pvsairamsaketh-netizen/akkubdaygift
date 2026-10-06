@@ -245,7 +245,10 @@ RULES:
                 cat = mem.get("category", "preference")
                 subj = mem.get("subject", "")
                 subj_str = f" | Subject: {subj}" if subj else ""
-                entry = f"- [{cat}{subj_str}]{date_str}: {mem.get('text')}"
+                status = mem.get("status", "current")
+                ver = mem.get("version", 1)
+                status_label = "LATEST CONFIRMED" if status == "current" else "HISTORICAL / SUPERSEDED"
+                entry = f"- [{cat}{subj_str} | {status_label} (v{ver})]{date_str}: {mem.get('text')}"
                 if src_type in ("user_memory", "manual"):
                     explicit_memories.append(f"{entry} (Source: Explicit Saved User Memory ❤️)")
                 else:
@@ -267,9 +270,9 @@ RULES:
 {archive_section}
 
 CRITICAL MEMORY GROUNDING DIRECTIVE:
-1. Explicit Saved User Memories are the HIGHEST AUTHORITY. If an explicit saved memory directly or indirectly answers the question (such as Akku's favorite ice cream, favorite foods, favorite treats, or recent statements), YOU MUST STATE IT WARMLY AND DIRECTLY based on that memory (e.g., "Akku loves vanilla ice cream. ❤️").
+1. Explicit Saved User Memories are the HIGHEST AUTHORITY. If an explicit saved memory directly or indirectly answers the question (such as Akku's preferences, favorite things, or recent statements), YOU MUST STATE IT WARMLY AND DIRECTLY based on that exact memory.
 2. NEVER claim that "the provided material does not mention..." or "I don't know" when an explicit saved memory is provided above!
-3. If an explicit saved memory conflicts with an older document, the explicit saved memory ALWAYS overrides older records."""
+3. If an explicit saved memory conflicts with an older document, the explicit saved memory ALWAYS overrides older records. Prefer the latest confirmed status."""
             messages = [{"role": "system", "content": system_content}]
 
             # Bounded history: at most last 2 turns

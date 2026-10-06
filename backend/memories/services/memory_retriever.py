@@ -219,7 +219,9 @@ class MemoryRetriever:
         for token in content_tokens:
             q_filter |= Q(memory_text__icontains=token) | Q(subject__icontains=token) | Q(summary__icontains=token)
 
-        qs = PersonalMemory.objects.filter(q_filter, is_active=True, user_id=user_id)
+        qs = PersonalMemory.objects.filter(q_filter, is_active=True).filter(
+            Q(user_id=user_id) | Q(source_type='initial_pdf')
+        )
         if not include_historical:
             qs = qs.filter(status='current')
         if category and category != 'all':

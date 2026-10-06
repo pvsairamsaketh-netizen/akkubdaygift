@@ -28,6 +28,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/health/', health_check, name='health_check'),
     path('api/documents/', include('documents.urls')),
+    path('api/knowledge/', include('documents.urls')),
     path('api/', include('chat.urls')),
     path('api/voice/', include('voice.urls')),
     path('api/', include('memories.urls')),

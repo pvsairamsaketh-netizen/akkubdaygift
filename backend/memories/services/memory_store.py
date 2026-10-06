@@ -84,7 +84,7 @@ class MemoryVectorStore:
 
         conditions = []
         if user_id:
-            conditions.append({"user_id": str(user_id)})
+            conditions.append({"$or": [{"user_id": str(user_id)}, {"source_type": "initial_pdf"}]})
         if category:
             conditions.append({"category": str(category)})
         if status_filter:

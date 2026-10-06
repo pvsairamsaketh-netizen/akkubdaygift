@@ -83,20 +83,21 @@ class KnowledgeIngestor:
                     "total_memories": existing_mems
                 }
 
-        # Extract text per page
-        doc = pymupdf.open(self.pdf_path)
-        total_pages = len(doc)
-        pages_text: List[Dict[str, Any]] = []
+        # Extract text per page using robust PDFExtractor
+        from documents.services.pdf_extractor import PDFExtractor
+        extraction_res = PDFExtractor.extract_from_pdf(self.pdf_path)
+        total_pages = extraction_res["total_pages"]
+        empty_pages = extraction_res["empty_pages"]
+        pages_text = [p for p in extraction_res["pages"] if not p.get("is_empty", False)]
 
-        for page_idx in range(min(7, total_pages)):
-            txt = doc[page_idx].get_text().strip()
-            if txt:
-                pages_text.append({
-                    "page_number": page_idx + 1,
-                    "text": txt
-                })
+        logger.info(
+            f"Extracted {len(pages_text)} readable pages from knowledge base PDF "
+            f"({total_pages} total pages, {len(empty_pages)} empty/corrupted resource pages, "
+            f"{extraction_res['total_chars']} chars)."
+        )
 
-        logger.info(f"Extracted {len(pages_text)} readable pages from knowledge base PDF")
+        doc_obj.total_pages = total_pages
+        doc_obj.empty_pages = empty_pages
 
         # Create structured memory segments
         structured_segments = self._build_semantic_segments(pages_text)
@@ -128,13 +129,17 @@ class KnowledgeIngestor:
                 "chunk_id": f"{doc_obj.id}_chunk_{idx}",
                 "document_id": str(doc_obj.id),
                 "filename": doc_obj.filename,
+                "source_name": "Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf",
                 "page_number": seg.get("page_number", 1),
+                "section": seg.get("subject", ""),
                 "chunk_index": idx,
                 "email_subject": seg.get("subject", ""),
                 "email_date": seg.get("date", ""),
                 "token_count": len(seg["text"].split()),
                 "text": seg["text"],
-                "source_type": "initial_pdf"
+                "source_type": "pdf",
+                "version": "1.0",
+                "created_at": timezone.now().isoformat()
             })
             embeddings_for_doc_chroma.append(emb)
 
@@ -371,17 +376,109 @@ class KnowledgeIngestor:
             )
         })
 
-        # Add any full narrative text chunks from pages 2 to 4
+        # 11. All 24 Explicit QA Reference Pairs from Pages 5 & 6
+        qa_pairs = [
+            ("Who are Saki and Akku?",
+             "Saki is the boy, identified in the emails as Saketh/Sairam Saketh; Akku is the girl, also named Akshatha.",
+             5, "Who are Saki and Akku"),
+            ("How did they first connect?",
+             "They began as college acquaintances after Akku moved from K section to B section. Their early conversations covered everyday topics, studies, music, films, sports, places, and language.",
+             5, "How did Saki and Akku first connect"),
+            ("When did Saki propose?",
+             "Akku's retrospective account places the proposal on May 4, 2022.",
+             5, "When did Saki propose"),
+            ("How did the proposal happen?",
+             "After a mechanical class, they headed to the canteen. Saki spoke about the girl he wanted to marry, hinted that he would accept Akku, and later said 'I love you' while they were eating a samosa. Akku accepted.",
+             5, "How did the proposal happen"),
+            ("What did they agree after accepting?",
+             "They agreed that the relationship should not affect their academics.",
+             5, "Agreement after accepting the proposal"),
+            ("What were some early shared memories?",
+             "Their first photograph, a prize ceremony, eating at Andhra Mess, conversations about paruppu podi, presentations, campus walks, and time at the canteen.",
+             5, "Early shared memories"),
+            ("What caused early conflict?",
+             "Akku recalls being compared with Kaavya, arguments over small matters, comments influenced by hostel friends, and being scolded at a sukka poori shop.",
+             5, "Early conflicts"),
+            ("What did Saki apologize for?",
+             "He apologized for shouting, insulting or hurting Akku, making her feel afraid or lonely, not spending enough time with her, comparing her with others, and failing to respect her time.",
+             5, "Saki's apologies"),
+            ("What did Akku appreciate about Saki?",
+             "She appreciated his affection, honesty about his past, willingness to recognize mistakes, loyalty, respect, simplicity, support, and efforts to change.",
+             5, "What Akku appreciated in Saki"),
+            ("How did Akku support Saki academically?",
+             "She helped him with exams, public speaking, presentations, and study notes, including SQL notes.",
+             5, "Akku's academic support for Saki"),
+            ("How did Saki say he would support Akku?",
+             "He promised emotional, moral, educational, and financial support and discussed helping her with machine learning, data science, and higher education, including a PhD.",
+             5, "Saki's support for Akku"),
+            ("What career concerns did Akku face?",
+             "She was anxious about placements and unemployment. Saki discussed job options and further study paths, while Akku also wanted emotional support.",
+             5, "Akku's career concerns"),
+            ("Why was Saki sometimes unavailable?",
+             "He attributed reduced communication to work responsibilities at Tessel, health issues, and the demands of building financial stability.",
+             5, "Reasons for Saki's reduced communication"),
+            ("Why did Akku sometimes accept less time together?",
+             "She said she did not want to jeopardize Saki's internship or career and understood the pressures of employment, although she missed him.",
+             5, "Akku's understanding regarding Saki's career"),
+            ("What family obstacle appears repeatedly?",
+             "Both worried about convincing their parents to accept their marriage. Saki's mother's concerns included astrology/jatakam.",
+             6, "Family obstacles and astrology"),
+            ("How did Akku respond to the astrology concern?",
+             "She said she could adapt to customs and practical expectations, but could not change her horoscope, and asked Saki to speak with his mother.",
+             6, "Akku's response to astrology and horoscope"),
+            ("What did Akku say about cultural adaptation?",
+             "She said she was willing to learn Telugu and follow the customs of Saki's family, while acknowledging that adapting might take time.",
+             6, "Akku's cultural adaptation and learning Telugu"),
+            ("What are some memorable places or activities?",
+             "Andhra Mess, Marina Beach, Bessie (Besant Nagar), Forum Mall by bike, park visits, canteen meals, and hosting/pitching at a Tech It Out event.",
+             6, "Memorable places and activities"),
+            ("What does Akku call Saki?",
+             "She uses names including Saki and Dudu; she also calls him her husband in affectionate, future-oriented messages.",
+             6, "What Akku calls Saki"),
+            ("What does Saki call Akku?",
+             "He uses affectionate names including Akku, idli, bubbu, Achu, and chinna pilla.",
+             6, "What Saki calls Akku"),
+            ("Did they marry?",
+             "The supplied document records repeated hopes and promises to marry, but it does not confirm that a marriage occurred.",
+             6, "Hopes and promises to marry"),
+            ("How long was the relationship?",
+             "The source contains more than one duration reference, including three years and four years, six months. An LLM should report the wording and context of the specific passage rather than assert a single reconciled duration.",
+             6, "Relationship duration references"),
+            ("What is the overall character of the relationship in the emails?",
+             "The emails portray a relationship combining affection, mutual encouragement, shared college memories, conflict, apologies, distance, career stress, family pressure, and continued hopes for marriage.",
+             6, "Overall character of the relationship"),
+            ("What is the anniversary message's central idea?",
+             "Akku calls it a love journey rather than merely a love story, emphasizing that it included memories, misunderstandings, tears, affection, care, and efforts to remain together.",
+             6, "Anniversary message central idea")
+        ]
+
+        for q_text, a_text, p_num, sub in qa_pairs:
+            segments.append({
+                "page_number": p_num,
+                "category": "relationship",
+                "subject": f"Q&A Reference: {sub}",
+                "speaker": "Both",
+                "importance": 1.0,
+                "summary": f"{q_text} -> {a_text[:80]}",
+                "text": f"Question: {q_text}\nAnswer: {a_text}"
+            })
+
+        # 12. Add full narrative text chunks from each readable page
         for p in pages:
-            if p["page_number"] in [2, 3, 4]:
+            p_num = p.get("page_number", 1)
+            p_txt = p.get("text", "").strip()
+            if not p_txt:
+                continue
+            paras = [para.strip() for para in p_txt.split("\n\n") if len(para.strip()) > 50]
+            for para_idx, para in enumerate(paras):
                 segments.append({
-                    "page_number": p["page_number"],
+                    "page_number": p_num,
                     "category": "relationship",
-                    "subject": f"Relationship Narrative Section (Page {p['page_number']})",
+                    "subject": f"Foundational Narrative Page {p_num} (Part {para_idx + 1})",
                     "speaker": "Both",
-                    "importance": 0.8,
-                    "summary": f"Refined narrative passage from Page {p['page_number']}",
-                    "text": p["text"]
+                    "importance": 0.85,
+                    "summary": para[:120],
+                    "text": para
                 })
 
         return segments
