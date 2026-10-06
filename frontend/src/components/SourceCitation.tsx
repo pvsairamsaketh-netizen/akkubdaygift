@@ -36,9 +36,18 @@ export const SourceCitation: React.FC<SourceCitationProps> = ({ citations = [], 
   const [expanded, setExpanded] = useState(false);
   const { triggerMemoryPhoto } = useMemoryPhotos();
 
-  const relevantCitations = (citations || []).slice(0, 2);
-  const relevantMemories = (personalMemories || []).slice(0, 2);
+  const userMemories = (personalMemories || []).filter(
+    m => m.source_type === 'user_memory' || m.source_type === 'manual' || m.source === 'user_memory'
+  );
+  const otherMemories = (personalMemories || []).filter(
+    m => m.source_type !== 'user_memory' && m.source_type !== 'manual' && m.source !== 'user_memory'
+  );
 
+  const orderedMemories = [...userMemories, ...otherMemories];
+  const relevantMemories = orderedMemories.slice(0, 3);
+  const relevantCitations = (citations || []).slice(0, 2);
+
+  const hasUserMemories = userMemories.length > 0;
   const hasMemories = relevantMemories.length > 0;
   const hasCitations = relevantCitations.length > 0;
 
@@ -53,16 +62,18 @@ export const SourceCitation: React.FC<SourceCitationProps> = ({ citations = [], 
 
   // Construct label according to Requirement 19
   let sourceLabel = 'Source: Relationship Archive';
-  if (hasMemories && hasCitations) {
-    sourceLabel = 'Source: Saved Memory + Relationship Archive';
-  } else if (hasMemories) {
-    const top = relevantMemories[0];
+  if (hasUserMemories && hasCitations) {
+    const top = userMemories[0];
     const catStr = formatCategory(top.category);
-    if (top.subject && top.subject.trim() && top.subject.toLowerCase() !== 'manual entry') {
-      sourceLabel = `Source: Saved Memory • ${catStr} • ${top.subject.trim()}`;
-    } else {
-      sourceLabel = `Source: Saved Memory • ${catStr}`;
-    }
+    const subStr = top.subject && top.subject.trim() && top.subject.toLowerCase() !== 'manual entry' ? ` • ${top.subject.trim()}` : '';
+    sourceLabel = `Source: Saved Memory (${catStr}${subStr}) + Relationship Archive`;
+  } else if (hasUserMemories) {
+    const top = userMemories[0];
+    const catStr = formatCategory(top.category);
+    const subStr = top.subject && top.subject.trim() && top.subject.toLowerCase() !== 'manual entry' ? ` • ${top.subject.trim()}` : '';
+    sourceLabel = `Source: Saved Memory • ${catStr}${subStr}`;
+  } else if (hasMemories) {
+    sourceLabel = 'Source: Relationship Archive';
   }
 
   return (
