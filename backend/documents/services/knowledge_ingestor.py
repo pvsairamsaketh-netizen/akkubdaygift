@@ -34,11 +34,14 @@ class KnowledgeIngestor:
         if pdf_path:
             self.pdf_path = pdf_path
         else:
-            default_path = os.path.join(settings.BASE_DIR, 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')
-            if not os.path.exists(default_path):
-                # Try project root
-                default_path = os.path.join(os.path.dirname(settings.BASE_DIR), 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')
-            self.pdf_path = default_path
+            candidates = [
+                os.path.join(settings.BASE_DIR, 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf'),
+                os.path.join(os.path.dirname(settings.BASE_DIR), 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf'),
+                '/app/Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf',
+                '/home/ubuntu/akkubdaygift/Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf',
+                '/home/ubuntu/akkubdaygift/backend/Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf',
+            ]
+            self.pdf_path = next((p for p in candidates if os.path.exists(p)), candidates[0])
 
         self.embedding_service = EmbeddingService.get_instance()
         self.doc_vector_store = ChromaVectorStore.get_instance()
