@@ -12,5 +12,6 @@ urlpatterns = [
     path('conversations/<uuid:conv_id>/', ConversationDetailView.as_view(), name='conversation-detail'),
     path('chat/', ChatView.as_view(), name='chat'),
     path('chat/stream/', ChatStreamView.as_view(), name='chat-stream'),
+    path('chat/debug/', RetrievalDebugView.as_view(), name='chat-debug'),
     path('retrieval/debug/', RetrievalDebugView.as_view(), name='retrieval-debug'),
 ]
