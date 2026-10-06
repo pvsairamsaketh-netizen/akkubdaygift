@@ -235,15 +235,24 @@ RULES:
         if question_type is None:
             question_type = "simple" if (personal_memories and not retrieved_chunks) else "complex"
 
-        # 1. Format Stored Personal Memories
-        memory_parts = []
+        # 1. Format Stored Personal Memories (Separating Explicit User Memories from Archive)
+        explicit_memories = []
+        archive_memories = []
         if personal_memories:
             for mem in personal_memories:
                 date_str = f" ({mem.get('timestamp')})" if mem.get('timestamp') else ""
-                memory_parts.append(f"- [{mem.get('category', 'preference')}]{date_str}: {mem.get('text')}")
-            memories_text = "\n".join(memory_parts)
-        else:
-            memories_text = "No specific personal memory notes retrieved for this question."
+                src_type = mem.get("source_type", "user_memory")
+                cat = mem.get("category", "preference")
+                subj = mem.get("subject", "")
+                subj_str = f" | Subject: {subj}" if subj else ""
+                entry = f"- [{cat}{subj_str}]{date_str}: {mem.get('text')}"
+                if src_type in ("user_memory", "manual"):
+                    explicit_memories.append(f"{entry} (Source: Explicit Saved User Memory ❤️)")
+                else:
+                    archive_memories.append(entry)
+
+        explicit_section = "\n".join(explicit_memories) if explicit_memories else "None explicitly saved for this specific query."
+        archive_section = "\n".join(archive_memories) if archive_memories else "None."
 
         lang_directive = self.get_language_directive(lang)
 
@@ -251,8 +260,16 @@ RULES:
         if question_type == "simple":
             system_content = f"""{self.FAST_PERSONA}
 
-STORED CONVERSATIONAL MEMORIES ABOUT AKKU:
-{memories_text}"""
+=== EXPLICIT SAVED USER MEMORIES (PRIMARY TRUTH - HIGHEST AUTHORITY) ===
+{explicit_section}
+
+=== RELATIONSHIP ARCHIVE MEMORIES ===
+{archive_section}
+
+CRITICAL MEMORY GROUNDING DIRECTIVE:
+1. Explicit Saved User Memories are the HIGHEST AUTHORITY. If an explicit saved memory directly or indirectly answers the question (such as Akku's favorite ice cream, favorite foods, favorite treats, or recent statements), YOU MUST STATE IT WARMLY AND DIRECTLY based on that memory (e.g., "Akku loves vanilla ice cream. ❤️").
+2. NEVER claim that "the provided material does not mention..." or "I don't know" when an explicit saved memory is provided above!
+3. If an explicit saved memory conflicts with an older document, the explicit saved memory ALWAYS overrides older records."""
             messages = [{"role": "system", "content": system_content}]
 
             # Bounded history: at most last 2 turns
@@ -296,8 +313,12 @@ HINDI TRANSLATION GUIDELINES:
 
         system_content = f"""{self.BASE_PERSONA}
 {extra_guidelines}
-STORED CONVERSATIONAL MEMORIES ABOUT AKKU:
-{memories_text}
+
+=== EXPLICIT SAVED USER MEMORIES (PRIMARY TRUTH - HIGHEST AUTHORITY) ===
+{explicit_section}
+
+=== RELATIONSHIP ARCHIVE MEMORIES ===
+{archive_section}
 
 RETRIEVED DOCUMENT PASSAGES (From Relationship Archive):
 {context_text}
@@ -309,9 +330,10 @@ SPECIFIC QUESTION-ANSWER KNOWLEDGE REFERENCE:
 - How they first connected: They began as college acquaintances after Akku moved from K section to B section in college. Their early conversations covered studies, music, films, campus walks, and language.
 - Memorable places: Andhra Mess (podi dosa, paruppu podi), Besant Nagar (Bessie) and Marina Beach in Chennai overlooking the Bay of Bengal, college canteen, Forum Vijaya Mall.
 - Academics: Akku is pursuing second year of M.Tech in Data Engineering and preparing for placements.
-- Personal Preferences & Favorites: All food, ice cream, color, music, travel, and personal preferences MUST be grounded strictly in the STORED CONVERSATIONAL MEMORIES above. Never invent or guess. If not found, respond: "I don't have that memory saved yet ❤️. If you tell me, I can remember it for next time!"
+- Personal Preferences & Favorites: All food, ice cream, color, music, travel, and personal preferences MUST be grounded strictly in the EXPLICIT SAVED USER MEMORIES above. If an explicit saved memory directly or indirectly answers the question (e.g. Akku's favorite ice cream, food, or hobbies), state it directly and warmly! NEVER claim that the provided material does not mention it when an explicit memory exists. If not found in explicit memories or archive, respond honestly: "I don't have that memory saved yet ❤️. If you tell me, I can remember it for next time!"
 
 RESPONSE GUIDELINES:
+- SOURCE PRIORITY: 1. Explicit Saved User Memories (Highest Authority), 2. Relationship Archive, 3. General knowledge.
 - Strictly match the question's language: If English, reply in English ONLY. If Hindi, reply in Hindi. If Hinglish, reply in Hinglish.
 - Akku is Saki's girlfriend. Never call her sister.
 - Give a thorough, natural, and warm response grounded in the memories above.

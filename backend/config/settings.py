@@ -133,7 +133,8 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 
 # Ollama LLM - Low Latency High-Speed Config
 OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
-OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5:3b')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', os.getenv('LLM_MODEL', 'qwen3.8:8b'))
+LLM_MODEL = os.getenv('LLM_MODEL', os.getenv('OLLAMA_MODEL', 'qwen3.8:8b'))
 OLLAMA_NUM_CTX = int(os.getenv('OLLAMA_NUM_CTX', '2048'))  # Context window for thorough retrieval
 OLLAMA_TEMPERATURE = float(os.getenv('OLLAMA_TEMPERATURE', '0.3'))
 OLLAMA_TOP_P = float(os.getenv('OLLAMA_TOP_P', '0.9'))

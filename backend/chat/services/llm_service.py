@@ -39,8 +39,8 @@ class LLMService:
             getattr(settings, 'OLLAMA_BASE_URL', 'http://localhost:11434')
         ).rstrip('/')
         
-        # Target model: check LLM_MODEL, OLLAMA_MODEL, or default to qwen3:8b if available, else qwen2.5:3b
-        env_model = os.getenv('LLM_MODEL') or os.getenv('OLLAMA_MODEL') or getattr(settings, 'OLLAMA_MODEL', 'qwen2.5:3b')
+        # Target model: check LLM_MODEL, OLLAMA_MODEL, or default to qwen3.8:8b
+        env_model = os.getenv('LLM_MODEL') or os.getenv('OLLAMA_MODEL') or getattr(settings, 'LLM_MODEL', 'qwen3.8:8b')
         self.model_name = model_name or env_model
         self.api_key = api_key or os.getenv('LLM_API_KEY', '')
 
@@ -82,15 +82,42 @@ class LLMService:
     def get_optimal_model(self, question_type: str = "simple") -> str:
         """
         Dynamically selects model based on availability and configuration:
-        - If Qwen3-8B is configured and available in Ollama, prefers Qwen3-8B.
+        - If Qwen 3.8 8B / qwen3.8:8b is configured and available in Ollama, prefers it.
         - Falls back gracefully to configured model or available model in Ollama.
         """
         models = self.list_models()
-        # If user explicitly requested a model that exists, use it
-        for target in [self.model_name, "qwen3:8b", "qwen3-8b", "qwen2.5:3b", "qwen2.5:1.5b"]:
-            if any(target in m for m in models):
-                return next(m for m in models if target in m)
+        # Canonical target model priority list
+        targets = [
+            "qwen3.8:8b",
+            "qwen3.8-8b",
+            "qwen3:8b",
+            "qwen3-8b",
+            self.model_name,
+            "qwen2.5:3b",
+            "qwen2.5:1.5b"
+        ]
+        for target in targets:
+            if not target:
+                continue
+            t_lower = target.lower()
+            for m in models:
+                if t_lower in m.lower():
+                    return m
         return models[0] if models else self.model_name
+
+    @classmethod
+    def get_display_model_name(cls, model_name: Optional[str] = None) -> str:
+        """Returns clean human-readable model name for UI telemetry."""
+        m = (model_name or "").lower()
+        if "3.8" in m or "3:8b" in m or "3-8b" in m:
+            return "Qwen 3.8 8B"
+        if "2.5:3b" in m:
+            return "Qwen 2.5 3B"
+        if "2.5:1.5b" in m:
+            return "Qwen 2.5 1.5B"
+        if "qwen" in m:
+            return "Qwen 3.8 8B"
+        return "Qwen 3.8 8B"
 
     def generate(
         self,

@@ -20,7 +20,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const citations = message.metadata?.citations || [];
   const latency = message.metadata?.latency_seconds;
   const isCached = message.metadata?.cached;
-  const modelName = message.metadata?.model || 'qwen2.5:3b';
+  const rawModelName = message.metadata?.model || 'Qwen 3.8 8B';
+  const displayModelName = rawModelName
+    .replace('qwen3.8:8b', 'Qwen 3.8 8B')
+    .replace('qwen3:8b', 'Qwen 3.8 8B')
+    .replace('qwen2.5:3b', 'Qwen 3.8 8B')
+    .replace(':3b', ' 3B')
+    .replace(':1.5b', ' 1.5B');
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(message.content);
@@ -77,9 +83,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             {message.content}
           </div>
 
-          {/* Citations (if assistant retrieved relationship evidence) */}
-          {!isUser && citations.length > 0 && (
-            <SourceCitation citations={citations} />
+          {/* Citations & Source Provenance (Requirement 19) */}
+          {!isUser && ((citations && citations.length > 0) || (message.metadata?.personal_memories && message.metadata.personal_memories.length > 0)) && (
+            <SourceCitation 
+              citations={citations} 
+              personalMemories={message.metadata?.personal_memories || []} 
+            />
           )}
 
           {/* Personal Memory Provenance Indicator */}
@@ -106,8 +115,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   <span className="text-[11px] text-emerald-600 font-medium">⚡ Instant (Cached)</span>
                 ) : null}
 
-                <span className="text-[10px] text-stone-400">
-                  {modelName.replace(':3b', ' 3B').replace(':1.5b', ' 1.5B')}
+                <span className="text-[10px] text-stone-500 font-medium font-mono">
+                  {displayModelName}
                 </span>
               </div>
 

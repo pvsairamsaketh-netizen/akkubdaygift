@@ -44,7 +44,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectPrompt }) => {
       {/* Agent Model Hero Badge */}
       <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-rose-100 to-pink-100 border border-rose-200/80 text-rose-800 text-xs font-semibold mb-4 shadow-2xs">
         <Cpu className="w-3.5 h-3.5 text-rose-600" />
-        <span>Qwen 2.5 Agent • Grounded in Our ChromaDB</span>
+        <span>Qwen 3.8 8B Agent • Grounded in Our ChromaDB</span>
       </div>
 
       {/* Main Title */}

@@ -47,10 +47,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Real Agent Model Pill (ChatGPT/Gemini style) */}
         <div 
           className="hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-full bg-stone-50 border border-stone-200/80 text-stone-700 text-xs shadow-2xs"
-          title="Qwen 2.5 Local LLM with ChromaDB Grounding"
+          title="Qwen 3.8 8B Local LLM with ChromaDB Grounding"
         >
           <Cpu className="w-3.5 h-3.5 text-rose-600" />
-          <span className="font-semibold text-stone-900">Qwen 2.5</span>
+          <span className="font-semibold text-stone-900">Qwen 3.8 8B</span>
           <span className="text-[10px] text-stone-400">|</span>
           <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />

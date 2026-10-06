@@ -51,6 +51,7 @@ export function useChat(activeConversationId: string | null) {
     const tempAsstId = `stream_asst_${Date.now()}`;
     let accumulatedContent = '';
     let citations: any[] = [];
+    let personalMemories: any[] = [];
 
     try {
       let streamed = false;
@@ -61,6 +62,7 @@ export function useChat(activeConversationId: string | null) {
           onContext: (data) => {
             streamed = true;
             citations = data.citations || [];
+            personalMemories = data.personal_memories || [];
             setMessages(prev => {
               if (prev.some(m => m.id === tempAsstId)) return prev;
               return [...prev, {
@@ -68,7 +70,11 @@ export function useChat(activeConversationId: string | null) {
                 role: 'assistant',
                 content: '',
                 created_at: new Date().toISOString(),
-                metadata: { citations }
+                metadata: {
+                  citations,
+                  personal_memories: personalMemories,
+                  model: data.model || 'Qwen 3.8 8B'
+                }
               }];
             });
           },
@@ -83,7 +89,11 @@ export function useChat(activeConversationId: string | null) {
                   role: 'assistant',
                   content: accumulatedContent,
                   created_at: new Date().toISOString(),
-                  metadata: { citations }
+                  metadata: {
+                    citations,
+                    personal_memories: personalMemories,
+                    model: 'Qwen 3.8 8B'
+                  }
                 }];
               }
               const updated = [...prev];
@@ -106,8 +116,9 @@ export function useChat(activeConversationId: string | null) {
                 created_at: new Date().toISOString(),
                 metadata: {
                   citations: data.citations || citations,
+                  personal_memories: data.personal_memories || personalMemories,
                   latency_seconds: data.latency,
-                  model: 'qwen2.5:3b'
+                  model: data.model || 'Qwen 3.8 8B'
                 }
               };
               if (index === -1) return [...prev, finalMsg];

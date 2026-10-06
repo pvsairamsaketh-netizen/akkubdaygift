@@ -392,3 +392,81 @@ def test_contradiction_resolution_newer_memory_precedence():
     # Top memory should be the chocolate one
     assert 'chocolate' in results[0]['text'].lower()
 
+
+@pytest.mark.django_db
+def test_critical_vanilla_ice_cream_flow():
+    """
+    Requirement 32 Test 1 & Requirement 33:
+    1. User explicitly saves: 'Akku loves vanilla ice cream.', Category: Food & Drinks, Subject: Ice Cream
+    2. Ask: 'What is Akku\'s favorite ice cream?'
+    3. Expected: answer contains 'vanilla ice cream' and source is Saved Memory.
+    4. Must NOT say 'does not mention' or 'unknown'.
+    """
+    client = APIClient()
+    res = client.post(
+        '/api/memories/',
+        {
+            'memory_text': 'Akku loves vanilla ice cream.',
+            'category': 'food_drinks',
+            'subject': 'Ice Cream'
+        },
+        format='json',
+        HTTP_X_USER_ID='default_user'
+    )
+    assert res.status_code == 201
+
+    from chat.services.rag_graph import RAGGraphService
+    rag = RAGGraphService()
+    result = rag.answer_question(
+        question="What is Akku's favorite ice cream?",
+        user_id='default_user'
+    )
+    assert 'vanilla' in result['answer'].lower()
+    assert 'does not mention' not in result['answer'].lower()
+    assert len(result['personal_memories']) >= 1
+    assert 'vanilla' in result['personal_memories'][0]['text'].lower()
+    assert result['evidence_sufficient'] is True
+
+
+@pytest.mark.django_db
+def test_multilingual_tamil_and_telugu_memory_retrieval():
+    """
+    Requirement 32 Test 9 & 10:
+    Save: 'Akku loves vanilla ice cream.'
+    Ask in Tamil: 'Akku-ku enna ice cream romba pidikkum?'
+    Ask in Telugu: 'Akku ki ye ice cream istam?'
+    Both must retrieve the same vanilla ice cream memory.
+    """
+    client = APIClient()
+    client.post(
+        '/api/memories/',
+        {
+            'memory_text': 'Akku loves vanilla ice cream.',
+            'category': 'food_drinks',
+            'subject': 'Ice Cream'
+        },
+        format='json',
+        HTTP_X_USER_ID='default_user'
+    )
+
+    from chat.services.rag_graph import RAGGraphService
+    rag = RAGGraphService()
+
+    # Tamil query
+    ta_res = rag.answer_question(
+        question="Akku-ku enna ice cream romba pidikkum?",
+        user_id='default_user'
+    )
+    assert len(ta_res['personal_memories']) >= 1
+    assert 'vanilla' in ta_res['personal_memories'][0]['text'].lower()
+    assert any(v in ta_res['answer'].lower() for v in ('vanilla', 'vanila'))
+
+    # Telugu query
+    te_res = rag.answer_question(
+        question="Akku ki ye ice cream istam?",
+        user_id='default_user'
+    )
+    assert len(te_res['personal_memories']) >= 1
+    assert 'vanilla' in te_res['personal_memories'][0]['text'].lower()
+    assert any(v in te_res['answer'].lower() for v in ('vanilla', 'vanila'))
+

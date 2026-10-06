@@ -76,7 +76,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium text-[11px] border border-emerald-200">
-                qwen2.5:3b
+                Qwen 3.8 8B
               </span>
             </div>
 

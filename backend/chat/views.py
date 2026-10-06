@@ -124,15 +124,25 @@ class ChatStreamView(APIView):
 
 class RetrievalDebugView(APIView):
     """
-    Development-only endpoint to inspect retrieved chunks, embeddings, and similarity metrics.
+    Development-only endpoint to inspect retrieved memories, chunks, embeddings, and similarity metrics (Req 31).
     """
     def post(self, request):
         question = request.data.get('question')
         if not question:
             return Response({"error": "Question is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        user_id = get_user_id(request)
         top_k = int(request.data.get('top_k', 5))
-        min_relevance = float(request.data.get('min_relevance', 0.0))
+        min_relevance = float(request.data.get('min_relevance', 0.20))
+
+        from memories.services.memory_retriever import MemoryRetriever
+        mem_retriever = MemoryRetriever()
+        memories = mem_retriever.retrieve_memories(
+            query=question,
+            top_k=top_k,
+            min_relevance=min_relevance,
+            user_id=user_id
+        )
 
         service = RetrievalService()
         chunks = service.retrieve(
@@ -145,6 +155,24 @@ class RetrievalDebugView(APIView):
             "query": question,
             "top_k": top_k,
             "min_relevance": min_relevance,
-            "retrieved_count": len(chunks),
-            "chunks": chunks
+            "model": "Qwen 3.8 8B",
+            "retrieved_memories_count": len(memories),
+            "retrieved_memories": [
+                {
+                    "text": m.get("text"),
+                    "source": "Saved Memory" if m.get("source_type") in ("user_memory", "manual") else "Relationship Archive",
+                    "category": m.get("category"),
+                    "subject": m.get("subject"),
+                    "similarity": m.get("score")
+                } for m in memories
+            ],
+            "retrieved_chunks_count": len(chunks),
+            "retrieved_chunks": [
+                {
+                    "text": c.get("text", "")[:150],
+                    "source": "Relationship Archive",
+                    "similarity": c.get("score")
+                } for c in chunks
+            ],
+            "final_selected_context": [m.get("text") for m in memories]
         })
