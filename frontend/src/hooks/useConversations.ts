@@ -10,18 +10,20 @@ export function useConversations() {
 
   const loadConversations = useCallback(async () => {
     try {
-      setLoading(true);
       const data = await api.getConversations();
       setConversations(data);
-      if (data.length > 0 && !activeId) {
-        setActiveId(data[0].id);
-      }
+      setActiveId(current => {
+        if (!current && data.length > 0) {
+          return data[0].id;
+        }
+        return current;
+      });
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [activeId]);
+  }, []);
 
   useEffect(() => {
     loadConversations();
@@ -29,8 +31,8 @@ export function useConversations() {
 
   const createNewConversation = async (title?: string) => {
     try {
-      const newConv = await api.createConversation(title);
-      setConversations(prev => [newConv, ...prev]);
+      const newConv = await api.createConversation(title || "New Memory Chat");
+      setConversations(prev => [newConv, ...prev.filter(c => c.id !== newConv.id)]);
       setActiveId(newConv.id);
       return newConv;
     } catch (err: any) {

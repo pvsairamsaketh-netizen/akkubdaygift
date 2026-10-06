@@ -108,17 +108,25 @@ class ChatStreamView(APIView):
                     min_relevance=float(min_relevance) if min_relevance else None
                 ):
                     event_name = event.get("event", "message")
-                    data = json.dumps(event.get("data", {}))
+                    raw_data = event.get("data", {})
+                    payload = {
+                        "type": event_name,
+                        **raw_data
+                    }
+                    if event_name == "token" and "token" in raw_data and "content" not in payload:
+                        payload["content"] = raw_data["token"]
+                    data = json.dumps(payload)
                     yield f"event: {event_name}\ndata: {data}\n\n"
             except Exception as e:
-                err_data = json.dumps({"error": str(e)})
+                err_data = json.dumps({"type": "error", "error": str(e)})
                 yield f"event: error\ndata: {err_data}\n\n"
 
         response = StreamingHttpResponse(
             event_stream(),
-            content_type="text/event-stream"
+            content_type="text/event-stream; charset=utf-8"
         )
-        response['Cache-Control'] = 'no-cache'
+        response['Cache-Control'] = 'no-cache, no-transform'
+        response['Connection'] = 'keep-alive'
         response['X-Accel-Buffering'] = 'no'
         return response
 

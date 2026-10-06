@@ -79,9 +79,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           }`}
         >
           {/* Main Text Content */}
-          <div className="whitespace-pre-wrap font-sans text-[13.5px] sm:text-sm leading-relaxed">
-            {message.content}
-          </div>
+          {message.content ? (
+            <div className="whitespace-pre-wrap font-sans text-[13.5px] sm:text-sm leading-relaxed text-stone-800">
+              {message.content}
+              {message.metadata?.streaming && (
+                <span className="inline-block w-1.5 h-3.5 bg-rose-500 ml-1 animate-pulse align-middle" />
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 py-1 text-rose-500 font-sans text-xs sm:text-sm">
+              <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping shrink-0" />
+              <span className="font-medium animate-pulse">Akku is thinking & recalling memories...</span>
+            </div>
+          )}
 
           {/* Citations & Source Provenance (Requirement 19) */}
           {!isUser && ((citations && citations.length > 0) || (message.metadata?.personal_memories && message.metadata.personal_memories.length > 0)) && (

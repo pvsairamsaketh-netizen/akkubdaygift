@@ -79,13 +79,16 @@ export const ChatPage: React.FC = () => {
     // Trigger photo immediately before starting async LLM streaming
     triggerMemoryPhoto('chat');
 
-    if (!activeId) {
-      const newConv = await createNewConversation();
-      // useChat will react to activeId change and we can send message
+    let targetConvId = activeId;
+    if (!targetConvId) {
+      const newConv = await createNewConversation("New Memory Chat");
+      targetConvId = newConv.id;
       setActiveId(newConv.id);
     }
+
     await sendMessage(
       text,
+      targetConvId,
       autoSpeak && !isFromVoice,
       (audioUrl) => {
         playAudio(audioUrl);
@@ -109,9 +112,9 @@ export const ChatPage: React.FC = () => {
           triggerMemoryPhoto('memory');
           setActiveId(id);
         }}
-        onNew={() => {
+        onNew={async () => {
           triggerMemoryPhoto('memory');
-          createNewConversation();
+          await createNewConversation("New Memory Chat");
         }}
         onRename={renameConversation}
         onDelete={deleteConversation}

@@ -102,6 +102,8 @@ export const api = {
       onError?: (err: Error) => void;
     }
   ) {
+    console.debug(`[CHAT] User query sent: "${question.slice(0, 50)}..."`, { conversation_id });
+
     const res = await fetch(`${API_BASE}/chat/stream/`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -110,7 +112,9 @@ export const api = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Failed to start streaming chat");
+      const errorMsg = err.error || `Chat streaming failed with status ${res.status}`;
+      callbacks?.onError?.(new Error(errorMsg));
+      throw new Error(errorMsg);
     }
 
     const reader = res.body?.getReader();
@@ -118,42 +122,56 @@ export const api = {
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
 
-      const events = buffer.split('\n\n');
-      buffer = events.pop() || '';
+        const parts = buffer.split(/\r?\n\r?\n/);
+        buffer = parts.pop() || '';
 
-      for (const eventStr of events) {
-        if (!eventStr.trim()) continue;
-        let eventName = 'message';
-        let dataStr = '';
+        for (const part of parts) {
+          if (!part.trim()) continue;
+          let eventName = 'message';
+          const dataLines: string[] = [];
 
-        for (const line of eventStr.split('\n')) {
-          if (line.startsWith('event: ')) {
-            eventName = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            dataStr = line.slice(6).trim();
+          for (const line of part.split(/\r?\n/)) {
+            if (line.startsWith('event:')) {
+              eventName = line.slice(6).trim();
+            } else if (line.startsWith('data:')) {
+              dataLines.push(line.slice(5).trim());
+            }
           }
-        }
 
-        try {
-          const parsed = JSON.parse(dataStr);
-          if (eventName === 'context') {
-            callbacks?.onContext?.(parsed);
-          } else if (eventName === 'token') {
-            callbacks?.onToken?.(parsed.token);
-          } else if (eventName === 'done') {
-            callbacks?.onDone?.(parsed);
-          } else if (eventName === 'error') {
-            callbacks?.onError?.(new Error(parsed.error));
+          if (dataLines.length === 0) continue;
+          const dataStr = dataLines.join('\n');
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            const eventType = parsed.type || eventName || 'message';
+            const tokenText = parsed.content !== undefined ? parsed.content : (parsed.token !== undefined ? parsed.token : '');
+
+            if (eventType === 'context') {
+              console.debug("[RETRIEVAL] Documents retrieved:", parsed.citations?.length || 0, "Memories:", parsed.personal_memories?.length || 0);
+              callbacks?.onContext?.(parsed);
+            } else if (eventType === 'token') {
+              if (tokenText !== undefined) callbacks?.onToken?.(tokenText);
+            } else if (eventType === 'done') {
+              console.debug("[CHAT] Generation completed", parsed);
+              callbacks?.onDone?.(parsed);
+            } else if (eventType === 'error') {
+              console.warn("[SSE] Error event:", parsed.error);
+              callbacks?.onError?.(new Error(parsed.error || 'Server stream error'));
+            }
+          } catch (jsonErr) {
+            console.debug("[SSE] Buffer waiting for complete JSON chunk:", dataStr);
           }
-        } catch {
-          // ignore parsing error
         }
       }
+    } catch (err: any) {
+      callbacks?.onError?.(err);
+      throw err;
     }
   },
 

@@ -31,7 +31,7 @@ class ConversationService:
             metadata=metadata or {}
         )
         # Update conversation title if this is the first user message and title is default
-        if role == 'user' and conversation.title == "New Relationship Memory":
+        if role == 'user' and conversation.title in ("New Relationship Memory", "New Memory Chat"):
             # Set title from first question (up to 40 chars)
             clean_title = content.strip().replace('\n', ' ')
             if len(clean_title) > 40:
