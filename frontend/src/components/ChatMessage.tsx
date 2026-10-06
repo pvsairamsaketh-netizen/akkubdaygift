@@ -22,11 +22,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   const isCached = message.metadata?.cached;
   const rawModelName = message.metadata?.model || 'Qwen 3.8 8B';
   const displayModelName = rawModelName
-    .replace('qwen3.8:8b', 'Qwen 3.8 8B')
-    .replace('qwen3:8b', 'Qwen 3.8 8B')
-    .replace('qwen2.5:3b', 'Qwen 3.8 8B')
-    .replace(':3b', ' 3B')
-    .replace(':1.5b', ' 1.5B');
+    .replace(/qwen2\.5[\s:]*3b/gi, 'Qwen 3.8 8B')
+    .replace(/qwen3\.8[\s:]*8b/gi, 'Qwen 3.8 8B')
+    .replace(/qwen3[\s:]*8b/gi, 'Qwen 3.8 8B')
+    .replace(/^cache$/i, 'Qwen 3.8 8B');
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(message.content);
