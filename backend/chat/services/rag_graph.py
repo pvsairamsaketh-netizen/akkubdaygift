@@ -1004,12 +1004,14 @@ class RAGGraphService:
                 # Anti-Hallucination Topic Filter for Specific Property Inquiries (Section 1 & 6)
                 if topic:
                     topic_words = set(re.findall(r'\b\w{3,}\b', topic.lower())) - {"akku", "her", "she", "what", "favorite", "favourite"}
+                    distinctive_words = topic_words - {"name", "names", "detail", "details", "info", "information"}
+                    check_words = distinctive_words if distinctive_words else topic_words
                     mem_matches_topic = any(
-                        any(tw in (m.get("text") or "").lower() or tw in (m.get("subject") or "").lower() for tw in topic_words)
+                        any(tw in (m.get("text") or "").lower() or tw in (m.get("subject") or "").lower() for tw in check_words)
                         for m in final_memories
                     )
                     chunk_matches_topic = any(
-                        any(tw in (c.get("text") or "").lower() for tw in topic_words)
+                        any(tw in (c.get("text") or "").lower() for tw in check_words)
                         for c in final_chunks
                     )
                     if not mem_matches_topic and not chunk_matches_topic:
