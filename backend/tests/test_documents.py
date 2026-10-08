@@ -8,7 +8,12 @@ from documents.models import Document, DocumentChunk
 
 @pytest.mark.django_db
 def test_pdf_extraction_and_empty_pages():
-    pdf_path = os.path.abspath(os.path.join(settings.BASE_DIR, '..', 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf'))
+    candidates = [
+        os.path.abspath(os.path.join(settings.BASE_DIR, '..', 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')),
+        os.path.abspath(os.path.join(settings.BASE_DIR, 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')),
+        os.path.abspath(os.path.join(settings.BASE_DIR, 'data', 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')),
+    ]
+    pdf_path = next((p for p in candidates if os.path.exists(p)), candidates[0])
     assert os.path.exists(pdf_path), "PDF file must exist in workspace"
 
     result = PDFExtractor.extract_from_pdf(pdf_path)
@@ -50,7 +55,12 @@ def test_document_chunker():
 
 @pytest.mark.django_db
 def test_content_hash_and_duplicate_detection():
-    pdf_path = os.path.abspath(os.path.join(settings.BASE_DIR, '..', 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf'))
+    candidates = [
+        os.path.abspath(os.path.join(settings.BASE_DIR, '..', 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')),
+        os.path.abspath(os.path.join(settings.BASE_DIR, 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')),
+        os.path.abspath(os.path.join(settings.BASE_DIR, 'data', 'Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')),
+    ]
+    pdf_path = next((p for p in candidates if os.path.exists(p)), candidates[0])
     hash1 = IngestionService.compute_sha256(pdf_path)
     hash2 = IngestionService.compute_sha256(pdf_path)
     assert hash1 == hash2
