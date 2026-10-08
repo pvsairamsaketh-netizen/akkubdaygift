@@ -228,7 +228,9 @@ class PersonalMemoryListView(APIView):
 class PersonalMemoryDetailView(APIView):
     def get(self, request, mem_id):
         user_id = get_user_id(request)
-        mem = PersonalMemory.objects.filter(id=mem_id, is_active=True, user_id=user_id).first()
+        mem = PersonalMemory.objects.filter(id=mem_id, is_active=True).filter(
+            Q(user_id=user_id) | Q(source_type='initial_pdf') | Q(user_id='default_user')
+        ).first()
         if not mem:
             return Response({"error": "Memory not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = PersonalMemorySerializer(mem)
@@ -236,7 +238,9 @@ class PersonalMemoryDetailView(APIView):
 
     def patch(self, request, mem_id):
         user_id = get_user_id(request)
-        mem = PersonalMemory.objects.filter(id=mem_id, is_active=True, user_id=user_id).first()
+        mem = PersonalMemory.objects.filter(id=mem_id, is_active=True).filter(
+            Q(user_id=user_id) | Q(source_type='initial_pdf') | Q(user_id='default_user')
+        ).first()
         if not mem:
             return Response({"error": "Memory not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -317,22 +321,23 @@ class PersonalMemoryDetailView(APIView):
 
     def delete(self, request, mem_id):
         user_id = get_user_id(request)
-        mem = PersonalMemory.objects.filter(id=mem_id, user_id=user_id).first()
+        mem = PersonalMemory.objects.filter(id=mem_id).filter(
+            Q(user_id=user_id) | Q(source_type='initial_pdf') | Q(user_id='default_user')
+        ).first()
         if not mem:
             return Response({"error": "Memory not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Soft-delete in relational DB and deactivate
-        mem.is_active = False
-        mem.status = 'archived'
-        mem.save(update_fields=['is_active', 'status'])
+        mem_id_str = str(mem.id)
+        # Delete from relational DB
+        mem.delete()
 
         # Remove vector from active ChromaDB collection
         try:
             store = MemoryVectorStore.get_instance()
-            store.delete_memory(str(mem.id))
-            logger.info(f"Memory Deactivated (ID: {mem.id}) → Removed from ChromaDB active search")
+            store.delete_memory(mem_id_str)
+            logger.info(f"Memory Deleted (ID: {mem_id_str}) → Removed from ChromaDB active search")
         except Exception as e:
-            logger.warning(f"Error removing vector for memory {mem_id}: {e}")
+            logger.warning(f"Error removing vector for memory {mem_id_str}: {e}")
 
         # Invalidate answer cache
         try:
@@ -345,8 +350,8 @@ class PersonalMemoryDetailView(APIView):
 
         return Response({
             "success": True,
-            "message": f"Memory {mem_id} deactivated and removed from active retrieval."
-        })
+            "message": f"Memory {mem_id_str} deleted and removed from active retrieval."
+        }, status=status.HTTP_200_OK)
 
 
 class MemorySearchView(APIView):

@@ -26,6 +26,12 @@ class MemoryExtractor:
         (r'\b(?:she|akku)\s+(?:dislikes?|hates?|doesn\'t\s+like|can\'t\s+stand)\s+([^.\n]+)', 'likes_dislikes', 'Dislike'),
         (r'\bher\s+favou?rite\s+([a-zA-Z\s]+)\s+is\s+([^.\n]+)', 'personal_preferences', 'Favorite {0}'),
         (r'\b(?:she|akku)\s+(?:prefers?)\s+([^.\n]+)', 'personal_preferences', 'Preference'),
+
+        # Identity, Origin & Birthplace
+        (r'\b(?:akku\'?s?|saki\'?s?|her|his)\s+(?:original|real|actual)\s+name\s+(?:is|was)\s+([^.\n]+)', 'personal_preferences', 'Original Name'),
+        (r'\b(?:akku|saki)\s+(?:original|real|actual)\s+name\s+(?:is|was)\s+([^.\n]+)', 'personal_preferences', 'Original Name'),
+        (r'\b(?:she|akku)\s+was\s+born\s+(?:in|at)\s+([^.\n]+)', 'personal_preferences', 'Birthplace'),
+        (r'\b(?:her|akku\'?s)\s+birthplace\s+is\s+([^.\n]+)', 'personal_preferences', 'Birthplace'),
         
         # Health & Feelings
         (r'\b(?:she|akku)\s+(?:had|has|suffered\s+from|is\s+having)\s+(?:a\s+)?(headache|fever|cold|pain|stomach\s+ache|migraine|cough|illness)([^.\n]*)', 'health_wellness', 'Health'),
@@ -114,17 +120,19 @@ class MemoryExtractor:
             for pattern, category, subject_template in self.PATTERNS:
                 matches = re.finditer(pattern, cleaned_input, re.IGNORECASE)
                 for match in matches:
+                    m_str = match.group(0).strip()
+                    if m_str.lower().startswith("akku") or m_str.lower().startswith("saki"):
+                        fact_text = m_str
+                    else:
+                        fact_text = f"Akku: {m_str}"
                     groups = match.groups()
                     if len(groups) == 1:
                         detail = groups[0].strip()
                         subject = subject_template
-                        fact_text = f"Akku: {match.group(0).strip()}"
                     elif len(groups) == 2:
                         arg1, arg2 = groups[0].strip(), groups[1].strip()
                         subject = subject_template.format(arg1) if '{0}' in subject_template else f"{subject_template} ({arg1})"
-                        fact_text = f"Akku: {match.group(0).strip()}"
                     else:
-                        fact_text = f"Akku: {match.group(0).strip()}"
                         subject = subject_template
 
                     extracted_facts.append({
@@ -163,9 +171,11 @@ class MemoryExtractor:
             )
 
             version = 1
+            old_mem = None
             if similar_mem:
                 try:
-                    old_mem = PersonalMemory.objects.get(id=int(similar_mem["memory_id"]))
+                    old_mem_id = similar_mem.get("memory_id") or similar_mem.get("id")
+                    old_mem = PersonalMemory.objects.get(id=old_mem_id)
                     old_mem.status = "historical"
                     old_mem.is_active = False
                     old_mem.save(update_fields=["status", "is_active", "updated_at"])
@@ -175,6 +185,7 @@ class MemoryExtractor:
                     logger.info(f"Superseding memory {old_mem.id} with version {version}")
                 except Exception as e:
                     logger.warning(f"Failed to supersede old memory: {e}")
+                    old_mem = None
 
             # Create new memory
             mem = PersonalMemory.objects.create(
@@ -192,6 +203,13 @@ class MemoryExtractor:
                 status="current",
                 is_active=True
             )
+
+            if old_mem:
+                try:
+                    old_mem.superseded_by = mem
+                    old_mem.save(update_fields=["superseded_by"])
+                except Exception as e:
+                    logger.warning(f"Could not link superseded_by: {e}")
 
             # Embed and save to ChromaDB
             try:

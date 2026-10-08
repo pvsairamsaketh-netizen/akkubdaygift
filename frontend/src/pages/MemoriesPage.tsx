@@ -104,7 +104,6 @@ export const MemoriesPage: React.FC = () => {
         subject: newSubject.trim() || undefined
       });
       setEditingMemory(null);
-      triggerMemoryPhoto('memory');
       showToast("Memory updated successfully! ✨", "success");
       await fetchMemories();
     } catch (err: any) {
@@ -118,6 +117,9 @@ export const MemoriesPage: React.FC = () => {
     if (!confirm("Are you sure you want to delete this memory? It will be removed from both the database and vector search.")) return;
     try {
       await api.deleteMemory(id);
+      if (editingMemory?.id === id) {
+        setEditingMemory(null);
+      }
       showToast("Memory deleted.", "success");
       await fetchMemories();
     } catch (err: any) {
@@ -137,10 +139,9 @@ export const MemoriesPage: React.FC = () => {
   };
 
   const openEditModal = (mem: PersonalMemory) => {
-    triggerMemoryPhoto('memory');
     setEditingMemory(mem);
     setNewText(mem.memory_text);
-    setNewCategory(mem.category);
+    setNewCategory(mem.category || 'personal_preferences');
     setNewSubject(mem.subject || '');
   };
 
@@ -265,17 +266,19 @@ export const MemoriesPage: React.FC = () => {
                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 capitalize">
                     {mem.category.replace('_', ' ')}
                   </span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
+                      type="button"
                       onClick={() => openEditModal(mem)}
-                      className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+                      className="p-1 rounded-md text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors cursor-pointer"
                       title="Edit memory"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleDelete(mem.id)}
-                      className="p-1 rounded-md text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      className="p-1 rounded-md text-stone-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                       title="Delete memory"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -338,8 +341,9 @@ export const MemoriesPage: React.FC = () => {
                 {editingMemory ? "Edit Memory" : "Save New Memory"}
               </h3>
               <button
+                type="button"
                 onClick={() => { setIsAddModalOpen(false); setEditingMemory(null); }}
-                className="p-1 rounded-full text-stone-400 hover:text-stone-600"
+                className="p-1 rounded-full text-stone-400 hover:text-stone-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -372,12 +376,19 @@ export const MemoriesPage: React.FC = () => {
                   >
                     <option value="personal_preferences">Personal Preferences</option>
                     <option value="likes_dislikes">Likes & Dislikes</option>
+                    <option value="favorite">Favorites</option>
                     <option value="food_drinks">Food & Drinks</option>
-                    <option value="health_wellness">Health & Wellness</option>
-                    <option value="habits_routines">Habits & Routines</option>
+                    <option value="places_travel">Places & Travel</option>
                     <option value="important_dates">Important Dates</option>
                     <option value="shared_experiences">Shared Moments</option>
+                    <option value="relationship">Relationship</option>
+                    <option value="health_wellness">Health & Wellness</option>
+                    <option value="habits_routines">Habits & Routines</option>
                     <option value="music_entertainment">Music & Entertainment</option>
+                    <option value="movie">Movies & Shows</option>
+                    <option value="family_friends">Family & Friends</option>
+                    <option value="education">Education</option>
+                    <option value="career">Career</option>
                     <option value="other">Other</option>
                   </select>
                 </div>
@@ -390,28 +401,41 @@ export const MemoriesPage: React.FC = () => {
                     type="text"
                     value={newSubject}
                     onChange={(e) => setNewSubject(e.target.value)}
-                    placeholder="e.g. Ice Cream, Headache"
+                    placeholder="e.g. Ice Cream, Headache, Original Name"
                     className="w-full px-3 py-2 rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-400 text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setIsAddModalOpen(false); setEditingMemory(null); }}
-                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-600 text-xs sm:text-sm hover:bg-stone-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex items-center space-x-1.5 px-5 py-2 rounded-xl bg-rose-600 text-white text-xs sm:text-sm font-medium hover:bg-rose-700 shadow-md shadow-rose-200 disabled:opacity-50 cursor-pointer"
-                >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
-                  <span>{isSaving ? "Saving..." : editingMemory ? "Save Changes" : "Create Memory"}</span>
-                </button>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-rose-50">
+                {editingMemory ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(editingMemory.id)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-rose-600 hover:bg-rose-50 text-xs sm:text-sm font-medium transition-colors cursor-pointer border border-rose-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Delete</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setIsAddModalOpen(false); setEditingMemory(null); }}
+                    className="px-4 py-2 rounded-xl border border-stone-200 text-stone-600 text-xs sm:text-sm hover:bg-stone-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="flex items-center space-x-1.5 px-5 py-2 rounded-xl bg-rose-600 text-white text-xs sm:text-sm font-medium hover:bg-rose-700 shadow-md shadow-rose-200 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSaving && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
+                    <span>{isSaving ? "Saving..." : editingMemory ? "Save Changes" : "Create Memory"}</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

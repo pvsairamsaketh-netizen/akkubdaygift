@@ -150,6 +150,7 @@ CHROMA_MEMORIES_COLLECTION_NAME = 'akku_personal_memories'
 # High-Speed RAG Retrieval Settings (TOP_K = 2, max 3)
 RAG_TOP_K = int(os.getenv('RAG_TOP_K', '2'))
 RAG_MIN_RELEVANCE = float(os.getenv('RAG_MIN_RELEVANCE', '0.25'))
+RELEVANCE_THRESHOLD = float(os.getenv('RELEVANCE_THRESHOLD', '0.70'))  # Strict grounding relevance threshold
 RAG_CHUNK_SIZE = int(os.getenv('RAG_CHUNK_SIZE', '800'))
 RAG_CHUNK_OVERLAP = int(os.getenv('RAG_CHUNK_OVERLAP', '100'))
 MAX_CONTEXT_TOKENS = int(os.getenv('MAX_CONTEXT_TOKENS', '1536'))

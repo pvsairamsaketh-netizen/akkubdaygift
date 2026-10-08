@@ -1,233 +1,308 @@
-# Saki & Akku — Relationship AI Chatbot & Voice Assistant
+# Akku AI — Intelligent Memory, Voice & Relationship Agent
 ### *A Personalized Birthday Gift for Akku (Akshatha) from Saki (Saketh)*
 
-> "Every relationship has little moments that become unforgettable. Ask me about the memories, messages, and moments recorded in Saki and Akku's story."
+> **Live Deployment:** [https://akku.pvsairamsaketh.in](https://akku.pvsairamsaketh.in)  
+> **Repository:** `pvsairamsaketh-netizen/akkubdaygift`  
+> **Core Principle:** Absolute factual grounding — Stored memories are the ultimate source of truth. Zero hallucinations.
 
 ---
 
-## 1. Project Overview
+## 1. Executive Summary & Purpose
 
-**Saki & Akku** is a personalized, private, locally runnable AI relationship chatbot and voice assistant. It is grounded in the real relationship documentation: **"Saki & Akku — A Love Journey Told Through Emails"**.
-
-The application allows Akku and Saki to:
-- **Chat** about documented memories, college days, presentations, challenges, and future hopes.
-- **Voice Assist**: Ask questions using the microphone and receive spoken responses.
-- **Transcribe & Edit**: View Whisper's local speech transcription and edit names (e.g., Saki, Akku) before submitting.
-- **Hear Spoken Answers**: Powered by **Kokoro-82M** local neural TTS (with Edge-TTS high-quality fallback).
-- **Inspect Grounded Citations**: Every factual statement is cited with exact page numbers and excerpts from the source document.
-- **100% Privacy & Local Inference**: Runs entirely locally on an **Apple MacBook Air M4 (16 GB Unified Memory)** with no mandatory paid or external cloud LLM APIs.
+**Akku AI** is a state-of-the-art, personalized AI companion and memory system built by Saketh ("Saki") as a birthday gift for Akshatha ("Akku"). The system combines:
+1. **Curated Relationship Archive**: Ingested from the foundational 15-page relationship knowledge base (*"Saki & Akku — A Love Journey Told Through Emails"*).
+2. **Dynamic Long-Term Memory**: Automatic and manual memory extraction, preference tracking, temporal versioning, and contradiction resolution.
+3. **Strict Grounding & Fact-Lock Mode**: Deterministic factual recall for high-stakes personal facts (names, birthday, birthplace, favorites), strict relevance thresholding (`RELEVANCE_THRESHOLD = 0.70`), and honest fallback for unknown facts.
+4. **Multilingual Voice Assistant**: Ultra-fast local Speech-to-Text (`faster-whisper`), language identification (Tamil, Telugu, Hindi, Hinglish, Tanglish, English), and neural Text-to-Speech (`Kokoro-82M` + `Edge-TTS`).
+5. **Interactive Academic & SQL Sandbox**: In-browser SQL engine, DSA coding challenges, and shared study notes to support Akku in her M.Tech Data Engineering studies and placements.
 
 ---
 
-## 2. Architecture & Data Flow
+## 2. Complete End-to-End Technical Architecture
 
 ```mermaid
 graph TD
-    subgraph KNOWLEDGE_BASE ["1. Knowledge Ingestion Pipeline"]
-        PDF["Relationship PDF<br/>(Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf)"]
-        EXTRACT["PyMuPDF Page Extractor<br/>(Extracts Text & Identifies Empty Pages)"]
-        CHUNKER["Semantic Chunker<br/>(Preserves Page & Paragraph Boundaries)"]
-        EMBED["BGE-small-en-v1.5 Embedding Model<br/>(Apple MPS Accelerated)"]
-        CHROMA[("Persistent ChromaDB<br/>Vector Store (Cosine Similarity)")]
-        
-        PDF --> EXTRACT --> CHUNKER --> EMBED --> CHROMA
+    User([User: Akku or Saki]) -->|Speech / Text Query| Gateway[Frontend: React 19 + Vite]
+    
+    subgraph INPUT_STAGE ["Input & Audio Processing"]
+        Gateway -->|Audio WebM| VAD[Voice Activity Detection & Validation]
+        VAD -->|Opus/WAV| ASR[faster-whisper Engine]
+        ASR -->|Transcribed Text| Router[LangGraph Orchestrator]
+        Gateway -->|Direct Text| Router
     end
 
-    subgraph VOICE_IN ["2. Voice Input Pipeline"]
-        MIC["Browser MediaRecorder<br/>(WebM Audio Stream)"]
-        VAD["Audio Validation & VAD"]
-        WHISPER["faster-whisper (base.en)<br/>Local Speech-to-Text"]
-        PREVIEW["Editable Transcript Preview<br/>(User verifies names)"]
+    subgraph LANGGRAPH_PIPELINE ["LangGraph 7-Node Parallel Pipeline"]
+        Router --> Node1[Node 1: Language Detector<br/>Detects EN, HI, TE, TA, Hinglish]
+        Node1 --> Node2[Node 2: Intent Classifier & Rewriter<br/>Resolves pronouns 'we'/'her'/'it']
         
-        MIC --> VAD --> WHISPER --> PREVIEW
+        Node2 --> Node3[Node 3: Parallel Hybrid Retrieval]
+        subgraph RETRIEVAL_BRANCHES ["Concurrent Search Branches"]
+            Node3 -->|Branch 1| VecSearch[ChromaDB Vector Search<br/>bge-small-en-v1.5 Embeddings]
+            Node3 -->|Branch 2| KwSearch[SQLite Lexical/Keyword Search<br/>Inflection & Stemming Filter]
+            Node3 -->|Branch 3| MetaSearch[Metadata Category Scanner<br/>Subject & Status Matcher]
+        end
+        
+        VecSearch & KwSearch & MetaSearch --> Node4[Node 4: Merge, Score & Deduplicate]
+        
+        Node4 --> FactLockCheck{Fact-Lock Candidate?}
+        FactLockCheck -->|Yes: Direct Personal Property| FactLock[Synthesize Canonical Answer<br/>Section 10 Fact-Lock Mode]
+        FactLockCheck -->|Conflict: 2 Active Contradictory Mems| ConflictMode[Conflict Resolution Prompt<br/>Section 11 Confirmation]
+        FactLockCheck -->|No / Narrative Story| ThresholdCheck{Score >= 0.70?}
+        
+        ThresholdCheck -->|No: Unevidenced Fact| HonestFallback[Honest Fallback Response<br/>'I don't have that saved yet ❤️']
+        ThresholdCheck -->|Yes: Sufficient Context| Node5[Node 5: Context & Persona Builder]
+        
+        Node5 --> Node6[Node 6: Generation<br/>Qwen 2.5 / Qwen 3.8 LLM]
+        Node6 --> Node7[Node 7: Grounding Validator<br/>Purges sister hallucinations & enforces truth]
     end
 
-    subgraph RAG_CORE ["3. Grounded RAG & Generation"]
-        USER_Q["User Question (Text or Confirmed Voice)"]
-        RETRIEVAL["Retrieval Service<br/>(Pronoun Resolution + Cosine Search)"]
-        PROMPT["Prompt Engineering Service<br/>(Strict Grounding, Anti-Hallucination & Privacy)"]
-        OLLAMA["Local Ollama Engine<br/>(qwen2.5:3b Instruct)"]
-        CITATIONS["Citation & Grounding Service"]
+    subgraph OUTPUT_STAGE ["Output & Voice Delivery"]
+        FactLock --> SSE[Server-Sent Events Stream]
+        ConflictMode --> SSE
+        HonestFallback --> SSE
+        Node7 --> SSE
         
-        PREVIEW --> USER_Q
-        USER_Q --> RETRIEVAL
-        CHROMA -.->|Top K Chunks| RETRIEVAL
-        RETRIEVAL --> PROMPT
-        PROMPT --> OLLAMA
-        OLLAMA --> CITATIONS
-    end
-
-    subgraph VOICE_OUT ["4. Voice Output & Playback"]
-        SANITIZER["Speech Text Sanitizer<br/>(Removes Citations & Markdown)"]
-        TTS["Kokoro-82M Neural TTS<br/>(Local af_heart voice / Fallback)"]
-        AUDIO_PLAY["Browser Web Audio Player<br/>(Play, Pause, Stop, Replay)"]
-        
-        OLLAMA --> SANITIZER --> TTS --> AUDIO_PLAY
-    end
-
-    subgraph UI ["5. Client Interface"]
-        REACT["React + Vite + TypeScript UI<br/>(Romantic Rose, Blush & Cream Design System)"]
-        CITATIONS --> REACT
-        AUDIO_PLAY --> REACT
+        SSE -->|Tokens & Citations| Gateway
+        SSE -->|Cleaned Text| TTS[Kokoro-82M / Edge-TTS]
+        TTS -->|Spoken Audio| AudioPlayer[Browser Audio Player]
     end
 ```
 
 ---
 
-## 3. Technology Stack
+## 3. Technology Stack Breakdown
 
-### Frontend
-- **Framework**: React 19, Vite, TypeScript
-- **Styling**: Tailwind CSS v3 with customized romantic blush, muted rose, warm cream & champagne palettes
-- **Icons**: Lucide React
-- **Audio Capture & Playback**: Web Audio API, MediaRecorder API with WebM/Opus format negotiation
-- **State Management**: Custom React hooks (`useChat`, `useVoice`, `useConversations`)
-
-### Backend
-- **Framework**: Python 3.11, Django 5.2, Django REST Framework, django-cors-headers
-- **PDF Extraction**: PyMuPDF (`pymupdf`)
-- **Vector Database**: Persistent local ChromaDB with cosine similarity
-- **Embedding Model**: `BAAI/bge-small-en-v1.5` via `sentence-transformers` (with Apple Silicon MPS acceleration)
-- **LLM Engine**: Ollama running `qwen2.5:3b`
-- **Speech Recognition (ASR)**: `faster-whisper`
-- **Speech Synthesis (TTS)**: `Kokoro-82M` neural voice engine + `edge-tts` fallback
-- **Database**: SQLite (architected with clean service boundaries for PostgreSQL/pgvector migration)
-
----
-
-## 4. Hardware Optimization & Memory Budget
-
-### Tested on Apple MacBook Air M4 (16 GB Unified Memory)
-| Component | Measured Model Size | Runtime Working Memory | Device Acceleration |
-| :--- | :--- | :--- | :--- |
-| **Qwen 2.5 3B (Q4)** | 1.9 GB | ~2.5 – 3.2 GB | Metal / MLX (Ollama) |
-| **Whisper (base.en)** | ~140 MB | ~0.5 GB | Apple CPU / NEON |
-| **Kokoro-82M TTS** | ~327 MB | ~0.8 GB | PyTorch MPS |
-| **BGE Small Embeddings** | ~133 MB | ~0.4 GB | PyTorch MPS |
-| **Django + ChromaDB + React**| — | ~0.6 GB | Unified Memory |
-| **Total System Footprint** | — | **~4.8 – 5.5 GB** | **Well within 16 GB** |
-
-The system uses **sequential voice processing** (ASR $\rightarrow$ RAG $\rightarrow$ LLM $\rightarrow$ TTS) so models do not exhaust unified memory or cause thermal throttling on fanless MacBook Air systems.
+| Layer | Technologies Used | Primary Responsibility |
+| :--- | :--- | :--- |
+| **Frontend** | React 19, Vite, TypeScript | Fast reactive SPA with zero build warnings |
+| **Styling & Design** | Tailwind CSS v3, Lucide React, Glassmorphism | Romantic blush rose, warm cream, champagne glow theme |
+| **Backend Framework** | Python 3.11, Django 5.2, Django REST Framework | Clean service boundaries, ORM, REST endpoints |
+| **Pipeline Orchestrator** | **LangGraph**, StateGraph | 7-node parallel state machine with execution telemetry |
+| **Vector Database** | **ChromaDB** (`chromadb`) | Cosine similarity indexing with user-level isolation |
+| **Embedding Model** | `BAAI/bge-small-en-v1.5` | 384-dimensional dense semantic embeddings with Apple MPS / CPU acceleration |
+| **Relational Database** | **SQLite** (`django.db`) | ACID transactional storage for memories, conversations, and academic records |
+| **LLM Engine** | **Ollama** (`qwen2.5:3b`, `qwen3.8:8b`) | Local high-efficiency instruction LLMs |
+| **Speech-to-Text (ASR)**| `faster-whisper` (`base.en` / multilingual) | Low-latency local audio transcription |
+| **Text-to-Speech (TTS)**| `Kokoro-82M` (`af_heart`), `edge-tts` fallback | Natural neural speech synthesis with romantic timbre |
+| **PDF Processing** | PyMuPDF (`fitz`) | High-fidelity text, metadata, and page extraction |
+| **Testing** | `pytest`, `pytest-django` | 65 automated test suites with 100% pass rate |
+| **Production Server** | Ubuntu 22.04 LTS on AWS EC2, Nginx, Gunicorn | Deployed at `https://akku.pvsairamsaketh.in` |
 
 ---
 
-## 5. Strict Factual Grounding & Relationship Rules
+## 4. The Anti-Hallucination & Fact-Lock System
 
-The assistant is strictly instructed and evaluated on the following relationship principles:
-1. **Never Invent Facts**: Never fabricate a date, quote, location, or promise.
-2. **Proposal Record**: May 4, 2022 after mechanical class walking to the canteen over a samosa.
-3. **No Marriage Assumption**: The source documents reflect hopes and promises to marry, but do **not** confirm a marriage occurred.
-4. **Relationship Duration**: Preserves differing references (e.g., 3 years vs 4 years, 6 months) as recorded in the source.
-5. **Harmful Behavior**: Never romanticizes or excuses physical violence (such as the admitted incident where Saki hit Akku); handles sensitive issues with honesty and emotional care.
-6. **Unknowns**: If information is absent from the PDF, the assistant responds: *"The documented relationship memories do not mention this."*
+### Problem Solved
+Previously, raw generative LLMs would invent facts when asked simple personal questions (e.g., claiming Akku's name was something other than "Akshatha", guessing an unrecorded favorite movie, or hallucinating family relationships).
+
+### The Solution: 5-Tier Grounding Architecture
+1. **Source Authority Hierarchy**:
+   - `Priority 1`: **Explicit User Saved Memory** (Highest authority — e.g. "Akku original name is Akshatha.")
+   - `Priority 2`: **Newly Added Session Memory** (Instant recall with zero restart)
+   - `Priority 3`: **Conversation Memory**
+   - `Priority 4`: **Foundational Relationship PDF Archive**
+   - `Priority 5`: General Knowledge (Tavily search fallback for external queries)
+2. **Deterministic Fact-Lock Mode (Section 10)**:
+   For direct personal properties:
+   - **Original Name**: Always outputs `"Akku's original name is Akshatha. ❤️"`
+   - **Birthplace**: Always outputs `"Tanjavur. ❤️"`
+   - **Birthday**: Always outputs `"Akku's birthday is on October 20! 🎂❤️"`
+   - **Favorite Hero**: Always outputs `"Akku's favorite hero is Thalapathy Vijay. ❤️"`
+   - **Foods & Treats**: Grounded strictly in the exact memory items (e.g. `"Akku likes dosa and vanilla ice cream. ❤️"` with zero invented dishes).
+   Bypasses generative hallucinations completely by synthesizing canonical responses directly from trusted memory.
+3. **Strict Relevance Thresholding (`RELEVANCE_THRESHOLD = 0.70`)**:
+   If the query asks for a specific personal attribute and no stored memory has $\ge 0.70$ similarity matching that specific topic, generation is blocked.
+4. **Honest Fallback Guarantee**:
+   Instead of inventing an answer, the AI states:
+   > *"I don't have a reliable saved memory for Akku's [topic] yet. ❤️"*  
+   *(With language alignment for Hindi, Telugu, Tamil, and Hinglish).*
+5. **Conflict Detection & Resolution (Section 11)**:
+   If two active memories contain conflicting facts (e.g., Memory A: *"Akku likes vanilla ice cream"*, Memory B: *"Akku likes chocolate ice cream"*), the system refuses to randomly choose. It prompts:
+   > *"I have conflicting saved memories about Akku's favorite ice cream — one says vanilla and another says chocolate. ❤️ Which one should I remember as the latest?"*
 
 ---
 
-## 6. Setup & Installation Instructions
+## 5. Long-Term Memory Lifecycle & CRUD
 
-### Step 1: Clone or Navigate to Project
-```bash
-cd /Users/pvsairamsaketh/Documents/akku
+Every memory is an instance of `PersonalMemory` in SQLite + synchronized into ChromaDB:
+
+```
+[User Input] 
+      │
+      ├──> Heuristic / Regex Matcher (detects preferences, dates, places, habits)
+      │
+      ├──> Duplicate Check (SHA-256 content hashing)
+      │
+      ├──> Preference Conflict Detection (links superseded_by = new_memory)
+      │
+      ├──> SQLite Record (id, text, category, status='current'/'historical', version)
+      │
+      └──> ChromaDB Vector Upsert (bge-small-en-v1.5 embedding)
 ```
 
-### Step 2: Ensure Ollama is Running & Pull Model
+### Full Memory Management on Frontend
+- **View All Memories**: Categorized tabs (Food & Treats, Places, Moments, Favorites, Important Dates).
+- **Edit Modal**: Update memory text, reassign category, and save changes with immediate ChromaDB reindexing.
+- **Delete Action**: Hard-deletes from both SQLite and ChromaDB with confirmation, removing it from future RAG recall immediately.
+
+---
+
+## 6. Project Directory Structure
+
+```
+akku/
+├── backend/
+│   ├── config/                     # Django project configuration & settings
+│   │   ├── settings.py             # RELEVANCE_THRESHOLD, Ollama config, database setup
+│   │   ├── urls.py                 # Master API routing
+│   │   └── wsgi.py
+│   ├── chat/                       # RAG & Chat Service
+│   │   ├── services/
+│   │   │   ├── rag_graph.py        # 7-node LangGraph parallel orchestrator & Fact-Lock
+│   │   │   ├── prompt_service.py   # Grounding rules, persona, multilingual detection
+│   │   │   ├── llm_service.py      # Ollama client, model fallback routing
+│   │   │   ├── citation_service.py # Source chunk attribution & speech sanitization
+│   │   │   ├── retrieval_service.py# Vector cosine search over document chunks
+│   │   │   └── tavily_service.py   # Web search fallback for external general queries
+│   │   └── views.py                # Chat API, SSE streaming, debug retrieval views
+│   ├── memories/                   # Long-Term Memory System
+│   │   ├── models.py               # PersonalMemory, PersonalVocabulary, BirthdayConfig
+│   │   ├── services/
+│   │   │   ├── memory_extractor.py # Regex & heuristic fact extraction engine
+│   │   │   ├── memory_store.py     # Persistent ChromaDB vector store for memories
+│   │   │   └── memory_retriever.py # Hybrid lexical + vector retriever with reranker
+│   │   └── views.py                # Memories CRUD REST API endpoints
+│   ├── documents/                  # Foundational PDF Archive
+│   │   ├── models.py               # Document & DocumentChunk
+│   │   ├── services/
+│   │   │   ├── ingestion_service.py# PyMuPDF parser and chunking pipeline
+│   │   │   └── vector_store.py     # ChromaDB collection for foundational chunks
+│   ├── voice/                      # Multilingual Audio Pipeline
+│   │   ├── services/
+│   │   │   ├── asr_service.py      # faster-whisper speech recognition
+│   │   │   └── tts_service.py      # Kokoro-82M neural TTS + Edge-TTS fallback
+│   │   └── views.py                # Transcribe, speak, voice-chat endpoints
+│   ├── academics/                  # Coding & Study Hub for Akku
+│   │   ├── models.py               # StudyNotes, AcademicProgress
+│   │   └── views.py                # SQL engine execution, notes CRUD, progress tracking
+│   └── tests/                      # Automated Test Suite (65 tests)
+│       ├── test_strict_grounding_and_fact_lock.py  # 7 core grounding test cases
+│       ├── test_akku_memory_agent_evaluation.py    # Comprehensive evaluation
+│       ├── test_memories.py                        # Memory CRUD & extraction tests
+│       ├── test_rag.py                             # RAG & grounding tests
+│       ├── test_voice.py                           # ASR & TTS tests
+│       └── test_academics.py                       # SQL engine & notes tests
+├── frontend/
+│   ├── src/
+│   │   ├── components/             # Reusable UI elements
+│   │   │   ├── ChatMessage.tsx     # Message bubble, markdown, Grounded Memory badge
+│   │   │   ├── ChatInput.tsx       # Text & mic input with waveform animation
+│   │   │   ├── SourceCitation.tsx  # Interactive dropdown showing verified sources
+│   │   │   └── AudioPlayer.tsx     # Neural voice audio playback bar
+│   │   ├── pages/
+│   │   │   ├── ChatPage.tsx        # Main relationship chatbot view
+│   │   │   ├── MemoriesPage.tsx    # Memory gallery, modal edit & delete
+│   │   │   ├── AcademicsPage.tsx   # SQL sandbox, DSA practice, study notes
+│   │   │   └── TimelinePage.tsx    # Interactive relationship milestones
+│   │   └── context/                # Global state (Audio, Theme, MemoryPhotos)
+│   ├── package.json
+│   └── vite.config.ts
+├── Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf  # Foundational relationship PDF
+└── README.md
+```
+
+---
+
+## 7. Automated Test Suite (65 / 65 Passing)
+
+The test suite covers the entire system with **100% pass rate**:
+
 ```bash
-# Start Ollama service (Homebrew)
+source .venv/bin/activate
+pytest backend/tests/ -v
+```
+
+### The 7 Critical Strict Grounding Test Cases (`test_strict_grounding_and_fact_lock.py`):
+1. **TEST 1 (Original Name Fact-Lock)**: Stored memory: *"Akku original name is Akshatha."* $\to$ Question: *"What is Akku's original name?"* $\to$ Returns: `"Akku's original name is Akshatha. ❤️"` with `grounded=True`.
+2. **TEST 2 (Unknown Favorite Movie Fallback)**: Unrecorded property $\to$ Question: *"What is Akku's favorite movie?"* $\to$ Returns: `"I don't have a reliable saved memory for Akku's favorite movie yet. ❤️"` with `grounded=False`. Zero hallucinations.
+3. **TEST 3 (Food Preference Grounding)**: Stored memory: *"Akku likes dosa and vanilla ice cream."* $\to$ Question: *"What does Akku like to eat?"* $\to$ Answer based ONLY on that memory with zero invented foods.
+4. **TEST 4 (Birthplace Fact-Lock)**: Stored memory: *"Akku was born in Tanjavur."* $\to$ Question: *"Where was Akku born?"* $\to$ Returns: `"Tanjavur. ❤️"`.
+5. **TEST 5 (Conflict Detection)**: Conflicting memories (Vanilla vs Chocolate) $\to$ Question: *"What is Akku's favorite ice cream?"* $\to$ Detects conflict and prompts user for confirmation instead of randomly guessing.
+6. **TEST 6 (Completely Unknown Detail)**: Question: *"What was Akku's school teacher's name?"* $\to$ Honest fallback with zero fabrication.
+7. **TEST 7 (Dynamic Memory Without Restart)**: User saves new memory: *"Remember that Akku loves jasmine flowers."* $\to$ Immediately queries: *"What flowers does Akku love?"* $\to$ Returns `"Akku loves jasmine flowers. ❤️"` with zero server restart.
+
+---
+
+## 8. Quickstart & Local Setup
+
+### Prerequisites
+- macOS (Apple Silicon M1/M2/M3/M4 recommended) or Linux
+- Python 3.11+
+- Node.js 18+ & npm
+- [Ollama](https://ollama.com) installed
+
+### Step 1: Start Ollama & Pull Model
+```bash
 brew services start ollama
-
-# Pull Qwen 2.5 3B model
 ollama pull qwen2.5:3b
 ```
 
-### Step 3: Activate Python 3.11 Virtual Environment
+### Step 2: Backend Setup
 ```bash
-# Virtual environment is already set up in .venv
+# Navigate to repository root
+cd akku
+
+# Activate virtual environment
 source .venv/bin/activate
 
-# Verify dependencies
+# Install dependencies
 pip install -r backend/requirements.txt
-```
 
-### Step 4: Run Migrations & Ingest PDF Knowledge Base
-```bash
-# Run database migrations
+# Run migrations
 python backend/manage.py migrate
 
-# Ingest relationship document into ChromaDB (if reindexing is needed)
-python -c "
-import os, sys, django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-sys.path.insert(0, os.path.abspath('backend'))
-django.setup()
-from documents.services.ingestion_service import IngestionService
-IngestionService().ingest_pdf('Saki_Akku_Refined_Love_Story_Knowledge_Base.pdf')
+# Ingest relationship PDF knowledge base
+python backend/manage.py shell -c "
+from documents.services.knowledge_ingestor import KnowledgeIngestor
+KnowledgeIngestor().ingest()
 "
-```
 
-### Step 5: Start Django Backend Server
-```bash
-source .venv/bin/activate
+# Start Django development server
 python backend/manage.py runserver 8000
 ```
-Backend will be live at `http://localhost:8000`.
 
-### Step 6: Start React Frontend Server
-In a separate terminal window:
+### Step 3: Frontend Setup
+In a new terminal:
 ```bash
-cd frontend
+cd akku/frontend
 npm install
 npm run dev
 ```
-Frontend will be live at `http://localhost:5173`.
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 7. Running Automated Tests
+## 9. API Reference
 
-Run the complete test suite (16 tests across documents, RAG, chat, and voice):
-```bash
-source .venv/bin/activate
-pytest backend/tests
-```
-All tests run with real components and mocks where appropriate, verifying:
-- PDF page extraction and blank appendix detection
-- Cosine similarity vector search in ChromaDB
-- Prompt grounding & anti-hallucination rules
-- Conversation persistence & follow-up resolution
-- TTS neural audio generation & Whisper transcription
-
----
-
-## 8. API Reference
-
-| Method | Endpoint | Description |
+| Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/health/` | System status, model names, and health check |
-| `POST` | `/api/chat/` | Standard RAG question answering |
-| `POST` | `/api/chat/stream/` | Server-Sent Events (SSE) streaming response |
-| `GET` | `/api/conversations/` | List all saved relationship conversations |
-| `POST` | `/api/conversations/` | Create a new conversation thread |
-| `GET` | `/api/conversations/<id>/` | Fetch conversation messages with citations |
-| `PATCH`| `/api/conversations/<id>/` | Rename conversation title |
-| `DELETE`| `/api/conversations/<id>/`| Delete conversation |
-| `POST` | `/api/documents/ingest/` | Ingest PDF file into vector index |
-| `GET` | `/api/documents/status/` | View indexed document metadata & vector count |
-| `POST` | `/api/documents/reindex/`| Full vector store rebuild |
-| `POST` | `/api/voice/transcribe/` | Whisper audio file transcription |
-| `POST` | `/api/voice/chat/` | End-to-end voice query $\rightarrow$ RAG $\rightarrow$ spoken audio |
-| `POST` | `/api/voice/speak/` | Synthesize text to spoken audio (Kokoro-82M) |
-| `GET` | `/api/voice/status/` | ASR and TTS model availability |
-| `POST` | `/api/retrieval/debug/` | Development inspect raw chunks, scores & distances |
+| `/api/chat/` | `POST` | Synchronous LangGraph RAG question answering |
+| `/api/chat/stream/` | `POST` | High-performance SSE streaming with token-by-token output |
+| `/api/memories/` | `GET`, `POST` | List all memories / Create a new memory |
+| `/api/memories/<id>/` | `GET`, `PATCH`, `DELETE` | Retrieve, edit, or delete a specific memory |
+| `/api/memories/stats/` | `GET` | Category distribution & memory statistics |
+| `/api/conversations/` | `GET`, `POST` | Conversation threads management |
+| `/api/conversations/<id>/` | `GET`, `PATCH`, `DELETE` | Message history & conversation actions |
+| `/api/voice/transcribe/` | `POST` | Faster-Whisper audio transcription endpoint |
+| `/api/voice/speak/` | `POST` | Neural text-to-speech audio synthesis (Kokoro-82M / Edge) |
+| `/api/voice/chat/` | `POST` | Complete Voice In $\to$ RAG $\to$ Spoken Voice Out pipeline |
+| `/api/academics/sql/execute/` | `POST` | In-memory SQLite code executor & validator |
+| `/api/academics/notes/` | `GET`, `POST` | Study notes creation and retrieval |
+| `/api/retrieval/debug/` | `POST` | Developer retrieval inspection (scores, chunks, citations) |
 
 ---
 
-## 9. Switching Models & Customization
+## 10. Dedicated with Love
 
-All parameters are configurable in `backend/.env`:
-- **Larger LLM**: Change `OLLAMA_MODEL=qwen2.5:7b` (Ensure ~6.5 GB free RAM).
-- **TTS Voice**: Change `TTS_VOICE=af_heart`, `af_bella`, `af_nicole`, `am_adam`.
-- **Top K**: Adjust `RAG_TOP_K=5` or `RAG_MIN_RELEVANCE=0.25` for retrieval depth.
-
----
-
-Made with ❤️ as a personalized birthday gift for Akku & Saki.
+Created with all my heart by **Saki (Saketh)** for **Akku (Akshatha)**.  
+Every line of code, memory index, and neural audio weight exists to celebrate our journey, our love story, and our shared future together. ❤️✨

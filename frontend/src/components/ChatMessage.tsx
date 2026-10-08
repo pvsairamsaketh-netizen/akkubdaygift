@@ -61,7 +61,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           <span className="text-xs font-bold text-stone-900 font-serif">
             {isUser ? 'Saki' : 'Akku AI'}
           </span>
-          {!isUser && (
+          {!isUser && message.metadata?.grounded === true && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-medium border border-rose-200/60 flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-rose-500" />
               <span>Grounded Memory</span>

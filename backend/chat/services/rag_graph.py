@@ -23,6 +23,7 @@ import logging
 from typing import TypedDict, List, Dict, Any, Optional, Generator
 from langgraph.graph import StateGraph, START, END
 
+from django.conf import settings
 from django.db.models import Q
 from chat.services.retrieval_service import RetrievalService
 from chat.services.prompt_service import PromptService
@@ -73,6 +74,8 @@ class ChatState(TypedDict, total=False):
     raw_answer: str
     answer: str
     grounding_passed: bool
+    grounded: bool
+    fact_locked_answer: Optional[str]
     
     # Timing Telemetry (all in milliseconds)
     timings: Dict[str, float]
@@ -163,11 +166,36 @@ class RAGGraphService:
 
     @staticmethod
     def _extract_fact_topic(question: str) -> Optional[str]:
-        """Extracts the subject or property being asked about, e.g. 'favorite movie', 'ice cream', etc."""
+        """Extracts the subject or property being asked about, e.g. 'favorite movie', 'original name', etc."""
         q = question.lower().strip()
+
+        # High-priority exact property triggers
+        if any(w in q for w in ["original name", "real name", "actual name", "original_name"]):
+            return "original name"
+        if any(w in q for w in ["born", "birthplace", "birth place"]):
+            return "birthplace"
+        if any(w in q for w in ["birthday", "bday"]):
+            return "birthday"
+        if any(w in q for w in ["teacher", "school teacher"]):
+            return "school teacher's name"
+        if any(w in q for w in ["hero", "actor"]):
+            return "favorite hero"
+        if any(w in q for w in ["movie", "film"]):
+            return "favorite movie"
+        if any(w in q for w in ["flower", "flowers"]):
+            return "favorite flowers"
+        if any(w in q for w in ["ice cream", "icecream"]):
+            return "favorite ice cream"
+        if any(w in q for w in ["color", "colour"]):
+            return "favorite color"
+        if any(w in q for w in ["eat", "food", "dishes", "dish"]):
+            return "favorite food"
+        if any(w in q for w in ["wear", "outfit", "clothes"]):
+            return "outfit on that day"
+
         patterns = [
             r'favou?rite\s+([a-zA-Z\s]+)',
-            r'what\s+(?:is|are)\s+(?:akku\'?s|her)\s+([a-zA-Z\s]+)',
+            r'what\s+(?:is|are)\s+(?:akku\'?s|saki\'?s|her|his)\s+([a-zA-Z\s]+)',
             r'what\s+does\s+(?:akku|she)\s+(?:like|love|dislike|prefer|eat|drink)\s*(?:about|for|to)?\s*([a-zA-Z\s]*)',
             r'what\s+(?:did|does)\s+(?:akku|she)\s+say\s+about\s+([a-zA-Z\s]+)',
             r'tell\s+me\s+about\s+(?:akku\'?s|her)\s+([a-zA-Z\s]+)',
@@ -187,12 +215,124 @@ class RAGGraphService:
                 if cleaned and len(cleaned) > 2 and not any(cleaned.startswith(w) for w in ["you", "we", "the"]):
                     return cleaned
 
-        if "wear" in q or "outfit" in q or "clothes" in q:
-            return "outfit on that day"
-        if "flower" in q:
-            return "favorite flower"
-        if "movie" in q or "film" in q:
-            return "favorite movie"
+        return None
+
+    @staticmethod
+    def _format_grounded_answer(text: str) -> str:
+        """Ensures the answer has clean punctuation and a single romantic heart emoji."""
+        cleaned = re.sub(r'[\s\.❤️✨😊!]+$', '', text.strip())
+        return f"{cleaned}. ❤️"
+
+    @classmethod
+    def _synthesize_fact_lock_answer(cls, question: str, memory_item: Dict[str, Any]) -> Optional[str]:
+        """
+        Synthesizes a direct, canonical answer directly from a trusted memory.
+        Enforces Section 10 Fact-Lock mode for simple factual queries.
+        """
+        q_lower = question.lower()
+        m_text = (memory_item.get("text") or "").strip()
+        if not m_text:
+            return None
+
+        # Clean common prefixes
+        clean_text = m_text
+        for prefix in ["Akku:", "Saki:", "Answer:", "Note:"]:
+            if clean_text.lower().startswith(prefix.lower()):
+                clean_text = clean_text[len(prefix):].strip()
+
+        # 1. Original Name
+        if any(w in q_lower for w in ["original name", "real name", "actual name", "original_name"]):
+            if "akshatha" in clean_text.lower():
+                return "Akku's original name is Akshatha. ❤️"
+            elif "saketh" in clean_text.lower():
+                return "Saki's original name is Saketh. ❤️"
+            else:
+                formatted = re.sub(r'\bAkku\s+original\s+name\b', "Akku's original name", clean_text, flags=re.IGNORECASE)
+                return cls._format_grounded_answer(formatted)
+
+        # 2. Birthplace / Where born
+        if any(w in q_lower for w in ["born", "birthplace", "birth place"]):
+            if "tanjavur" in clean_text.lower() or "thanjavur" in clean_text.lower():
+                return "Tanjavur. ❤️"
+            else:
+                return cls._format_grounded_answer(clean_text)
+
+        # 3. Birthday
+        if any(w in q_lower for w in ["birthday", "bday"]):
+            if "october 20" in clean_text.lower() or "20 october" in clean_text.lower():
+                return "Akku's birthday is on October 20! 🎂❤️"
+            else:
+                return cls._format_grounded_answer(clean_text)
+
+        # 4. Favorite Hero / Actor
+        if any(w in q_lower for w in ["hero", "favorite actor", "favourite actor"]):
+            if "thalapathy" in clean_text.lower() or "vijay" in clean_text.lower():
+                return "Akku's favorite hero is Thalapathy Vijay. ❤️"
+            else:
+                return cls._format_grounded_answer(clean_text)
+
+        # 5. Food, Flowers, General Preferences & Direct Property Inquiries
+        pref_keywords = ["food", "eat", "drink", "dish", "dishes", "ice cream", "icecream", "flower", "flowers", "color", "colour", "hobby", "hobbies", "prefer"]
+        if any(w in q_lower for w in pref_keywords):
+            if clean_text.lower().startswith("she "):
+                clean_text = "Akku " + clean_text[4:]
+            elif clean_text.lower().startswith("her "):
+                clean_text = "Akku's " + clean_text[4:]
+            elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
+                if not clean_text.lower().startswith("our "):
+                    clean_text = f"Akku {clean_text}"
+            return cls._format_grounded_answer(clean_text)
+
+        return None
+
+    @classmethod
+    def _detect_memory_conflicts(cls, memories: List[Dict[str, Any]], topic: Optional[str], question: str) -> Optional[str]:
+        """
+        Detects conflicting active memories on the same personal attribute (Section 11).
+        If multiple current memories state conflicting facts, asks the user for confirmation.
+        """
+        q_lower = question.lower()
+        active_mems = [
+            m for m in memories
+            if m.get("status") == "current" and float(m.get("composite_score", m.get("score", 0))) >= 0.70
+        ]
+        if len(active_mems) < 2:
+            return None
+
+        mem1_text = (active_mems[0].get("text") or "").lower()
+        mem2_text = (active_mems[1].get("text") or "").lower()
+
+        # 1. Ice cream conflict check
+        if any(w in q_lower for w in ["ice cream", "icecream"]):
+            flavors = ["vanilla", "chocolate", "mango", "strawberry", "butterscotch", "pista", "black current"]
+            f1 = [fl for fl in flavors if fl in mem1_text]
+            f2 = [fl for fl in flavors if fl in mem2_text]
+            if f1 and f2 and f1[0] != f2[0]:
+                return f"I have conflicting saved memories about Akku's favorite ice cream — one says {f1[0]} and another says {f2[0]}. ❤️ Which one should I remember as the latest?"
+
+        # 2. Color conflict check
+        if any(w in q_lower for w in ["color", "colour"]):
+            colors = ["pink", "blue", "red", "yellow", "black", "white", "green", "purple", "lavender"]
+            c1 = [col for col in colors if col in mem1_text]
+            c2 = [col for col in colors if col in mem2_text]
+            if c1 and c2 and c1[0] != c2[0]:
+                return f"I have conflicting saved memories about Akku's favorite color — one says {c1[0]} and another says {c2[0]}. ❤️ Which one should I remember as the latest?"
+
+        # 3. Generic topic conflict check
+        if topic:
+            topic_words = set(re.findall(r'\b\w{3,}\b', topic.lower())) - {"akku", "her", "she", "what", "favorite", "favourite"}
+            mem1_has_topic = any(tw in mem1_text or tw in (active_mems[0].get("subject") or "").lower() for tw in topic_words)
+            mem2_has_topic = any(tw in mem2_text or tw in (active_mems[1].get("subject") or "").lower() for tw in topic_words)
+            if mem1_has_topic and mem2_has_topic:
+                tokens1 = set(re.findall(r'\b[a-zA-Z]{4,}\b', mem1_text)) - {"akku", "likes", "loves", "favorite", "favourite"} - topic_words
+                tokens2 = set(re.findall(r'\b[a-zA-Z]{4,}\b', mem2_text)) - {"akku", "likes", "loves", "favorite", "favourite"} - topic_words
+                diff1 = tokens1 - tokens2
+                diff2 = tokens2 - tokens1
+                if diff1 and diff2 and not tokens1.issubset(tokens2) and not tokens2.issubset(tokens1):
+                    val1 = " ".join(list(diff1)[:2])
+                    val2 = " ".join(list(diff2)[:2])
+                    return f"I have conflicting saved memories about Akku's {topic} — one says {val1} and another says {val2}. ❤️ Which one should I remember as the latest?"
+
         return None
 
     @classmethod
@@ -404,9 +544,22 @@ class RAGGraphService:
         }
         content_tokens = [t for t in tokens if t not in stop_words] or tokens
 
-        if content_tokens:
+        # Inflection and stemming expansion (e.g. flowers <-> flower, movies <-> movie)
+        expanded_tokens = set(content_tokens)
+        for t in list(content_tokens):
+            if t.endswith("ies") and len(t) > 4:
+                expanded_tokens.add(t[:-3] + "y")
+            elif t.endswith("es") and len(t) > 3:
+                expanded_tokens.add(t[:-2])
+            elif t.endswith("s") and len(t) > 3:
+                expanded_tokens.add(t[:-1])
+            else:
+                expanded_tokens.add(t + "s")
+        search_tokens = list(expanded_tokens)
+
+        if search_tokens:
             q_filter = Q()
-            for token in content_tokens:
+            for token in search_tokens:
                 q_filter |= (
                     Q(memory_text__icontains=token) |
                     Q(subject__icontains=token) |
@@ -414,12 +567,12 @@ class RAGGraphService:
                     Q(original_input__icontains=token)
                 )
             
-            user_filter = Q(user_id=user_id) | Q(source_type="initial_pdf")
+            user_filter = Q(user_id=user_id) | Q(source_type="initial_pdf") | Q(user_id="default_user")
             db_mems = PersonalMemory.objects.filter(q_filter, user_filter, is_active=True)[:15]
             for m in db_mems:
                 m_text_lower = f"{m.memory_text} {m.subject or ''}".lower()
-                m_matches = sum(1 for t in content_tokens if t in m_text_lower)
-                subj_match = bool(m.subject and any(t in m.subject.lower() for t in content_tokens))
+                m_matches = sum(1 for t in search_tokens if t in m_text_lower)
+                subj_match = bool(m.subject and any(t in m.subject.lower() for t in search_tokens))
                 is_user_mem = m.source_type in ('user_memory', 'manual')
                 
                 ratio = 0.60 + (m_matches / max(1, len(content_tokens))) * 0.35
@@ -436,13 +589,15 @@ class RAGGraphService:
                     "category": m.category,
                     "subject": m.subject,
                     "source_type": m.source_type,
+                    "status": m.status,
+                    "version": m.version,
                     "score": score,
                     "timestamp": m.conversation_timestamp.strftime("%B %d, %Y"),
                     "source": "keyword_search"
                 })
 
             chunk_filter = Q()
-            for token in content_tokens[:6]:
+            for token in search_tokens[:6]:
                 chunk_filter |= Q(text__icontains=token)
             db_chunks = DocumentChunk.objects.filter(chunk_filter)[:3]
             for c in db_chunks:
@@ -471,7 +626,7 @@ class RAGGraphService:
         content_tokens = [t for t in tokens if t not in stop_words] or tokens
 
         # 1. Subject-level scan across active memories
-        user_filter = Q(user_id=user_id) | Q(source_type="initial_pdf")
+        user_filter = Q(user_id=user_id) | Q(source_type="initial_pdf") | Q(user_id="default_user")
         all_active = PersonalMemory.objects.filter(user_filter, is_active=True)
         for m in all_active:
             subj = (m.subject or "").lower()
@@ -483,6 +638,8 @@ class RAGGraphService:
                     "category": m.category,
                     "subject": m.subject,
                     "source_type": m.source_type,
+                    "status": m.status,
+                    "version": m.version,
                     "score": 0.98 if m.source_type in ('user_memory', 'manual') else 0.88,
                     "timestamp": m.conversation_timestamp.strftime("%B %d, %Y"),
                     "source": "metadata_subject_match"
@@ -498,6 +655,8 @@ class RAGGraphService:
             cat = "places_travel"
         elif any(w in q_lower for w in ["proposal", "propose", "canteen", "story", "college"]):
             cat = "shared_experiences"
+        elif any(w in q_lower for w in ["name", "original name", "born", "birthplace", "hero", "flower", "flowers"]):
+            cat = "personal_preferences"
 
         if cat:
             mems = PersonalMemory.objects.filter(user_filter, category=cat, is_active=True)[:10]
@@ -510,6 +669,8 @@ class RAGGraphService:
                         "category": m.category,
                         "subject": m.subject,
                         "source_type": m.source_type,
+                        "status": m.status,
+                        "version": m.version,
                         "score": 0.90 if m.source_type in ('user_memory', 'manual') else 0.75,
                         "timestamp": m.conversation_timestamp.strftime("%B %d, %Y"),
                         "source": "metadata_search"
@@ -692,60 +853,112 @@ class RAGGraphService:
         if len(citations) > 2:
             citations = citations[:2]
 
-        # Check evidence sufficiency for personal factual questions (Req 13, 23, 25)
+        # Check evidence sufficiency, conflict detection, and Fact-Lock mode (Req 6, 8, 9, 10, 11)
         topic = self._extract_fact_topic(state["question"])
         evidence_sufficient = True
         unknown_message = None
+        fact_locked_answer = None
+        grounded = True
 
-        if topic and state.get("query_intent", "personal_memory") in ("personal_memory", "relationship_conversation"):
-            topic_lower = topic.lower()
-            topic_tokens = set(re.findall(r'\b\w{3,}\b', topic_lower)) - {
-                "akku", "her", "she", "what", "favorite", "favourite", "brand", "type", "hai", "kya", "kaun"
-            }
+        # 1. Conflict Detection across active memories (Section 11)
+        conflict_msg = self._detect_memory_conflicts(ranked_memories, topic, question)
+        if conflict_msg:
+            fact_locked_answer = conflict_msg
+            evidence_sufficient = True
+            grounded = True
+        else:
+            # 2. Fact-Lock Mode for Simple Factual Questions (Section 10)
+            if ranked_memories:
+                top_m = ranked_memories[0]
+                top_score = float(top_m.get("composite_score", top_m.get("score", 0)))
+                top_text_lower = (top_m.get("text") or "").lower()
+                top_subj_lower = (top_m.get("subject") or "").lower()
 
-            has_mem_match = any(
-                bool(topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', m.get("text", "").lower())))) or
-                bool(topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', m.get("subject", "").lower()))))
-                for m in final_memories
-            )
-            has_chunk_match = any(
-                bool(topic_tokens.intersection(set(re.findall(r'\b\w{3,}\b', c.get("text", "").lower()))))
-                for c in final_chunks
-            )
-            is_core_anchor = any(w in topic_lower for w in [
-                "proposal", "propose", "canteen", "samosa", "meet", "meeting", "beach", "bessie",
-                "birthday", "bday", "october 20", "m.tech", "data engineering", "placement", "chennai"
-            ])
+                # Check if top memory answers the fact
+                fact_cand = self._synthesize_fact_lock_answer(question, top_m)
+                topic_matched = False
+                if topic:
+                    topic_words = set(re.findall(r'\b\w{3,}\b', topic.lower())) - {"akku", "her", "she", "what", "favorite", "favourite"}
+                    if topic_words and (topic_words.intersection(set(re.findall(r'\b\w{3,}\b', top_text_lower))) or topic_words.intersection(set(re.findall(r'\b\w{3,}\b', top_subj_lower)))):
+                        topic_matched = True
+                elif any(t in top_text_lower or t in top_subj_lower for t in content_tokens):
+                    topic_matched = True
 
-            content_match = any(
-                any(t in m.get("text", "").lower() or t in (m.get("subject") or "").lower() for t in content_tokens)
-                for m in final_memories
-            ) or any(
-                any(t in c.get("text", "").lower() for t in content_tokens)
-                for c in final_chunks
-            )
+                if any(k in question.lower() for k in ["original name", "real name", "actual name"]) and ("akshatha" in top_text_lower or "saketh" in top_text_lower):
+                    topic_matched = True
+                if any(k in question.lower() for k in ["born", "birthplace", "birth place"]) and ("tanjavur" in top_text_lower or "thanjavur" in top_text_lower):
+                    topic_matched = True
+                if any(k in question.lower() for k in ["birthday", "bday"]) and ("october 20" in top_text_lower or "20 october" in top_text_lower):
+                    topic_matched = True
 
-            if not has_mem_match and not has_chunk_match and not is_core_anchor and not content_match:
-                evidence_sufficient = False
-                lang = state.get("detected_language", "en")
-                if lang == "hi":
-                    unknown_message = f"मेरे पास अभी अक्कू की {topic} से जुड़ी कोई याद सहेजी नहीं गई है, साकी ❤️। आप इसे Memories सेक्शन में सिखा सकते हैं!"
-                elif lang == "hinglish":
-                    unknown_message = f"Mere paas abhi Akku ki {topic} ke baare mein saved memory nahi hai, Saki ❤️. Aap ise Memories section me sikha sakte hain!"
-                elif lang == "te":
-                    unknown_message = f"నా దగ్గర అక్కు {topic} గురించిన జ్ఞాపకం ఇంకా భద్రపరచలేదు, సాకీ ❤️. మీరు Memories విభాగంలో నన్ను నేర్పించవచ్చు!"
-                elif lang == "teluglish":
-                    unknown_message = f"Naaku inka Akku {topic} gurinchi saved memory ledu, Saki ❤️. Meeru Memories section lo cheppandi!"
-                elif lang == "ta":
-                    unknown_message = f"அக்குவின் {topic} பற்றிய நினைவு என்னிடம் இன்னும் சேமிக்கப்படவில்லை, சாகி ❤️. நீங்கள் Memories பிரிவில் சொல்லிக் கொடுக்கலாம்!"
-                elif lang == "tanglish":
-                    unknown_message = f"Enakku innum Akku oda {topic} pathi saved memory illa, Saki ❤️. Neenga Memories section-la solli tharalaam!"
-                elif lang == "es":
-                    unknown_message = f"Todavía no tengo guardado ese recuerdo sobre {topic} de Akku, Saki ❤️. ¡Puedes enseñármelo en la sección de Memories!"
-                elif lang == "fr":
-                    unknown_message = f"Je n'ai pas encore de souvenir enregistré concernant {topic} d'Akku, Saki ❤️. Tu peux me l'apprendre dans la section Memories !"
-                else:
-                    unknown_message = f"I don't have Akku's {topic} saved yet, Saki. You can teach me through the Memories section. ❤️"
+                is_food_query = any(w in question.lower() for w in ["eat", "food", "dish", "dishes"]) and (
+                    top_m.get("category") == "food_drinks" or any(w in top_text_lower for w in ["dosa", "ice cream", "eat", "food", "biryani", "samosa", "paruppu"])
+                )
+                if is_food_query:
+                    topic_matched = True
+
+                if fact_cand and topic_matched and top_score >= 0.70:
+                    fact_locked_answer = fact_cand
+                    evidence_sufficient = True
+                    grounded = True
+
+            # 3. Relevance Threshold & Anti-Hallucination check (Section 6 & 1)
+            if not fact_locked_answer:
+                relevance_thresh = getattr(settings, 'RELEVANCE_THRESHOLD', 0.70)
+                is_personal_q = state.get("query_intent", "personal_memory") in ("personal_memory", "relationship_conversation") or any(
+                    kw in question.lower() for kw in ["akku", "saki", "our", "relationship", "we", "us", "her", "she", "his"]
+                )
+
+                has_mem_above_thresh = bool(
+                    final_memories and float(final_memories[0].get("composite_score", final_memories[0].get("score", 0))) >= relevance_thresh
+                )
+                has_chunk_match = any(
+                    any(t in c.get("text", "").lower() for t in content_tokens)
+                    for c in final_chunks
+                )
+                is_core_anchor = any(w in question.lower() for w in [
+                    "proposal", "propose", "canteen", "samosa", "meet", "meeting", "beach", "bessie",
+                    "birthday", "bday", "october 20", "m.tech", "data engineering", "placement", "chennai"
+                ])
+
+                # Anti-Hallucination Topic Filter for Specific Property Inquiries (Section 1 & 6)
+                if topic:
+                    topic_words = set(re.findall(r'\b\w{3,}\b', topic.lower())) - {"akku", "her", "she", "what", "favorite", "favourite"}
+                    mem_matches_topic = any(
+                        any(tw in (m.get("text") or "").lower() or tw in (m.get("subject") or "").lower() for tw in topic_words)
+                        for m in final_memories
+                    )
+                    chunk_matches_topic = any(
+                        any(tw in (c.get("text") or "").lower() for tw in topic_words)
+                        for c in final_chunks
+                    )
+                    if not mem_matches_topic and not chunk_matches_topic:
+                        has_mem_above_thresh = False
+                        has_chunk_match = False
+
+                if is_personal_q and not has_mem_above_thresh and not is_core_anchor and not has_chunk_match:
+                    evidence_sufficient = False
+                    grounded = False
+                    lang = state.get("detected_language", "en")
+                    if topic:
+                        clean_topic = topic if topic.lower().startswith("akku") else f"Akku's {topic}"
+                        if lang == "hi":
+                            unknown_message = f"मेरे पास अभी अक्कू की {clean_topic} से जुड़ी कोई याद सहेजी नहीं गई है ❤️।"
+                        elif lang == "hinglish":
+                            unknown_message = f"Mere paas abhi {clean_topic} ke baare mein saved memory nahi hai ❤️."
+                        elif lang == "te":
+                            unknown_message = f"నా దగ్గర {clean_topic} గురించిన జ్ఞాపకం ఇంకా భద్రపరచలేదు, సాకీ ❤️."
+                        elif lang == "ta":
+                            unknown_message = f"அக்குவின் {clean_topic} பற்றிய நினைவு என்னிடம் இன்னும் சேமிக்கப்படவில்லை, சாகி ❤️."
+                        else:
+                            unknown_message = f"I don't have a reliable saved memory for {clean_topic} yet. ❤️"
+                    else:
+                        if lang == "hi":
+                            unknown_message = "मेरे पास अभी यह जानकारी सहेजी नहीं गई है ❤️।"
+                        elif lang == "hinglish":
+                            unknown_message = "Mere paas abhi yeh saved memory me nahi hai ❤️."
+                        else:
+                            unknown_message = "I don't have that information in my saved memories yet. ❤️"
 
         timings = state.get("timings", {})
         timings["merge_rank_ms"] = (time.perf_counter() - t0) * 1000
@@ -775,7 +988,7 @@ class RAGGraphService:
             ],
             "final_selected_context": [m.get("text") for m in final_memories],
             "model": "Qwen 3.8 8B",
-            "grounding_passed": True
+            "grounding_passed": grounded
         }
         logger.info(f"=== RETRIEVAL AUDIT === Query: '{question}' | Selected {len(final_memories)} memories, top: {final_memories[0].get('text') if final_memories else 'None'}")
 
@@ -785,6 +998,8 @@ class RAGGraphService:
             "citations": citations,
             "evidence_sufficient": evidence_sufficient,
             "unknown_message": unknown_message,
+            "fact_locked_answer": fact_locked_answer,
+            "grounded": grounded,
             "retrieval_debug": debug_audit,
             "timings": timings
         }
@@ -818,6 +1033,15 @@ class RAGGraphService:
         """Node 6: Synchronous generation node with anti-hallucination short-circuit."""
         t0 = time.perf_counter()
         timings = state.get("timings", {})
+
+        # Fact-Lock short-circuit (Section 10)
+        if state.get("fact_locked_answer"):
+            timings["llm_total_ms"] = (time.perf_counter() - t0) * 1000
+            timings["llm_first_token_ms"] = timings["llm_total_ms"]
+            return {
+                "raw_answer": state["fact_locked_answer"],
+                "timings": timings
+            }
 
         # Strict anti-hallucination: If personal fact is unevidenced, do not let LLM guess!
         if state.get("evidence_sufficient") is False and state.get("unknown_message"):
@@ -863,6 +1087,17 @@ class RAGGraphService:
         """
         t0 = time.perf_counter()
         timings = state.get("timings", {})
+
+        # Fact-Lock short-circuit (Section 10)
+        if state.get("fact_locked_answer"):
+            timings["grounding_check_ms"] = (time.perf_counter() - t0) * 1000
+            return {
+                "answer": state["fact_locked_answer"],
+                "grounding_passed": True,
+                "grounded": True,
+                "timings": timings
+            }
+
         answer = state.get("raw_answer", "").strip()
         lang = state.get("detected_language", "en")
         q = state["question"].lower()
@@ -870,7 +1105,7 @@ class RAGGraphService:
         # If evidence was already evaluated as insufficient (anti-hallucination unknown fact), preserve response
         if state.get("evidence_sufficient") is False:
             timings["grounding_check_ms"] = (time.perf_counter() - t0) * 1000
-            return {"answer": answer, "timings": timings}
+            return {"answer": answer, "grounding_passed": False, "grounded": False, "timings": timings}
 
         # 1. Purge false sister ('बहन') hallucinations
         sister_fixes = [
@@ -1028,6 +1263,7 @@ class RAGGraphService:
         return {
             "answer": answer,
             "grounding_passed": True,
+            "grounded": state.get("grounded", True),
             "timings": timings
         }
 
@@ -1187,6 +1423,7 @@ class RAGGraphService:
         personal_memories = final_state.get("retrieved_memories", [])
         retrieval_debug = final_state.get("retrieval_debug", {})
         latency_sec = round(total_ms / 1000, 2)
+        is_grounded = bool(final_state.get("grounded", True) and final_state.get("evidence_sufficient", True))
 
         # 7. Persist assistant message
         asst_msg = self.conversation_service.add_message(
@@ -1197,10 +1434,11 @@ class RAGGraphService:
                 "citations": citations,
                 "personal_memories": personal_memories,
                 "retrieval_debug": retrieval_debug,
+                "grounded": is_grounded,
                 "new_memories_saved": [m.memory_text for m in new_memories],
                 "latency_seconds": latency_sec,
                 "timings": timings,
-                "model": display_model
+                "model": "fact_lock" if final_state.get("fact_locked_answer") else display_model
             }
         )
 
@@ -1211,7 +1449,8 @@ class RAGGraphService:
                 "citations": citations,
                 "personal_memories": personal_memories,
                 "retrieval_debug": retrieval_debug,
-                "model": display_model
+                "grounded": is_grounded,
+                "model": "fact_lock" if final_state.get("fact_locked_answer") else display_model
             }
 
         return {
@@ -1224,10 +1463,11 @@ class RAGGraphService:
             "personal_memories": personal_memories,
             "retrieval_debug": retrieval_debug,
             "evidence_sufficient": final_state.get("evidence_sufficient", True),
+            "grounded": is_grounded,
             "new_memories_saved": [m.memory_text for m in new_memories],
             "latency": latency_sec,
             "timings": timings,
-            "model": display_model
+            "model": "fact_lock" if final_state.get("fact_locked_answer") else display_model
         }
 
     def answer_question_stream(
@@ -1274,6 +1514,7 @@ class RAGGraphService:
                     "citations": [],
                     "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
                     "new_memories_saved": [m.memory_text for m in new_memories],
+                    "grounded": True,
                     "latency_seconds": total_sec,
                     "model": "memory_agent"
                 }
@@ -1285,6 +1526,7 @@ class RAGGraphService:
                     "citations": [],
                     "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
                     "new_memories_saved": [m.memory_text for m in new_memories],
+                    "grounded": True,
                     "model": "memory_agent"
                 }
             }
@@ -1301,6 +1543,7 @@ class RAGGraphService:
                     "citations": [],
                     "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
                     "new_memories_saved": [m.memory_text for m in new_memories],
+                    "grounded": True,
                     "latency": total_sec,
                     "model": "memory_agent"
                 }
@@ -1319,6 +1562,7 @@ class RAGGraphService:
                     "citations": cached["citations"],
                     "personal_memories": cached.get("personal_memories", []),
                     "new_memories_saved": [],
+                    "grounded": cached.get("grounded", True),
                     "cached": True
                 }
             }
@@ -1336,6 +1580,7 @@ class RAGGraphService:
                     "citations": cached["citations"],
                     "latency_seconds": total_sec,
                     "cached": True,
+                    "grounded": cached.get("grounded", True),
                     "model": cached.get("model", "cache")
                 }
             )
@@ -1350,6 +1595,7 @@ class RAGGraphService:
                     "personal_memories": cached.get("personal_memories", []),
                     "new_memories_saved": [],
                     "latency": total_sec,
+                    "grounded": cached.get("grounded", True),
                     "cached": True
                 }
             }
@@ -1395,9 +1641,50 @@ class RAGGraphService:
                 "new_memories_saved": [m.memory_text for m in new_memories],
                 "question_type": state.get("question_type", "simple"),
                 "detected_language": state.get("detected_language", "en"),
-                "model": display_model
+                "grounded": state.get("grounded", True),
+                "model": "fact_lock" if state.get("fact_locked_answer") else display_model
             }
         }
+
+        # Check Fact-Lock short-circuit (Section 10)
+        if state.get("fact_locked_answer"):
+            locked_text = state["fact_locked_answer"]
+            yield {
+                "event": "token",
+                "data": {"token": locked_text}
+            }
+            total_pipeline_ms = (time.perf_counter() - start_time) * 1000
+            latency_sec = round(total_pipeline_ms / 1000, 2)
+            asst_msg = self.conversation_service.add_message(
+                conversation=conversation,
+                role="assistant",
+                content=locked_text,
+                metadata={
+                    "citations": citations,
+                    "personal_memories": personal_memories,
+                    "retrieval_debug": retrieval_debug,
+                    "grounded": True,
+                    "new_memories_saved": [m.memory_text for m in new_memories],
+                    "latency_seconds": latency_sec,
+                    "model": "fact_lock"
+                }
+            )
+            yield {
+                "event": "done",
+                "data": {
+                    "conversation_id": str(conversation.id),
+                    "assistant_message_id": str(asst_msg.id),
+                    "answer": locked_text,
+                    "citations": citations,
+                    "personal_memories": personal_memories,
+                    "retrieval_debug": retrieval_debug,
+                    "grounded": True,
+                    "new_memories_saved": [m.memory_text for m in new_memories],
+                    "latency": latency_sec,
+                    "model": "fact_lock"
+                }
+            }
+            return
 
         # If personal fact has no supporting evidence in memory, short circuit with honest unknown response
         if state.get("evidence_sufficient") is False and state.get("unknown_message"):
@@ -1416,6 +1703,7 @@ class RAGGraphService:
                     "citations": [],
                     "personal_memories": [],
                     "retrieval_debug": retrieval_debug,
+                    "grounded": False,
                     "new_memories_saved": [],
                     "latency_seconds": latency_sec,
                     "model": "grounding_guard"
@@ -1430,6 +1718,7 @@ class RAGGraphService:
                     "citations": [],
                     "personal_memories": [],
                     "retrieval_debug": retrieval_debug,
+                    "grounded": False,
                     "new_memories_saved": [],
                     "latency": latency_sec,
                     "model": "grounding_guard"
@@ -1474,6 +1763,7 @@ class RAGGraphService:
         total_pipeline_ms = (time.perf_counter() - start_time) * 1000
         state["timings"]["total_ms"] = total_pipeline_ms
         latency_sec = round(total_pipeline_ms / 1000, 2)
+        is_stream_grounded = bool(state.get("grounded", True) and state.get("evidence_sufficient", True))
 
         self._log_timing_audit(
             question=question,
@@ -1486,6 +1776,7 @@ class RAGGraphService:
             "citations": citations,
             "personal_memories": personal_memories,
             "retrieval_debug": retrieval_debug,
+            "grounded": is_stream_grounded,
             "new_memories_saved": [m.memory_text for m in new_memories],
             "latency_seconds": latency_sec,
             "timings": state["timings"],
@@ -1506,6 +1797,7 @@ class RAGGraphService:
                 "citations": citations,
                 "personal_memories": personal_memories,
                 "retrieval_debug": retrieval_debug,
+                "grounded": is_stream_grounded,
                 "model": display_model
             }
 
@@ -1518,6 +1810,7 @@ class RAGGraphService:
                 "citations": citations,
                 "personal_memories": personal_memories,
                 "retrieval_debug": retrieval_debug,
+                "grounded": is_stream_grounded,
                 "new_memories_saved": [m.memory_text for m in new_memories],
                 "latency": latency_sec,
                 "timings": state["timings"],

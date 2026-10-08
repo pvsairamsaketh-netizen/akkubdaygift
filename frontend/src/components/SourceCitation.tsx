@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { BookOpen, ChevronDown, ChevronUp, FileText, Heart, Sparkles } from 'lucide-react';
 import type { Citation } from '../types/chat';
-import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 interface SourceCitationProps {
   citations?: Citation[];
@@ -34,7 +33,6 @@ const formatCategory = (cat?: string): string => {
 
 export const SourceCitation: React.FC<SourceCitationProps> = ({ citations = [], personalMemories = [] }) => {
   const [expanded, setExpanded] = useState(false);
-  const { triggerMemoryPhoto } = useMemoryPhotos();
 
   const userMemories = (personalMemories || []).filter(
     m => m.source_type === 'user_memory' || m.source_type === 'manual' || m.source === 'user_memory'
@@ -54,9 +52,6 @@ export const SourceCitation: React.FC<SourceCitationProps> = ({ citations = [], 
   if (!hasMemories && !hasCitations) return null;
 
   const handleToggle = () => {
-    if (!expanded) {
-      triggerMemoryPhoto('memory');
-    }
     setExpanded(!expanded);
   };
 
