@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   BookmarkCheck, 
   Search, 
@@ -14,10 +15,8 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { PersonalMemory } from '../types/memories';
-import { useMemoryPhotos } from '../context/MemoryPhotoContext';
 
 export const MemoriesPage: React.FC = () => {
-  const { triggerMemoryPhoto } = useMemoryPhotos();
   const [memories, setMemories] = useState<PersonalMemory[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -70,6 +69,25 @@ export const MemoriesPage: React.FC = () => {
     fetchMemories();
   }, [selectedCategory, search]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAddModalOpen(false);
+        setEditingMemory(null);
+      }
+    };
+    if (isAddModalOpen || editingMemory) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAddModalOpen, editingMemory]);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newText.trim() || isSaving) return;
@@ -83,7 +101,6 @@ export const MemoriesPage: React.FC = () => {
       setNewText('');
       setNewSubject('');
       setIsAddModalOpen(false);
-      triggerMemoryPhoto('remember');
       showToast("Memory saved successfully into Akku's permanent memory! ❤️", "success");
       await fetchMemories();
     } catch (err: any) {
@@ -332,18 +349,31 @@ export const MemoriesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Add / Edit Modal */}
-      {(isAddModalOpen || editingMemory) && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-rose-100 space-y-4">
+      {/* Add / Edit Modal (Rendered in Portal to avoid CSS transform containing block) */}
+      {(isAddModalOpen || editingMemory) && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsAddModalOpen(false);
+              setEditingMemory(null);
+            }
+          }}
+        >
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-rose-100 space-y-4 my-auto relative animate-scale-up">
             <div className="flex items-center justify-between border-b border-rose-100 pb-3">
-              <h3 className="font-serif text-lg font-bold text-stone-900">
-                {editingMemory ? "Edit Memory" : "Save New Memory"}
-              </h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                  <BookmarkCheck className="w-4 h-4" />
+                </div>
+                <h3 className="font-serif text-lg font-bold text-stone-900">
+                  {editingMemory ? "Edit Saved Memory" : "Save New Memory"}
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => { setIsAddModalOpen(false); setEditingMemory(null); }}
-                className="p-1 rounded-full text-stone-400 hover:text-stone-600 cursor-pointer"
+                className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -357,10 +387,11 @@ export const MemoriesPage: React.FC = () => {
                 <textarea
                   value={newText}
                   onChange={(e) => setNewText(e.target.value)}
-                  placeholder="e.g. She likes mango ice cream with chocolate toppings"
+                  placeholder="e.g. Akku likes mango ice cream with chocolate toppings"
                   rows={3}
                   required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm"
+                  autoFocus
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm shadow-inner"
                 />
               </div>
 
@@ -372,7 +403,7 @@ export const MemoriesPage: React.FC = () => {
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-400 text-xs sm:text-sm bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-400 text-xs sm:text-sm bg-white cursor-pointer"
                   >
                     <option value="personal_preferences">Personal Preferences</option>
                     <option value="likes_dislikes">Likes & Dislikes</option>
@@ -439,7 +470,8 @@ export const MemoriesPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modern Floating Toast Notification */}

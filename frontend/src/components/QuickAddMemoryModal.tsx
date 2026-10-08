@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BookmarkCheck, Sparkles, X, Check } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
@@ -69,9 +70,12 @@ export const QuickAddMemoryModal: React.FC<QuickAddMemoryModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/50 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-rose-100 space-y-4">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-rose-100 space-y-4 my-auto animate-scale-up">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-rose-100 pb-3">
@@ -205,6 +209,7 @@ export const QuickAddMemoryModal: React.FC<QuickAddMemoryModalProps> = ({
         </form>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

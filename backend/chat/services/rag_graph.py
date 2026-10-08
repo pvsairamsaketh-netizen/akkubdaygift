@@ -293,6 +293,32 @@ class RAGGraphService:
                     clean_text = f"Akku {clean_text}"
             return cls._format_grounded_answer(clean_text)
 
+        # 6. Family & Relatives (Father, Mother, Parents)
+        if any(w in q_lower for w in ["father", "dad", "mother", "mom", "parents", "family"]):
+            if "pyn srinivas" in clean_text.lower() or "srinivas" in clean_text.lower():
+                return "Saki's father's name is PYN Srinivas. ❤️"
+            return cls._format_grounded_answer(clean_text)
+
+        # 7. Nicknames & Terms of Endearment
+        if any(w in q_lower for w in ["nickname", "nicknames", "call each other", "call him", "call her"]):
+            if any(w in q_lower for w in ["akku", "her", "she"]):
+                return "Saki affectionately calls Akku 'Akku', 'idli', 'bubbu', 'Achu', and 'chinna pilla'. ❤️"
+            elif any(w in q_lower for w in ["saki", "him", "he"]):
+                return "Akku calls Saki 'Saki' and 'Dudu', and affectionately calls him her husband in love notes. ❤️"
+
+        # 8. Songs, Music, Movies, Places, Activities, Education, Career
+        attr_keywords = [
+            "song", "songs", "music", "singer", "movie", "movies", "film", "place", "travel",
+            "pet", "animal", "book", "car", "bike", "game", "subject", "study", "class", "college",
+            "m.tech", "degree", "placement"
+        ]
+        if any(w in q_lower for w in attr_keywords):
+            if clean_text.lower().startswith("she "):
+                clean_text = "Akku " + clean_text[4:]
+            elif clean_text.lower().startswith("her "):
+                clean_text = "Akku's " + clean_text[4:]
+            return cls._format_grounded_answer(clean_text)
+
         return None
 
     @classmethod
