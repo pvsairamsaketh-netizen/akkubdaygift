@@ -221,3 +221,69 @@ def test_case_8_akku_and_saki_names_coexist_no_false_conflict():
     assert res["grounded"] is True
     assert res["answer"] == "Akku's original name is Akshatha. ❤️"
     assert "conflicting" not in res["answer"].lower()
+
+
+@pytest.mark.django_db
+def test_case_9_saki_parents_retrieval_and_no_original_name_leak():
+    """
+    TEST 9:
+    Database contains:
+    - 'Akku original name is Akshatha.' (v3)
+    - 'Saki original name is Saketh.' (v3)
+    - 'sakis father name is PYN Srinivas and moms name is P Sushma' (v1)
+    
+    Verifies:
+    1. Query 'sakis father name ?' answers 'Saki's father's name is PYN Srinivas. ❤️'
+    2. Query 'sakis moms name and fathers name ?' answers 'Saki's father's name is PYN Srinivas and his mother's name is P Sushma. ❤️'
+    3. Query 'sakis mother name ?' answers 'Saki's mother's name is P Sushma. ❤️'
+    4. ABSOLUTELY NEVER leaks 'Akku original name is Akshatha. ❤️' on parent queries!
+    """
+    extractor = MemoryExtractor()
+    extractor.extract_memories_from_text("Akku original name is Akshatha.", source="text", user_id="test_parents_user")
+    extractor.extract_memories_from_text("Saki original name is Saketh.", source="text", user_id="test_parents_user")
+    extractor.extract_memories_from_text("sakis father name is PYN Srinivas and moms name is P Sushma", source="text", user_id="test_parents_user")
+
+    rag = RAGGraphService()
+    rag.clear_cache()
+
+    # 1. Father query
+    res_dad = rag.answer_question("sakis father name ?", user_id="test_parents_user")
+    assert res_dad["grounded"] is True
+    assert "PYN Srinivas" in res_dad["answer"]
+    assert "Akshatha" not in res_dad["answer"]
+    assert res_dad["answer"] == "Saki's father's name is PYN Srinivas. ❤️"
+
+    # 2. Both parents query
+    rag.clear_cache()
+    res_both = rag.answer_question("sakis moms name and fathers name ?", user_id="test_parents_user")
+    assert res_both["grounded"] is True
+    assert "PYN Srinivas" in res_both["answer"]
+    assert "P Sushma" in res_both["answer"]
+    assert "Akshatha" not in res_both["answer"]
+
+    # 3. Mother query
+    rag.clear_cache()
+    res_mom = rag.answer_question("sakis mother name ?", user_id="test_parents_user")
+    assert res_mom["grounded"] is True
+    assert "P Sushma" in res_mom["answer"]
+    assert "Akshatha" not in res_mom["answer"]
+
+
+@pytest.mark.django_db
+def test_case_10_who_loves_akku_and_lover_name():
+    """
+    TEST 10:
+    Queries like 'who loves akku the most ?' and 'akkus lover name'
+    must identify Saki warmly and NEVER return 'Akku original name is Akshatha. ❤️'.
+    """
+    rag = RAGGraphService()
+    rag.clear_cache()
+
+    res_love = rag.answer_question("who loves akku the most ?", user_id="test_lover_user")
+    assert "Saki" in res_love["answer"]
+    assert "Akshatha" not in res_love["answer"]
+
+    rag.clear_cache()
+    res_lover = rag.answer_question("akkus lover name", user_id="test_lover_user")
+    assert "Saki" in res_lover["answer"]
+    assert "Akshatha" not in res_lover["answer"]

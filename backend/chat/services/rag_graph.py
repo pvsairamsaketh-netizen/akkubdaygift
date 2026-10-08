@@ -178,6 +178,14 @@ class RAGGraphService:
             return "birthday"
         if any(w in q for w in ["teacher", "school teacher"]):
             return "school teacher's name"
+        if any(w in q for w in ["father", "dad"]):
+            return "father's name"
+        if any(w in q for w in ["mother", "mom", "moms"]):
+            return "mother's name"
+        if any(w in q for w in ["parents", "parent"]):
+            return "parents' names"
+        if any(w in q for w in ["stargaz", "terrace", "moonlight"]):
+            return "stargazing"
         if any(w in q for w in ["hero", "actor"]):
             return "favorite hero"
         if any(w in q for w in ["movie", "film"]):
@@ -228,8 +236,9 @@ class RAGGraphService:
         """
         Synthesizes a direct, canonical answer directly from a trusted memory.
         Enforces Section 10 Fact-Lock mode for simple factual queries.
+        Strictly returns None if the memory text does not contain facts relevant to the question.
         """
-        q_lower = question.lower()
+        q_lower = question.lower().strip()
         m_text = (memory_item.get("text") or "").strip()
         if not m_text:
             return None
@@ -239,86 +248,138 @@ class RAGGraphService:
         for prefix in ["Akku:", "Saki:", "Answer:", "Note:"]:
             if clean_text.lower().startswith(prefix.lower()):
                 clean_text = clean_text[len(prefix):].strip()
+        clean_lower = clean_text.lower()
 
-        # 1. Original Name
+        # 1. Who loves Akku / Lover / Boyfriend
+        if any(p in q_lower for p in ["who loves akku", "who love akku", "who is akku's lover", "akkus lover", "akku's boyfriend", "who is akku's boyfriend"]):
+            return "Saki loves Akku the most! He is her loving boyfriend and created this entire AI world with love as a birthday gift for her. ❤️"
+
+        # 2. Original / Real Name (ONLY when question explicitly asks for original/real/actual name)
         if any(w in q_lower for w in ["original name", "real name", "actual name", "original_name"]):
             if any(w in q_lower for w in ["akku", "her", "she"]):
-                if "akshatha" in clean_text.lower():
+                if "akshatha" in clean_lower:
                     return "Akku's original name is Akshatha. ❤️"
-                elif "saketh" in clean_text.lower():
-                    return None
+                return None
             elif any(w in q_lower for w in ["saki", "his", "he", "him"]):
-                if "saketh" in clean_text.lower():
+                if "saketh" in clean_lower:
                     return "Saki's original name is Saketh. ❤️"
-                elif "akshatha" in clean_text.lower():
-                    return None
+                return None
             else:
-                if "akshatha" in clean_text.lower():
+                if "akshatha" in clean_lower and "saketh" not in clean_lower:
                     return "Akku's original name is Akshatha. ❤️"
-                elif "saketh" in clean_text.lower():
+                elif "saketh" in clean_lower and "akshatha" not in clean_lower:
                     return "Saki's original name is Saketh. ❤️"
-            formatted = re.sub(r'\bAkku\s+original\s+name\b', "Akku's original name", clean_text, flags=re.IGNORECASE)
-            return cls._format_grounded_answer(formatted)
+                return None
 
-        # 2. Birthplace / Where born
-        if any(w in q_lower for w in ["born", "birthplace", "birth place"]):
-            if "tanjavur" in clean_text.lower() or "thanjavur" in clean_text.lower():
-                return "Tanjavur. ❤️"
-            else:
-                return cls._format_grounded_answer(clean_text)
+        # 3. Family / Parents (Father & Mother)
+        has_father_q = any(w in q_lower for w in ["father", "dad"])
+        has_mother_q = any(w in q_lower for w in ["mother", "mom", "moms"])
+        has_parents_q = "parent" in q_lower or (has_father_q and has_mother_q)
 
-        # 3. Birthday
-        if any(w in q_lower for w in ["birthday", "bday"]):
-            if "october 20" in clean_text.lower() or "20 october" in clean_text.lower():
-                return "Akku's birthday is on October 20! 🎂❤️"
-            else:
-                return cls._format_grounded_answer(clean_text)
-
-        # 4. Favorite Hero / Actor
-        if any(w in q_lower for w in ["hero", "favorite actor", "favourite actor"]):
-            if "thalapathy" in clean_text.lower() or "vijay" in clean_text.lower():
-                return "Akku's favorite hero is Thalapathy Vijay. ❤️"
-            else:
-                return cls._format_grounded_answer(clean_text)
-
-        # 5. Food, Flowers, General Preferences & Direct Property Inquiries
-        pref_keywords = ["food", "eat", "drink", "dish", "dishes", "ice cream", "icecream", "flower", "flowers", "color", "colour", "hobby", "hobbies", "prefer"]
-        if any(w in q_lower for w in pref_keywords):
-            if clean_text.lower().startswith("she "):
-                clean_text = "Akku " + clean_text[4:]
-            elif clean_text.lower().startswith("her "):
-                clean_text = "Akku's " + clean_text[4:]
-            elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
-                if not clean_text.lower().startswith("our "):
-                    clean_text = f"Akku {clean_text}"
-            return cls._format_grounded_answer(clean_text)
-
-        # 6. Family & Relatives (Father, Mother, Parents)
-        if any(w in q_lower for w in ["father", "dad", "mother", "mom", "parents", "family"]):
-            if "pyn srinivas" in clean_text.lower() or "srinivas" in clean_text.lower():
+        if has_parents_q:
+            if "srinivas" in clean_lower and "sushma" in clean_lower:
+                return "Saki's father's name is PYN Srinivas and his mother's name is P Sushma. ❤️"
+            elif "srinivas" in clean_lower:
                 return "Saki's father's name is PYN Srinivas. ❤️"
-            return cls._format_grounded_answer(clean_text)
+            elif "sushma" in clean_lower:
+                return "Saki's mother's name is P Sushma. ❤️"
+            return None
 
-        # 7. Nicknames & Terms of Endearment
+        if has_father_q:
+            if "srinivas" in clean_lower:
+                return "Saki's father's name is PYN Srinivas. ❤️"
+            elif "father" in clean_lower:
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        if has_mother_q:
+            if "sushma" in clean_lower:
+                return "Saki's mother's name is P Sushma. ❤️"
+            elif "mother" in clean_lower or "mom" in clean_lower:
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 4. Birthplace / Where born
+        if any(w in q_lower for w in ["born", "birthplace", "birth place"]):
+            if "tanjavur" in clean_lower or "thanjavur" in clean_lower:
+                return "Tanjavur. ❤️"
+            elif "born" in clean_lower or "birth" in clean_lower:
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 5. Birthday
+        if any(w in q_lower for w in ["birthday", "bday"]):
+            if "october 20" in clean_lower or "20 october" in clean_lower:
+                return "Akku's birthday is on October 20! 🎂❤️"
+            elif "birthday" in clean_lower or "bday" in clean_lower:
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 6. Favorite Hero / Actor
+        if any(w in q_lower for w in ["hero", "favorite actor", "favourite actor"]):
+            if "thalapathy" in clean_lower or "vijay" in clean_lower:
+                return "Akku's favorite hero is Thalapathy Vijay. ❤️"
+            elif "hero" in clean_lower or "actor" in clean_lower:
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 7. Food, Drinks, Ice Cream & Chocolates
+        if any(w in q_lower for w in ["chocolate", "chocolates"]):
+            if "chocolate" in clean_lower:
+                if clean_text.lower().startswith("she "):
+                    clean_text = "Akku " + clean_text[4:]
+                elif clean_text.lower().startswith("her "):
+                    clean_text = "Akku's " + clean_text[4:]
+                elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
+                    clean_text = f"Akku {clean_text}"
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        if any(w in q_lower for w in ["ice cream", "icecream"]):
+            if "mango" in clean_lower:
+                return "Akku's favorite ice cream is mango ice cream now. ❤️"
+            elif "vanilla" in clean_lower:
+                return "Akku loves vanilla ice cream. ❤️"
+            elif "ice cream" in clean_lower:
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        if any(w in q_lower for w in ["eat", "food", "dish", "dishes"]):
+            food_terms = ["dosa", "ice cream", "biryani", "samosa", "paruppu", "sweet", "chocolate"]
+            if any(term in clean_lower for term in food_terms) or "eat" in clean_lower or "food" in clean_lower:
+                if clean_text.lower().startswith("she "):
+                    clean_text = "Akku " + clean_text[4:]
+                elif clean_text.lower().startswith("her "):
+                    clean_text = "Akku's " + clean_text[4:]
+                elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
+                    clean_text = f"Akku {clean_text}"
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 8. Flowers
+        if any(w in q_lower for w in ["flower", "flowers"]):
+            if "jasmine" in clean_lower or "flower" in clean_lower:
+                if clean_text.lower().startswith("she "):
+                    clean_text = "Akku " + clean_text[4:]
+                elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
+                    clean_text = f"Akku {clean_text}"
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 9. Stargazing
+        if any(w in q_lower for w in ["stargaz", "terrace", "moonlight"]):
+            if "stargaz" in clean_lower or "terrace" in clean_lower:
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 10. Nicknames & Terms of Endearment
         if any(w in q_lower for w in ["nickname", "nicknames", "call each other", "call him", "call her"]):
             if any(w in q_lower for w in ["akku", "her", "she"]):
                 return "Saki affectionately calls Akku 'Akku', 'idli', 'bubbu', 'Achu', and 'chinna pilla'. ❤️"
             elif any(w in q_lower for w in ["saki", "him", "he"]):
                 return "Akku calls Saki 'Saki' and 'Dudu', and affectionately calls him her husband in love notes. ❤️"
 
-        # 8. Songs, Music, Movies, Places, Activities, Education, Career
-        attr_keywords = [
-            "song", "songs", "music", "singer", "movie", "movies", "film", "place", "travel",
-            "pet", "animal", "book", "car", "bike", "game", "subject", "study", "class", "college",
-            "m.tech", "degree", "placement"
-        ]
-        if any(w in q_lower for w in attr_keywords):
-            if clean_text.lower().startswith("she "):
-                clean_text = "Akku " + clean_text[4:]
-            elif clean_text.lower().startswith("her "):
-                clean_text = "Akku's " + clean_text[4:]
-            return cls._format_grounded_answer(clean_text)
-
+        # None of the direct canonical fact patterns matched: Let LLM generate!
         return None
 
     @classmethod
@@ -700,17 +761,20 @@ class RAGGraphService:
         tokens = [w.lower() for w in re.findall(r'\b[a-zA-Z0-9\u0900-\u097f]{3,}\b', question)]
         stop_words = {
             "what", "when", "where", "which", "who", "whom", "this", "that", "with", "from",
-            "have", "does", "about", "tell", "like", "akku", "akkus", "saki", "her", "his", "she",
-            "kya", "hai", "kaun", "enna", "romba", "pidikkum", "istam", "pasand", "the", "and", "or"
+            "have", "does", "about", "tell", "like", "akku", "akkus", "saki", "sakis", "her", "his", "she",
+            "kya", "hai", "kaun", "enna", "romba", "pidikkum", "istam", "pasand", "the", "and", "or",
+            "name", "names", "fact", "info", "information"
         }
         content_tokens = [t for t in tokens if t not in stop_words] or tokens
 
         # 1. Subject-level scan across active memories
         user_filter = Q(user_id=user_id) | Q(source_type="initial_pdf") | Q(user_id="default_user")
         all_active = PersonalMemory.objects.filter(user_filter, is_active=True)
+        generic_subj_words = {"name", "names", "fact", "info", "information", "preference", "preferences", "remembered", "detail", "details"}
         for m in all_active:
             subj = (m.subject or "").lower()
-            if subj and (subj in q_lower or any(part in q_lower for part in subj.split() if len(part) >= 3) or any(t in subj for t in content_tokens)):
+            subj_parts = [p for p in subj.split() if len(p) >= 3 and p not in generic_subj_words]
+            if subj_parts and (any(part in q_lower for part in subj_parts) or any(t in subj for t in content_tokens)):
                 matched.append({
                     "id": str(m.id),
                     "user_id": str(m.user_id),
@@ -735,7 +799,7 @@ class RAGGraphService:
             cat = "places_travel"
         elif any(w in q_lower for w in ["proposal", "propose", "canteen", "story", "college"]):
             cat = "shared_experiences"
-        elif any(w in q_lower for w in ["name", "original name", "born", "birthplace", "hero", "flower", "flowers"]):
+        elif any(w in q_lower for w in ["original name", "real name", "actual name", "born", "birthplace", "hero", "flower", "flowers", "father", "mother", "mom", "dad", "parent", "parents"]):
             cat = "personal_preferences"
 
         if cat:
@@ -829,9 +893,9 @@ class RAGGraphService:
         tokens = [w.lower() for w in re.findall(r'\b[a-zA-Z0-9\u0900-\u097f]{3,}\b', question)]
         stop_words = {
             "what", "when", "where", "which", "who", "whom", "this", "that", "with", "from",
-            "have", "does", "about", "tell", "like", "akku", "akkus", "saki", "her", "his", "she",
+            "have", "does", "about", "tell", "like", "akku", "akkus", "saki", "sakis", "her", "his", "she",
             "kya", "hai", "kaun", "enna", "romba", "pidikkum", "istam", "pasand", "the", "and", "or",
-            "for", "favorite", "favourite"
+            "for", "favorite", "favourite", "name", "names"
         }
         content_tokens = [t for t in tokens if t not in stop_words] or tokens
 
@@ -848,6 +912,12 @@ class RAGGraphService:
                     candidate_map[m_id]["score"] = max(candidate_map[m_id].get("score", 0), item.get("score", 0))
 
         is_past_query = any(w in q_lower for w in ["earlier", "before", "previously", "used to", "past", "last year", "initially"])
+        is_orig_name_q = any(w in q_lower for w in ["original name", "real name", "actual name", "original_name"])
+        is_fam_q = any(w in q_lower for w in ["father", "dad", "mother", "mom", "moms", "parent", "parents", "family"])
+        is_food_q = any(w in q_lower for w in ["eat", "food", "dish", "dishes", "ice cream", "icecream", "chocolate", "dosa"])
+        is_star_q = any(w in q_lower for w in ["stargaz", "terrace", "moonlight"])
+        is_hero_q = any(w in q_lower for w in ["hero", "actor"])
+        is_flower_q = any(w in q_lower for w in ["flower", "flowers"])
 
         # Score & rank every candidate memory
         ranked_memories = []
@@ -872,7 +942,7 @@ class RAGGraphService:
                     status_boost = -0.30
             else:
                 if status == "current":
-                    status_boost = 0.50 + (version * 0.20)
+                    status_boost = 0.50 + (version * 0.10)
                 elif status == "historical":
                     status_boost = -0.60  # Deprioritize superseded memories for current questions
 
@@ -896,35 +966,63 @@ class RAGGraphService:
             # Entity match boost (Akku vs Saki)
             entity_boost = 0.0
             is_about_akku = any(w in q_lower for w in ["akku", "her", "she"])
-            is_about_saki = any(w in q_lower for w in ["saki", "his", "he", "him"]) and not is_about_akku
+            is_about_saki = any(w in q_lower for w in ["saki", "sakis", "his", "he", "him"]) and not is_about_akku
             if is_about_akku:
                 if "akku" in text_lower or "akku" in subj or "akshatha" in text_lower:
-                    entity_boost = 0.40
-                elif ("saki" in text_lower or "saketh" in text_lower) and not ("akku" in text_lower or "akshatha" in text_lower):
-                    entity_boost = -0.60
+                    entity_boost = 0.60
+                elif ("saki" in text_lower or "saketh" in text_lower or "srinivas" in text_lower or "sushma" in text_lower) and not ("akku" in text_lower or "akshatha" in text_lower):
+                    entity_boost = -1.20
             elif is_about_saki:
-                if "saki" in text_lower or "saki" in subj or "saketh" in text_lower:
-                    entity_boost = 0.40
-                elif ("akku" in text_lower or "akshatha" in text_lower) and not ("saki" in text_lower or "saketh" in text_lower):
-                    entity_boost = -0.60
+                if "saki" in text_lower or "saki" in subj or "saketh" in text_lower or "srinivas" in text_lower or "sushma" in text_lower:
+                    entity_boost = 0.80
+                elif ("akku" in text_lower or "akshatha" in text_lower) and not ("saki" in text_lower or "saketh" in text_lower or "srinivas" in text_lower or "sushma" in text_lower):
+                    entity_boost = -1.50
 
-            composite_score = base_score + src_boost + status_boost + subj_boost + kw_boost + direct_phrase_boost + entity_boost
+            # Semantic Topic Boost & Penalty
+            topic_boost = 0.0
+            if is_fam_q:
+                has_fam = any(w in text_lower or w in subj for w in ["father", "dad", "mother", "mom", "moms", "parent", "parents", "srinivas", "sushma", "family"])
+                topic_boost = 2.0 if has_fam else -2.0
+            elif is_star_q:
+                has_star = any(w in text_lower or w in subj for w in ["stargaz", "terrace", "moonlight"])
+                topic_boost = 2.5 if has_star else -1.5
+            elif is_hero_q:
+                has_hero = any(w in text_lower or w in subj for w in ["thalapathy", "vijay", "hero", "actor"])
+                topic_boost = 2.5 if has_hero else -1.5
+            elif is_flower_q:
+                has_flower = any(w in text_lower or w in subj for w in ["flower", "flowers", "jasmine", "rose"])
+                topic_boost = 2.5 if has_flower else -1.5
+            elif is_food_q:
+                has_food = any(w in text_lower or w in subj for w in ["dosa", "ice cream", "biryani", "samosa", "eat", "food", "paruppu", "sweet", "chocolate", "vanilla", "mango"])
+                topic_boost = 2.0 if has_food else -1.0
+            elif is_orig_name_q:
+                if is_about_akku and "akshatha" in text_lower:
+                    topic_boost = 2.5
+                elif is_about_saki and "saketh" in text_lower:
+                    topic_boost = 2.5
+                else:
+                    topic_boost = -1.5
+            else:
+                # If question does NOT ask about original names, penalize "Original Name" cards so they do not hijack
+                if "original name" in subj or "original name" in text_lower:
+                    topic_boost = -1.5
 
-            # Explicit user memory with topic match receives guaranteed top priority
-            if is_user_mem and (subj_boost > 0 or kw_boost > 0 or direct_phrase_boost > 0):
+            composite_score = base_score + src_boost + status_boost + subj_boost + kw_boost + direct_phrase_boost + entity_boost + topic_boost
+
+            # Explicit user memory with verified topic match receives top priority
+            if is_user_mem and (subj_boost > 0 or topic_boost > 0 or direct_phrase_boost > 0) and topic_boost >= 0:
                 if not is_past_query and status == "current":
-                    composite_score = max(composite_score, 2.0 + version * 0.15)
+                    composite_score = max(composite_score, 2.5 + version * 0.15)
                 elif is_past_query and status == "historical":
                     composite_score = max(composite_score, 2.0)
 
             item["composite_score"] = composite_score
             ranked_memories.append(item)
 
-        # Sort: Current highest-version user memories appear FIRST
+        # Sort: Highest composite relevance score FIRST, with version as tie-breaker
         ranked_memories.sort(key=lambda m: (
-            1 if (m.get("source_type") in ("user_memory", "manual") and m.get("status") == ("historical" if is_past_query else "current")) else 0,
-            int(m.get("version") or 1) if not is_past_query else -int(m.get("version") or 1),
-            m.get("composite_score", 0)
+            m.get("composite_score", 0),
+            int(m.get("version") or 1) if not is_past_query else -int(m.get("version") or 1)
         ), reverse=True)
 
         # Merge document chunks with deduplication
@@ -963,7 +1061,11 @@ class RAGGraphService:
             grounded = True
         else:
             # 2. Fact-Lock Mode for Simple Factual Questions (Section 10)
-            if ranked_memories:
+            if any(p in q_lower for p in ["who loves akku", "who love akku", "who is akku's lover", "akkus lover", "akku's boyfriend", "who is akku's boyfriend"]):
+                fact_locked_answer = "Saki loves Akku the most! He is her loving boyfriend and created this entire AI world with love as a birthday gift for her. ❤️"
+                evidence_sufficient = True
+                grounded = True
+            elif ranked_memories:
                 is_about_akku = any(w in q_lower for w in ["akku", "her", "she"])
                 is_about_saki = any(w in q_lower for w in ["saki", "his", "he", "him"]) and not is_about_akku
                 cand_m = None
@@ -982,28 +1084,7 @@ class RAGGraphService:
 
                 # Check if top memory answers the fact
                 fact_cand = self._synthesize_fact_lock_answer(question, top_m)
-                topic_matched = False
-                if topic:
-                    topic_words = set(re.findall(r'\b\w{3,}\b', topic.lower())) - {"akku", "her", "she", "what", "favorite", "favourite"}
-                    if topic_words and (topic_words.intersection(set(re.findall(r'\b\w{3,}\b', top_text_lower))) or topic_words.intersection(set(re.findall(r'\b\w{3,}\b', top_subj_lower)))):
-                        topic_matched = True
-                elif any(t in top_text_lower or t in top_subj_lower for t in content_tokens):
-                    topic_matched = True
-
-                if any(k in question.lower() for k in ["original name", "real name", "actual name"]) and ("akshatha" in top_text_lower or "saketh" in top_text_lower):
-                    topic_matched = True
-                if any(k in question.lower() for k in ["born", "birthplace", "birth place"]) and ("tanjavur" in top_text_lower or "thanjavur" in top_text_lower):
-                    topic_matched = True
-                if any(k in question.lower() for k in ["birthday", "bday"]) and ("october 20" in top_text_lower or "20 october" in top_text_lower):
-                    topic_matched = True
-
-                is_food_query = any(w in question.lower() for w in ["eat", "food", "dish", "dishes"]) and (
-                    top_m.get("category") == "food_drinks" or any(w in top_text_lower for w in ["dosa", "ice cream", "eat", "food", "biryani", "samosa", "paruppu"])
-                )
-                if is_food_query:
-                    topic_matched = True
-
-                if fact_cand and topic_matched and top_score >= 0.70:
+                if fact_cand and top_score >= 0.70:
                     fact_locked_answer = fact_cand
                     evidence_sufficient = True
                     grounded = True
@@ -1024,7 +1105,8 @@ class RAGGraphService:
                 )
                 is_core_anchor = any(w in question.lower() for w in [
                     "proposal", "propose", "canteen", "samosa", "meet", "meeting", "beach", "bessie",
-                    "birthday", "bday", "october 20", "m.tech", "data engineering", "placement", "chennai"
+                    "birthday", "bday", "october 20", "m.tech", "data engineering", "placement", "chennai",
+                    "who loves akku", "who love akku", "lover", "boyfriend"
                 ])
 
                 # Anti-Hallucination Topic Filter for Specific Property Inquiries (Section 1 & 6)
@@ -1307,26 +1389,25 @@ class RAGGraphService:
                     "Akku responded that while she could not change her birth horoscope or jatakam, she was warmly willing "
                     "to learn Telugu, respect family traditions, and adapt to cultural customs for their shared future! ❤️"
                 )
-        # 6. Generic or dynamic memory override (e.g. food, favorite treat, hobbies)
-        elif retrieved_mems:
+        # 6. Dynamic memory recovery when LLM falsely denies a known memory fact
+        elif retrieved_mems and has_denial:
             top_m = retrieved_mems[0]
-            m_text = top_m.get("text", "")
-            is_explicit_user_mem = top_m.get("source_type") in ("user_memory", "manual")
-            q_tokens = set(re.findall(r'\b[a-zA-Z]{3,}\b', q))
-            stop_set = {"akku", "loves", "love", "like", "likes", "this", "that", "with", "have", "tell", "what", "which", "when", "where", "about", "favorite", "favourite"} | q_tokens
-            content_words = [w.lower() for w in re.findall(r'\b[a-zA-Z]{4,}\b', m_text) if w.lower() not in stop_set]
-            missing_explicit_fact = is_explicit_user_mem and bool(content_words) and not any(w in answer.lower() for w in content_words)
-            if has_denial or missing_explicit_fact:
-                logger.warning(f"Grounding Validator intercepted denial/miss of memory '{m_text[:50]}'! Grounding with memory text.")
-                if "Answer:" in m_text:
-                    ans_part = m_text.split("Answer:", 1)[1].strip()
+            m_text = (top_m.get("text") or "").strip()
+            clean_m = m_text.rstrip('. ')
+            for pfx in ["Akku:", "Saki:"]:
+                if clean_m.startswith(pfx):
+                    clean_m = clean_m[len(pfx):].strip()
+            # Only recover if the top memory actually contains content related to the query
+            q_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', q)) - {"what", "when", "where", "which", "who", "whom", "tell", "about", "like", "akku", "saki", "name"}
+            if any(w in clean_m.lower() for w in q_words):
+                logger.warning(f"Grounding Validator recovered from false denial with memory '{m_text[:50]}'")
+                if "Answer:" in clean_m:
+                    ans_part = clean_m.split("Answer:", 1)[1].strip()
                     answer = f"{ans_part} ❤️"
+                elif clean_m.lower().startswith("akku") or clean_m.lower().startswith("saki"):
+                    answer = f"{clean_m}. ❤️"
                 else:
-                    clean_m = m_text.rstrip('. ')
-                    if clean_m.lower().startswith("akku"):
-                        answer = f"{clean_m}. ❤️"
-                    else:
-                        answer = f"According to our saved memory, {clean_m}. ❤️"
+                    answer = f"According to our saved memory, {clean_m}. ❤️"
 
         # 7. Superseded / Conflict Grounding Check (Req 9, 20, 23)
         # If question is about current preference and answer picked superseded/historical memory:
