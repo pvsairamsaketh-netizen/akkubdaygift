@@ -196,3 +196,28 @@ def test_case_7_immediate_retrieval_new_memory_no_restart():
     assert query_res["grounded"] is True
     assert "jasmine flowers" in query_res["answer"].lower()
     assert query_res["answer"] == "Akku loves jasmine flowers. ❤️"
+
+
+@pytest.mark.django_db
+def test_case_8_akku_and_saki_names_coexist_no_false_conflict():
+    """
+    TEST 8:
+    Database contains:
+    - 'Akku original name is Akshatha.'
+    - 'Saki original name is Saketh'
+    Question: 'What is Akku original name?'
+    Expected:
+    'Akku's original name is Akshatha. ❤️'
+    Must NOT trigger false conflict about Saketh/Saki.
+    """
+    extractor = MemoryExtractor()
+    extractor.extract_memories_from_text("Akku original name is Akshatha.", source="text", user_id="test_user")
+    extractor.extract_memories_from_text("Saki original name is Saketh.", source="text", user_id="test_user")
+
+    rag = RAGGraphService()
+    rag.clear_cache()
+    res = rag.answer_question("What is Akku original name?", user_id="test_user")
+
+    assert res["grounded"] is True
+    assert res["answer"] == "Akku's original name is Akshatha. ❤️"
+    assert "conflicting" not in res["answer"].lower()

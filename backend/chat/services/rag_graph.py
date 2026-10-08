@@ -242,13 +242,23 @@ class RAGGraphService:
 
         # 1. Original Name
         if any(w in q_lower for w in ["original name", "real name", "actual name", "original_name"]):
-            if "akshatha" in clean_text.lower():
-                return "Akku's original name is Akshatha. ❤️"
-            elif "saketh" in clean_text.lower():
-                return "Saki's original name is Saketh. ❤️"
+            if any(w in q_lower for w in ["akku", "her", "she"]):
+                if "akshatha" in clean_text.lower():
+                    return "Akku's original name is Akshatha. ❤️"
+                elif "saketh" in clean_text.lower():
+                    return None
+            elif any(w in q_lower for w in ["saki", "his", "he", "him"]):
+                if "saketh" in clean_text.lower():
+                    return "Saki's original name is Saketh. ❤️"
+                elif "akshatha" in clean_text.lower():
+                    return None
             else:
-                formatted = re.sub(r'\bAkku\s+original\s+name\b', "Akku's original name", clean_text, flags=re.IGNORECASE)
-                return cls._format_grounded_answer(formatted)
+                if "akshatha" in clean_text.lower():
+                    return "Akku's original name is Akshatha. ❤️"
+                elif "saketh" in clean_text.lower():
+                    return "Saki's original name is Saketh. ❤️"
+            formatted = re.sub(r'\bAkku\s+original\s+name\b', "Akku's original name", clean_text, flags=re.IGNORECASE)
+            return cls._format_grounded_answer(formatted)
 
         # 2. Birthplace / Where born
         if any(w in q_lower for w in ["born", "birthplace", "birth place"]):
@@ -292,15 +302,59 @@ class RAGGraphService:
         If multiple current memories state conflicting facts, asks the user for confirmation.
         """
         q_lower = question.lower()
-        active_mems = [
-            m for m in memories
-            if m.get("status") == "current" and float(m.get("composite_score", m.get("score", 0))) >= 0.70
-        ]
+        is_about_akku = any(w in q_lower for w in ["akku", "her", "she"])
+        is_about_saki = any(w in q_lower for w in ["saki", "his", "he", "him"]) and not is_about_akku
+
+        # Canonical identity facts (name, birthplace, birthday, hero) do NOT conflict unless two memories
+        # give contradictory values specifically for the SAME target person.
+        canonical_fact_keywords = ["original name", "real name", "actual name", "birthplace", "born", "birthday", "bday", "hero"]
+        is_canonical_fact = any(w in q_lower for w in canonical_fact_keywords)
+
+        active_mems = []
+        for m in memories:
+            if m.get("status") != "current" or float(m.get("composite_score", m.get("score", 0))) < 0.70:
+                continue
+            m_text = (m.get("text") or "").lower()
+            m_subj = (m.get("subject") or "").lower()
+
+            # Ensure the memory matches the entity being queried (Akku vs Saki)
+            if is_about_akku:
+                has_saki = any(w in m_text for w in ["saki", "saketh"]) or m_subj.startswith("saki")
+                has_akku = any(w in m_text for w in ["akku", "akshatha", "she", "her"]) or m_subj.startswith("akku")
+                if has_saki and not has_akku:
+                    continue
+            elif is_about_saki:
+                has_akku = any(w in m_text for w in ["akku", "akshatha"]) or m_subj.startswith("akku")
+                has_saki = any(w in m_text for w in ["saki", "saketh", "he", "his"]) or m_subj.startswith("saki")
+                if has_akku and not has_saki:
+                    continue
+
+            active_mems.append(m)
+
         if len(active_mems) < 2:
             return None
 
         mem1_text = (active_mems[0].get("text") or "").lower()
         mem2_text = (active_mems[1].get("text") or "").lower()
+
+        # For canonical facts: if memories don't contradict each other for this person, return None
+        if is_canonical_fact:
+            if any(w in q_lower for w in ["original name", "real name", "actual name"]):
+                akku_names = set()
+                for m in active_mems[:3]:
+                    txt = (m.get("text") or "").lower()
+                    if "akshatha" in txt:
+                        akku_names.add("akshatha")
+                    elif "saketh" in txt:
+                        pass
+                    else:
+                        m_match = re.search(r'(?:akku(?:\'s)?\s+original\s+name\s+is\s+)([a-zA-Z]+)', txt)
+                        if m_match:
+                            akku_names.add(m_match.group(1).lower())
+                if len(akku_names) > 1:
+                    names_list = list(akku_names)
+                    return f"I have conflicting saved memories about Akku's original name — one says {names_list[0]} and another says {names_list[1]}. ❤️ Which one should I remember as the latest?"
+            return None
 
         # 1. Ice cream conflict check
         if any(w in q_lower for w in ["ice cream", "icecream"]):
@@ -324,8 +378,8 @@ class RAGGraphService:
             mem1_has_topic = any(tw in mem1_text or tw in (active_mems[0].get("subject") or "").lower() for tw in topic_words)
             mem2_has_topic = any(tw in mem2_text or tw in (active_mems[1].get("subject") or "").lower() for tw in topic_words)
             if mem1_has_topic and mem2_has_topic:
-                tokens1 = set(re.findall(r'\b[a-zA-Z]{4,}\b', mem1_text)) - {"akku", "likes", "loves", "favorite", "favourite"} - topic_words
-                tokens2 = set(re.findall(r'\b[a-zA-Z]{4,}\b', mem2_text)) - {"akku", "likes", "loves", "favorite", "favourite"} - topic_words
+                tokens1 = set(re.findall(r'\b[a-zA-Z]{4,}\b', mem1_text)) - {"akku", "saki", "likes", "loves", "favorite", "favourite"} - topic_words
+                tokens2 = set(re.findall(r'\b[a-zA-Z]{4,}\b', mem2_text)) - {"akku", "saki", "likes", "loves", "favorite", "favourite"} - topic_words
                 diff1 = tokens1 - tokens2
                 diff2 = tokens2 - tokens1
                 if diff1 and diff2 and not tokens1.issubset(tokens2) and not tokens2.issubset(tokens1):
@@ -813,7 +867,22 @@ class RAGGraphService:
                     direct_phrase_boost = 0.40
                     break
 
-            composite_score = base_score + src_boost + status_boost + subj_boost + kw_boost + direct_phrase_boost
+            # Entity match boost (Akku vs Saki)
+            entity_boost = 0.0
+            is_about_akku = any(w in q_lower for w in ["akku", "her", "she"])
+            is_about_saki = any(w in q_lower for w in ["saki", "his", "he", "him"]) and not is_about_akku
+            if is_about_akku:
+                if "akku" in text_lower or "akku" in subj or "akshatha" in text_lower:
+                    entity_boost = 0.40
+                elif ("saki" in text_lower or "saketh" in text_lower) and not ("akku" in text_lower or "akshatha" in text_lower):
+                    entity_boost = -0.60
+            elif is_about_saki:
+                if "saki" in text_lower or "saki" in subj or "saketh" in text_lower:
+                    entity_boost = 0.40
+                elif ("akku" in text_lower or "akshatha" in text_lower) and not ("saki" in text_lower or "saketh" in text_lower):
+                    entity_boost = -0.60
+
+            composite_score = base_score + src_boost + status_boost + subj_boost + kw_boost + direct_phrase_boost + entity_boost
 
             # Explicit user memory with topic match receives guaranteed top priority
             if is_user_mem and (subj_boost > 0 or kw_boost > 0 or direct_phrase_boost > 0):
@@ -869,7 +938,18 @@ class RAGGraphService:
         else:
             # 2. Fact-Lock Mode for Simple Factual Questions (Section 10)
             if ranked_memories:
-                top_m = ranked_memories[0]
+                is_about_akku = any(w in q_lower for w in ["akku", "her", "she"])
+                is_about_saki = any(w in q_lower for w in ["saki", "his", "he", "him"]) and not is_about_akku
+                cand_m = None
+                for m in ranked_memories:
+                    m_txt = (m.get("text") or "").lower()
+                    if is_about_akku and ("saki" in m_txt or "saketh" in m_txt) and not ("akku" in m_txt or "akshatha" in m_txt):
+                        continue
+                    if is_about_saki and ("akku" in m_txt or "akshatha" in m_txt) and not ("saki" in m_txt or "saketh" in m_txt):
+                        continue
+                    cand_m = m
+                    break
+                top_m = cand_m or ranked_memories[0]
                 top_score = float(top_m.get("composite_score", top_m.get("score", 0)))
                 top_text_lower = (top_m.get("text") or "").lower()
                 top_subj_lower = (top_m.get("subject") or "").lower()
