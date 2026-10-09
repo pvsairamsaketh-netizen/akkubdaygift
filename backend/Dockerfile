@@ -7,13 +7,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies (ffmpeg, espeak-ng, curl, build essentials)
+# Install system dependencies (curl, build essentials)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    ffmpeg \
-    espeak-ng \
-    libespeak-ng-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PyTorch CPU first (180MB vs 6GB CUDA)
@@ -27,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Ensure storage directories exist
-RUN mkdir -p /app/data/chroma /app/media/temp_audio /app/media/tts_audio
+RUN mkdir -p /app/data/chroma /app/media
 
 EXPOSE 8000
 
