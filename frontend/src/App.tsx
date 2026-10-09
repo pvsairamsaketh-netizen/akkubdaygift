@@ -10,7 +10,6 @@ import { ChatPage } from './pages/ChatPage';
 import { BirthdayPage } from './pages/BirthdayPage';
 import { MemoriesPage } from './pages/MemoriesPage';
 import { PdfLibraryPage } from './pages/PdfLibraryPage';
-import { VoiceSettingsPage } from './pages/VoiceSettingsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AcademicsPage } from './pages/AcademicsPage';
 import { api } from './services/api';
@@ -22,11 +21,10 @@ const getInitialTab = (): NavTab => {
     const hash = window.location.hash.toLowerCase().replace('#', '');
     const path = window.location.pathname.toLowerCase();
     if (hash === 'academics' || path.startsWith('/academics')) return 'academics';
-    if (hash === 'chat' || path.startsWith('/chat')) return 'chat';
+    if (hash === 'chat' || path.startsWith('/chat') || hash === 'voice' || path.startsWith('/voice')) return 'chat';
     if (hash === 'birthday' || path.startsWith('/birthday')) return 'birthday';
     if (hash === 'memories' || path.startsWith('/memories')) return 'memories';
     if (hash === 'library' || path.startsWith('/library')) return 'library';
-    if (hash === 'voice' || path.startsWith('/voice')) return 'voice';
     if (hash === 'settings' || path.startsWith('/settings')) return 'settings';
   } catch {}
   return 'home';
@@ -162,10 +160,6 @@ export function App() {
 
               {activeTab === 'library' && (
                 <PdfLibraryPage />
-              )}
-
-              {activeTab === 'voice' && (
-                <VoiceSettingsPage />
               )}
 
               {activeTab === 'academics' && (

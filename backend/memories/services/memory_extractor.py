@@ -34,12 +34,9 @@ class MemoryExtractor:
         (r'\b(?:her|akku\'?s)\s+birthplace\s+is\s+([^.\n]+)', 'personal_preferences', 'Birthplace'),
 
         # Family, Parents & Relatives
-        (r'\b(?:akku\'?s?|saki\'?s?|her|his)\s+(?:father|mother|dad|mom|parents?)\s*(?:name)?\s*(?:is|was|are)\s+([^.\n]+)', 'personal_preferences', 'Family'),
-        (r'\b(?:akku|saki)\s+(?:father|mother|dad|mom|parents?)\s*(?:name)?\s*(?:is|was|are)\s+([^.\n]+)', 'personal_preferences', 'Family'),
-        (r'\b(?:father|mother|dad|mom|parents?)\s+name\s*(?:is|was)\s+([^.\n]+)', 'personal_preferences', 'Family'),
-
-        # Stargazing / Night / Terrace
-        (r'\b(?:she|akku)\s+(?:loves?|likes?)\s+(stargaz[^.\n]+)', 'personal_preferences', 'Stargazing'),
+        (r'\b(?:akku\'?s?|saki\'?s?|her|his)\s+(?:father|mother|dad|mom|parents?)\s*(?:name)?\s*(?:is|was|are)\s+([^.\n]+)', 'family_friends', 'Family'),
+        (r'\b(?:akku|saki)\s+(?:father|mother|dad|mom|parents?)\s*(?:name)?\s*(?:is|was|are)\s+([^.\n]+)', 'family_friends', 'Family'),
+        (r'\b(?:father|mother|dad|mom|parents?)\s+name\s*(?:is|was)\s+([^.\n]+)', 'family_friends', 'Family'),
         
         # Health & Feelings
         (r'\b(?:she|akku)\s+(?:had|has|suffered\s+from|is\s+having)\s+(?:a\s+)?(headache|fever|cold|pain|stomach\s+ache|migraine|cough|illness)([^.\n]*)', 'health_wellness', 'Health'),
@@ -104,7 +101,7 @@ class MemoryExtractor:
                 cat = "food_drinks"
                 subj = "Food Preference"
             elif any(w in raw_lower for w in ["father", "dad", "mother", "mom", "parent", "parents", "family"]):
-                cat = "personal_preferences"
+                cat = "family_friends"
                 subj = "Family"
             elif any(w in raw_lower for w in ["beach", "chennai", "place", "travel", "city"]):
                 cat = "places_travel"

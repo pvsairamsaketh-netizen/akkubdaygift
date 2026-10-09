@@ -178,6 +178,17 @@ class MemoryVectorStore:
         except Exception as e:
             logger.warning(f"Could not delete memories for user {user_id} from Chroma: {e}")
 
+    def update_memory_status(self, memory_id: str, new_status: str) -> None:
+        try:
+            existing = self.collection.get(ids=[str(memory_id)], include=["metadatas"])
+            if existing and existing.get("metadatas") and len(existing["metadatas"]) > 0:
+                meta = existing["metadatas"][0]
+                meta["status"] = str(new_status)
+                self.collection.update(ids=[str(memory_id)], metadatas=[meta])
+                logger.info(f"Updated memory {memory_id} status to {new_status} in ChromaDB")
+        except Exception as e:
+            logger.warning(f"Could not update status for memory {memory_id} in Chroma: {e}")
+
     def clear(self) -> None:
         try:
             self.client.delete_collection(self.collection_name)

@@ -13,12 +13,46 @@ from documents.services.vector_store import ChromaVectorStore
 logger = logging.getLogger(__name__)
 
 class RetrievalService:
+    MULTILINGUAL_BRIDGE = {
+        ("जन्मदिन", "जनमदिन", "janamdin", "janmadin", "birthday", "bday", "20 october", "october 20"): [
+            "october 20", "birthday"
+        ],
+        ("प्रपोज", "इजहार", "propose", "proposal", "4 may", "may 4", "4 मई", "समोसा", "samosa", "कैंटीन", "canteen", "मैकेनिकल", "mechanical"): [
+            "may 4, 2022", "may 4", "proposal", "propose", "canteen", "samosa", "mechanical"
+        ],
+        ("शादी", "विवाह", "shaadi", "shadi", "marry", "marriage"): [
+            "marriage", "did they marry"
+        ],
+        ("story begin", "first meet", "first met", "how did they connect", "first connect", "story start", "meet each other", "how did we meet", "story", "k section", "b section"): [
+            "how did they first connect", "college acquaintances", "k section to b section", "early shared memories", "began as college acquaintances"
+        ],
+        ("आइसक्रीम", "ice cream", "चॉकलेट", "chocolate"): [
+            "ice cream", "chocolate"
+        ],
+        ("सिरदर्द", "सरदर्द", "headache"): [
+            "headache"
+        ],
+        ("मरीना", "marina"): [
+            "marina beach", "bay of bengal", "chennai"
+        ],
+        ("बेसेंट", "besant", "bessie", "beach", "बीच", "sea", "समुद्र", "सागर", "ocean", "bay of bengal", "arabian"): [
+            "besant nagar", "bessie", "bay of bengal", "marina beach", "chennai"
+        ],
+        ("आंध्र", "andhra", "dosa", "डोसा"): [
+            "andhra mess"
+        ],
+        ("work commitment", "work commitments", "vark komitment", "commitments", "tessel", "tessell", "responsibilities", "work at tessel", "kaam", "kam"): [
+            "work commitments at tessel", "responsibilities at tessel", "work commitments", "tessel", "tessell", "reduced communication"
+        ]
+    }
+
     def __init__(self):
         self.embedding_service = EmbeddingService.get_instance()
         self.vector_store = ChromaVectorStore.get_instance()
         self.top_k = getattr(settings, 'RAG_TOP_K', 5)
         self.min_relevance = getattr(settings, 'RAG_MIN_RELEVANCE', 0.25)
         self.max_context_tokens = getattr(settings, 'MAX_CONTEXT_TOKENS', 4096)
+        self.multilingual_bridge = self.MULTILINGUAL_BRIDGE
 
     def resolve_query(self, question: str, conversation_history: List[Dict[str, str]]) -> str:
         """
@@ -67,35 +101,7 @@ class RetrievalService:
         exact_tokens = []
         bridge_keywords = []
 
-        multilingual_bridge = {
-            ("जन्मदिन", "जनमदिन", "janamdin", "janmadin", "birthday", "bday", "20 october", "october 20"): [
-                "october 20", "birthday"
-            ],
-            ("प्रपोज", "इजहार", "propose", "proposal", "4 may", "may 4", "4 मई", "समोसा", "samosa", "कैंटीन", "canteen", "मैकेनिकल", "mechanical"): [
-                "may 4, 2022", "may 4", "proposal", "propose", "canteen", "samosa", "mechanical"
-            ],
-            ("शादी", "विवाह", "shaadi", "shadi", "marry", "marriage"): [
-                "marriage", "did they marry"
-            ],
-            ("story begin", "first meet", "first met", "how did they connect", "first connect", "story start", "meet each other", "how did we meet", "story", "k section", "b section"): [
-                "how did they first connect", "college acquaintances", "k section to b section", "early shared memories", "began as college acquaintances"
-            ],
-            ("आइसक्रीम", "ice cream", "चॉकलेट", "chocolate"): [
-                "ice cream", "chocolate"
-            ],
-            ("सिरदर्द", "सरदर्द", "headache"): [
-                "headache"
-            ],
-            ("मरीना", "marina"): [
-                "marina beach", "bay of bengal", "chennai"
-            ],
-            ("बेसेंट", "besant", "bessie", "beach", "बीच", "sea", "समुद्र", "सागर", "ocean", "bay of bengal", "arabian"): [
-                "besant nagar", "bessie", "bay of bengal", "marina beach", "chennai"
-            ],
-            ("आंध्र", "andhra", "dosa", "डोसा"): [
-                "andhra mess"
-            ]
-        }
+        multilingual_bridge = self.MULTILINGUAL_BRIDGE
 
         for keys, targets in multilingual_bridge.items():
             if any(k in lower_q for k in keys):
@@ -103,7 +109,7 @@ class RetrievalService:
                 exact_tokens.extend(targets)
 
         # Also add any direct English matches
-        for word in ["how did they first connect", "college acquaintances", "k section to b section", "may 4, 2022", "may 4", "2022", "october 20", "oct 20", "birthday", "samosa", "canteen", "proposal", "propose", "marriage", "ice cream", "headache", "bay of bengal", "besant nagar", "marina beach"]:
+        for word in ["how did they first connect", "college acquaintances", "k section to b section", "may 4, 2022", "may 4", "2022", "october 20", "oct 20", "birthday", "samosa", "canteen", "proposal", "propose", "marriage", "ice cream", "headache", "bay of bengal", "besant nagar", "marina beach", "work commitments", "responsibilities", "tessel", "tessell"]:
             if word in lower_q and word not in exact_tokens:
                 exact_tokens.append(word)
 

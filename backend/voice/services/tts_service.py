@@ -98,18 +98,18 @@ class TTSService:
             return "en-IN-NeerjaNeural"
 
         # Check European languages
-        spanish_markers = {"como", "donde", "cuando", "nuestra", "historia", "amor", "recuerdo"}
-        french_markers = {"comment", "notre", "histoire", "quand", "avec", "amour", "souviens"}
-        german_markers = {"unsere", "geschichte", "warum", "liebe", "erinnerst"}
-        italian_markers = {"nostra", "quando", "dove", "perche", "amore", "ricordi"}
+        spanish_markers = {"como", "donde", "cuando", "nuestra", "historia", "amor", "recuerdo", "hola", "nuestro", "empezo"}
+        french_markers = {"comment", "notre", "histoire", "quand", "avec", "amour", "souviens", "bonjour"}
+        german_markers = {"unsere", "geschichte", "warum", "liebe", "erinnerst", "hallo"}
+        italian_markers = {"nostra", "quando", "dove", "perche", "amore", "ricordi", "ciao"}
 
-        if len(lower_words.intersection(spanish_markers)) >= 2:
+        if len(lower_words.intersection(spanish_markers)) >= 2 or any(w in lower_words for w in ["hola", "nuestra", "nuestro"]):
             return "es-ES-ElviraNeural"
-        if len(lower_words.intersection(french_markers)) >= 2:
+        if len(lower_words.intersection(french_markers)) >= 2 or any(w in lower_words for w in ["bonjour", "notre"]):
             return "fr-FR-DeniseNeural"
-        if len(lower_words.intersection(german_markers)) >= 2:
+        if len(lower_words.intersection(german_markers)) >= 2 or any(w in lower_words for w in ["hallo", "unsere"]):
             return "de-DE-KatjaNeural"
-        if len(lower_words.intersection(italian_markers)) >= 2:
+        if len(lower_words.intersection(italian_markers)) >= 2 or any(w in lower_words for w in ["ciao", "nostra"]):
             return "it-IT-ElsaNeural"
 
         # Indian English voice default for Saki & Akku love story context

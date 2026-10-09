@@ -24,6 +24,10 @@ class TavilyService:
             cls._instance = cls()
         return cls._instance
 
+    @classmethod
+    def is_available(cls) -> bool:
+        return cls.get_instance().is_enabled()
+
     def is_enabled(self) -> bool:
         return bool(self.api_key and self.api_key.strip())
 

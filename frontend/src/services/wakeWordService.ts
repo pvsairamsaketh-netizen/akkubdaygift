@@ -36,13 +36,16 @@ const WAKE_WORD_PATTERNS = [
   /\bey\s+akku\b/i,
   /\bhey\s+aku\b/i,
   /\bhey\s+akk\b/i,
-  /\bakku\b/i,
-  /ஹே\s*அக்கு/,
-  /அக்கு/,
-  /హే\s*అక్కు/,
-  /అక్కు/,
-  /हे\s*अक्कू/,
-  /अक्कू/
+  /\bnamaste\s+akku\b/i,
+  /\bvanakkam\s+akku\b/i,
+  /\bnamaskaram\s+akku\b/i,
+  /^akku\b/i,
+  /ஹே\s*அக்கு/i,
+  /வணக்கம்\s*அக்கு/i,
+  /హే\s*అక్కు/i,
+  /నమస్కారం\s*అక్కు/i,
+  /हे\s*अक्कू/i,
+  /नमस्ते\s*अक्कू/i
 ];
 
 const ACKNOWLEDGEMENTS = [
@@ -65,6 +68,8 @@ export class WakeWordAssistantService {
   private silenceTimer: any = null;
   private followUpTimer: any = null;
   private activeTTSAudio: HTMLAudioElement | null = null;
+  private lastSpokenText: string = '';
+  private currentlySpeakingWords: Set<string> = new Set();
 
   private constructor() {
     this.setupGlobalHotkey();
@@ -258,6 +263,7 @@ export class WakeWordAssistantService {
 
     this.stopSpeaking();
     this.setState('SPEAKING');
+    this.lastSpokenText = text;
 
     // Clean text for speech: remove Markdown symbols, emojis, citation brackets
     const cleanSpokenText = text
@@ -265,6 +271,10 @@ export class WakeWordAssistantService {
       .replace(/[*_#`~>]/g, '')
       .replace(/https?:\/\/\S+/g, '')
       .trim();
+
+    this.currentlySpeakingWords = new Set(
+      cleanSpokenText.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+    );
 
     try {
       // 1. Fetch high-quality neural TTS from backend
@@ -380,8 +390,16 @@ export class WakeWordAssistantService {
     const trimmed = latestTranscript.trim();
     if (!trimmed) return;
 
-    // 1. If Akku is speaking, ANY user speech is a barge-in / interruption
+    // 1. If Akku is speaking, check for acoustic echo vs genuine user barge-in
     if (this.state === 'SPEAKING') {
+      const words = trimmed.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+      if (words.length > 0 && this.currentlySpeakingWords.size > 0) {
+        const overlap = words.filter(w => this.currentlySpeakingWords.has(w)).length;
+        if (overlap / words.length >= 0.5) {
+          // Audio feedback from assistant's own speaker output into mic - ignore
+          return;
+        }
+      }
       this.stopSpeaking();
       this.setState('LISTENING');
       this.capturedQuestion = trimmed;
@@ -477,6 +495,28 @@ export class WakeWordAssistantService {
       // Nothing said, return to idle
       this.setState('IDLE');
     }
+  }
+
+  public cancelListening() {
+    this.clearTimers();
+    this.capturedQuestion = '';
+    this.stopSpeaking();
+    if (this.isContinuousRunning) {
+      this.setState('IDLE');
+    } else {
+      this.setState('OFF');
+    }
+    this.callbacks?.onTranscriptChange('', true);
+  }
+
+  public async replayLastAnswer(): Promise<void> {
+    if (this.lastSpokenText) {
+      await this.speakAnswer(this.lastSpokenText);
+    }
+  }
+
+  public getLastSpokenText(): string {
+    return this.lastSpokenText;
   }
 }
 

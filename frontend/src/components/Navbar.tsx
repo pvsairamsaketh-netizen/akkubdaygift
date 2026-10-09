@@ -5,7 +5,6 @@ import {
   Gift, 
   BookmarkCheck, 
   FileText, 
-  Mic, 
   Sliders,
   Menu,
   X,
@@ -17,7 +16,7 @@ import {
 } from 'lucide-react';
 import { RomanticAudioPlayer } from './RomanticAudioPlayer';
 
-export type NavTab = 'home' | 'chat' | 'birthday' | 'memories' | 'library' | 'voice' | 'academics' | 'settings';
+export type NavTab = 'home' | 'chat' | 'birthday' | 'memories' | 'library' | 'academics' | 'settings';
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -73,14 +72,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  // Exact 8 Navigation Items in order
+  // Primary Navigation Items
   const navItems: NavItem[] = [
     { id: 'home', label: 'Home', icon: <Heart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0" /> },
     { id: 'chat', label: 'Chat with Akku', icon: <MessageCircleHeart className="w-4 h-4 text-rose-600 shrink-0" /> },
     { id: 'birthday', label: 'Birthday', icon: <Gift className="w-4 h-4 text-rose-500 shrink-0" />, badge: 'SPECIAL' },
     { id: 'memories', label: 'Memories', icon: <BookmarkCheck className="w-4 h-4 text-rose-500 shrink-0" /> },
     { id: 'library', label: 'PDF Library', icon: <FileText className="w-4 h-4 text-rose-500 shrink-0" /> },
-    { id: 'voice', label: 'Voice', icon: <Mic className="w-4 h-4 text-rose-500 shrink-0" /> },
     { id: 'academics', label: 'Academics', icon: <GraduationCap className="w-4 h-4 text-amber-500 shrink-0" />, badge: 'DE100D' },
     { id: 'settings', label: 'Settings', icon: <Sliders className="w-4 h-4 text-rose-500 shrink-0" /> },
   ];

@@ -57,7 +57,8 @@ export function useVoice(onTranscriptionConfirmed?: (text: string) => void) {
       setIsTranscribing(true);
       const audioBlob = await recorderRef.current.stop();
       
-      const res = await api.transcribeAudio(audioBlob);
+      const storedLang = localStorage.getItem('akku_asr_language') || 'en';
+      const res = await api.transcribeAudio(audioBlob, storedLang);
       if (res.text) {
         setTranscriptionPreview(res.text);
       } else {

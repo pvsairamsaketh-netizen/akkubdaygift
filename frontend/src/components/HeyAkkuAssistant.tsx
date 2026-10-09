@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mic, MicOff, Volume2, Sparkles, VolumeX, Keyboard } from 'lucide-react';
+import { Mic, MicOff, Volume2, Sparkles, VolumeX, Keyboard, X, RotateCcw, Edit3, Check, Globe } from 'lucide-react';
 import { wakeWordAssistant, type AssistantVoiceState } from '../services/wakeWordService';
 
 interface HeyAkkuAssistantProps {
@@ -17,20 +17,32 @@ export const HeyAkkuAssistant: React.FC<HeyAkkuAssistantProps> = ({
     return localStorage.getItem('akku_hands_free_voice') === 'true';
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isEditingTranscript, setIsEditingTranscript] = useState<boolean>(false);
+  const [editedText, setEditedText] = useState<string>('');
+  const [lastSpoken, setLastSpoken] = useState<string>('');
 
   useEffect(() => {
     wakeWordAssistant.setCallbacks({
       onStateChange: (newState) => {
         setVoiceState(newState);
         if (newState === 'IDLE' || newState === 'OFF') {
-          setTranscript('');
+          if (!isEditingTranscript) {
+            setTranscript('');
+          }
+        }
+        if (newState === 'SPEAKING') {
+          setLastSpoken(wakeWordAssistant.getLastSpokenText());
         }
       },
       onTranscriptChange: (text) => {
-        setTranscript(text);
+        if (!isEditingTranscript) {
+          setTranscript(text);
+          setEditedText(text);
+        }
       },
       onQuestionCaptured: (question) => {
         setTranscript('');
+        setIsEditingTranscript(false);
         onQuestionCaptured(question);
       },
       onError: (err) => {
@@ -39,15 +51,10 @@ export const HeyAkkuAssistant: React.FC<HeyAkkuAssistantProps> = ({
       }
     });
 
-    // Auto-start hands-free if user previously enabled it
     if (isHandsFreeEnabled) {
       wakeWordAssistant.startHandsFree();
     }
-
-    return () => {
-      // Don't kill global listener unmount unless disabled
-    };
-  }, [onQuestionCaptured]);
+  }, [onQuestionCaptured, isEditingTranscript, isHandsFreeEnabled]);
 
   const toggleHandsFree = async () => {
     if (isHandsFreeEnabled) {
@@ -69,6 +76,25 @@ export const HeyAkkuAssistant: React.FC<HeyAkkuAssistantProps> = ({
 
   const handleStopSpeaking = () => {
     wakeWordAssistant.stopSpeaking();
+  };
+
+  const handleCancelListening = () => {
+    wakeWordAssistant.cancelListening();
+    setIsEditingTranscript(false);
+    setTranscript('');
+  };
+
+  const handleReplayAnswer = () => {
+    wakeWordAssistant.replayLastAnswer();
+  };
+
+  const handleSaveCorrection = () => {
+    if (editedText.trim()) {
+      onQuestionCaptured(editedText.trim());
+      setIsEditingTranscript(false);
+      setTranscript('');
+      wakeWordAssistant.cancelListening();
+    }
   };
 
   return (
@@ -127,18 +153,18 @@ export const HeyAkkuAssistant: React.FC<HeyAkkuAssistantProps> = ({
                   </span>
                 </span>
               ) : voiceState === 'WAKE_WORD_DETECTED' ? (
-                <span className="text-amber-600 font-medium">✨ "Yes Saki?"</span>
+                <span className="text-amber-600 font-medium">✨ "Yes Saki? ❤️"</span>
               ) : voiceState === 'PROCESSING' ? (
                 <span className="text-purple-600 flex items-center space-x-1">
                   <Sparkles className="w-3 h-3 animate-spin inline mr-1" />
-                  <span>Thinking...</span>
+                  <span>Thinking & Searching...</span>
                 </span>
               ) : voiceState === 'SPEAKING' ? (
                 <span className="text-emerald-700 flex items-center space-x-1">
-                  <span>🔊 Akku is speaking...</span>
+                  <span>🔊 Akku speaking</span>
                   <button
                     onClick={handleStopSpeaking}
-                    className="ml-1 text-[10px] underline hover:text-emerald-900 cursor-pointer"
+                    className="ml-1 text-[10px] underline hover:text-emerald-900 cursor-pointer font-bold"
                     title="Stop audio"
                   >
                     (Stop)
@@ -153,6 +179,15 @@ export const HeyAkkuAssistant: React.FC<HeyAkkuAssistantProps> = ({
               )}
             </span>
 
+            {/* Multilingual Badge */}
+            <span
+              className="inline-flex items-center text-[9px] text-rose-700 font-medium px-1.5 py-0.5 bg-rose-50 rounded-full border border-rose-200/60"
+              title="Multilingual: English, Hindi, Telugu, Tamil, Tanglish, Teluglish, etc."
+            >
+              <Globe className="w-2.5 h-2.5 mr-0.5 text-rose-500" />
+              Auto
+            </span>
+
             {/* Hotkey Badge */}
             <span
               className="hidden sm:inline-flex items-center text-[9px] text-stone-400 font-mono px-1 py-0.5 bg-stone-100 rounded border border-stone-200"
@@ -163,13 +198,86 @@ export const HeyAkkuAssistant: React.FC<HeyAkkuAssistantProps> = ({
             </span>
           </div>
 
-          {/* Real-time Speech Transcript Preview */}
-          {transcript && (
-            <p className="text-[10px] text-rose-700 italic max-w-[200px] truncate animate-fade-in font-medium">
-              "{transcript}"
-            </p>
+          {/* Real-time Speech Transcript Preview & Correction */}
+          {transcript && !isEditingTranscript && (
+            <div className="flex items-center space-x-1 mt-0.5">
+              <p className="text-[10px] text-rose-700 italic max-w-[180px] truncate animate-fade-in font-medium">
+                "{transcript}"
+              </p>
+              <button
+                onClick={() => {
+                  setIsEditingTranscript(true);
+                  setEditedText(transcript);
+                }}
+                className="text-stone-400 hover:text-rose-600 p-0.5"
+                title="Edit transcript before sending"
+              >
+                <Edit3 className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Inline Transcript Correction Mode */}
+          {isEditingTranscript && (
+            <div className="flex items-center space-x-1 mt-1">
+              <input
+                type="text"
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveCorrection()}
+                className="text-[11px] px-1.5 py-0.5 border border-rose-300 rounded bg-white text-stone-800 w-36 focus:outline-none focus:ring-1 focus:ring-rose-400"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveCorrection}
+                className="p-1 rounded bg-rose-500 text-white hover:bg-rose-600"
+                title="Send corrected question"
+              >
+                <Check className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => setIsEditingTranscript(false)}
+                className="p-1 rounded bg-stone-150 text-stone-600 hover:bg-stone-200"
+                title="Cancel edit"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Cancel Button while listening */}
+        {(voiceState === 'LISTENING' || voiceState === 'WAKE_WORD_DETECTED') && (
+          <button
+            onClick={handleCancelListening}
+            className="p-1 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer"
+            title="Cancel Listening"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* Replay Last Spoken Button */}
+        {lastSpoken && voiceState !== 'SPEAKING' && (
+          <button
+            onClick={handleReplayAnswer}
+            className="p-1 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer"
+            title="Replay Akku's last spoken answer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* Barge-In Stop button if speaking */}
+        {voiceState === 'SPEAKING' && (
+          <button
+            onClick={handleStopSpeaking}
+            className="p-1 rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 cursor-pointer"
+            title="Interrupt & Stop Speaking"
+          >
+            <VolumeX className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         {/* Toggle Hands-Free Button */}
         <button
@@ -181,25 +289,20 @@ export const HeyAkkuAssistant: React.FC<HeyAkkuAssistantProps> = ({
           }`}
           title={isHandsFreeEnabled ? 'Disable hands-free listening' : 'Enable hands-free "Hey Akku" wake word'}
         >
-          {isHandsFreeEnabled ? 'Hands-Free: ON' : 'Hands-Free: OFF'}
+          {isHandsFreeEnabled ? 'Wake Word: ON' : 'Wake Word: OFF'}
         </button>
-
-        {/* Barge-In Stop button if speaking */}
-        {voiceState === 'SPEAKING' && (
-          <button
-            onClick={handleStopSpeaking}
-            className="p-1 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer"
-            title="Interrupt & Stop Speaking"
-          >
-            <VolumeX className="w-3.5 h-3.5" />
-          </button>
-        )}
       </div>
 
       {/* Error Toast */}
       {errorMessage && (
-        <div className="absolute top-full mt-2 left-0 right-0 z-50 p-2.5 bg-rose-600 text-white text-xs rounded-xl shadow-lg animate-fade-in">
-          {errorMessage}
+        <div className="absolute top-full mt-2 left-0 right-0 z-50 p-2.5 bg-rose-600 text-white text-xs rounded-xl shadow-lg animate-fade-in flex items-center justify-between">
+          <span>{errorMessage}</span>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="ml-2 text-white/80 hover:text-white"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
     </div>

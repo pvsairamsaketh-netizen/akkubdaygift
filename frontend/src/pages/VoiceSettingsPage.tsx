@@ -18,7 +18,7 @@ export const VoiceSettingsPage: React.FC = () => {
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
   const [voicePreset, setVoicePreset] = useState<string>('af_heart');
   const [speechSpeed, setSpeechSpeed] = useState<number>(1.0);
-  const [language, setLanguage] = useState<string>('en');
+  const [language, setLanguage] = useState<string>(() => localStorage.getItem('akku_asr_language') || 'en');
   const [testingTTS, setTestingTTS] = useState<boolean>(false);
 
   // New Vocab Modal / Form
@@ -209,7 +209,13 @@ export const VoiceSettingsPage: React.FC = () => {
             </label>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setLanguage(val);
+                localStorage.setItem('akku_asr_language', val);
+                setMessage(`Speech recognition language updated to ${e.target.options[e.target.selectedIndex].text}.`);
+                setTimeout(() => setMessage(null), 3000);
+              }}
               className="w-full px-3.5 py-2.5 rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-400 text-xs sm:text-sm bg-white"
             >
               <option value="en">English / Indian English (Optimized)</option>

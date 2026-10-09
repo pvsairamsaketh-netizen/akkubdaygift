@@ -50,6 +50,8 @@ class PersonalMemory(models.Model):
     conversation_timestamp = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True, db_index=True)
+    is_visible = models.BooleanField(default=True, db_index=True)
+    visibility = models.CharField(max_length=20, default='visible', db_index=True)
     is_user_confirmed = models.BooleanField(default=True)
     superseded_by = models.ForeignKey(
         'self', null=True, blank=True, on_delete=models.SET_NULL, related_name='previous_versions'

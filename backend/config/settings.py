@@ -141,6 +141,10 @@ OLLAMA_TOP_P = float(os.getenv('OLLAMA_TOP_P', '0.9'))
 OLLAMA_MAX_TOKENS = int(os.getenv('OLLAMA_MAX_TOKENS', '600'))  # Ample tokens for rich, detailed answers
 OLLAMA_KEEP_ALIVE = os.getenv('OLLAMA_KEEP_ALIVE', '60m')  # Keep model warm in RAM
 
+# Gemini Translation & Multilingual Model Configuration
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', os.getenv('GOOGLE_API_KEY', ''))
+GEMINI_TRANSLATION_MODEL = os.getenv('GEMINI_TRANSLATION_MODEL', 'gemini-1.5-flash')
+
 # Embeddings & ChromaDB
 EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'BAAI/bge-small-en-v1.5')
 CHROMA_PERSIST_DIRECTORY = str(BASE_DIR / os.getenv('CHROMA_PERSIST_DIRECTORY', 'data/chroma'))
@@ -158,8 +162,8 @@ MAX_CONTEXT_TOKENS = int(os.getenv('MAX_CONTEXT_TOKENS', '1536'))
 # Voice Settings
 VOICE_ENABLED = os.getenv('VOICE_ENABLED', 'true').lower() in ('true', '1', 't')
 ASR_PROVIDER = os.getenv('ASR_PROVIDER', 'faster_whisper')
-ASR_MODEL = os.getenv('ASR_MODEL', 'base')
-ASR_LANGUAGE = os.getenv('ASR_LANGUAGE', 'auto')
+ASR_MODEL = os.getenv('ASR_MODEL', 'small')
+ASR_LANGUAGE = os.getenv('ASR_LANGUAGE', 'en')
 ASR_DEVICE = os.getenv('ASR_DEVICE', 'auto')
 TTS_PROVIDER = os.getenv('TTS_PROVIDER', 'kokoro')
 TTS_FALLBACK = os.getenv('TTS_FALLBACK', 'edge_tts')

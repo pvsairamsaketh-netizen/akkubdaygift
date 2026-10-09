@@ -134,15 +134,15 @@ RULES:
             return "teluglish"
         if len(words.intersection(tanglish_markers)) >= 1:
             return "tanglish"
-        if len(words.intersection(hinglish_markers)) >= 2:
+        if len(words.intersection(hinglish_markers)) >= 2 or any(p in words for p in ["ki", "ka", "kya", "hai", "hain", "kaun", "kaha", "kahan", "kab", "kyun"]):
             return "hinglish"
-        if len(words.intersection(spanish_markers)) >= 2:
+        if len(words.intersection(spanish_markers)) >= 2 or any(w in words for w in ["hola", "donde", "nuestra", "nuestro"]):
             return "es"
-        if len(words.intersection(french_markers)) >= 2:
+        if len(words.intersection(french_markers)) >= 2 or any(w in words for w in ["bonjour", "notre"]):
             return "fr"
-        if len(words.intersection(german_markers)) >= 2:
+        if len(words.intersection(german_markers)) >= 2 or any(w in words for w in ["hallo", "unsere"]):
             return "de"
-        if len(words.intersection(italian_markers)) >= 2:
+        if len(words.intersection(italian_markers)) >= 2 or any(w in words for w in ["ciao", "nostra"]):
             return "it"
 
         # 3. Default to English for general Latin text
@@ -160,9 +160,10 @@ RULES:
             )
         elif lang == "hinglish":
             return (
-                "[Language Directive: Saki asked in Hinglish (Hindi in Roman script). "
+                "[Language Directive: Saki asked in Hinglish (Hindi written in English alphabet / Roman script). "
                 "You MUST respond in fluent, natural Hinglish. Do NOT respond in pure English or pure Hindi script. "
-                "Akku is Saki's girlfriend and lover, never call her sister. "
+                "Akku is Saki's girlfriend and lover, NEVER refer to her as sister ('akka' or 'bahan'). "
+                "Ground your answer strictly and faithfully in the memories and document passages provided below. "
                 "Do NOT ask any follow-up question. End with a loving emoji (❤️/✨/😊), NOT a question mark.]"
             )
         elif lang == "te":
@@ -262,10 +263,25 @@ RULES:
         explicit_section = "\n".join(explicit_memories) if explicit_memories else "None explicitly saved for this specific query."
         archive_section = "\n".join(archive_memories) if archive_memories else "None."
 
+        # Format Document Passages from PDF
+        context_parts = []
+        if retrieved_chunks:
+            for idx, chunk in enumerate(retrieved_chunks):
+                meta = chunk.get("metadata", {})
+                page = meta.get("page_number", "?")
+                subject = meta.get("email_subject", "")
+                sub_str = f" | {subject}" if subject else ""
+                context_parts.append(
+                    f"--- DOCUMENT PASSAGE {idx+1} [Page {page}{sub_str}] ---\n{chunk.get('text', '').strip()}"
+                )
+            context_text = "\n\n".join(context_parts)
+        else:
+            context_text = "No direct passages found in relationship documents."
+
         lang_directive = self.get_language_directive(lang)
 
         # 2. Fast Path for Simple Factual Queries (< 150 prompt tokens)
-        if question_type == "simple":
+        if question_type == "simple" and not retrieved_chunks:
             system_content = f"""{self.FAST_PERSONA}
 
 === EXPLICIT SAVED USER MEMORIES (PRIMARY TRUTH - HIGHEST AUTHORITY) ===

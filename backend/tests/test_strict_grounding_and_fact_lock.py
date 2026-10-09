@@ -287,3 +287,22 @@ def test_case_10_who_loves_akku_and_lover_name():
     res_lover = rag.answer_question("akkus lover name", user_id="test_lover_user")
     assert "Saki" in res_lover["answer"]
     assert "Akshatha" not in res_lover["answer"]
+
+
+@pytest.mark.django_db
+def test_case_11_general_question_not_overwritten_by_latest_saved_memory():
+    """
+    TEST 11:
+    Even when the latest memory saved is 'Akku original name is Akshatha.',
+    asking general or external queries (e.g., 'Explain cosine similarity in face recognition.')
+    must return the actual LLM generated answer and NEVER be replaced by the latest memory!
+    """
+    extractor = MemoryExtractor()
+    extractor.extract_memories_from_text("Akku original name is Akshatha.", source="text", user_id="test_general_user")
+
+    rag = RAGGraphService()
+    rag.clear_cache()
+
+    res = rag.answer_question("Explain cosine similarity in face recognition.", user_id="test_general_user")
+    assert "cosine" in res["answer"].lower()
+    assert "Akku original name is Akshatha" not in res["answer"]

@@ -31,6 +31,7 @@ from chat.services.llm_service import LLMService
 from chat.services.citation_service import CitationService
 from chat.services.conversation_service import ConversationService
 from chat.services.tavily_service import TavilyService
+from chat.services.gemini_translation_service import GeminiTranslationService
 from memories.models import PersonalMemory
 from documents.models import DocumentChunk
 from memories.services.memory_extractor import MemoryExtractor
@@ -48,6 +49,7 @@ class ChatState(TypedDict, total=False):
     
     # Language & Classification
     detected_language: str  # "en" | "hi" | "hinglish" | "te" | "ta" | "tanglish"
+    normalized_english_question: Optional[str]
     question_type: str      # "simple" | "complex"
     query_intent: str       # "personal_memory" | "relationship_conversation" | "general_knowledge" | "external_search" | "mixed"
     evidence_sufficient: bool
@@ -109,6 +111,7 @@ class RAGGraphService:
         self.conversation_service = ConversationService()
         self.memory_extractor = MemoryExtractor()
         self.memory_retriever = MemoryRetriever()
+        self.translation_service = GeminiTranslationService.get_instance()
 
         # Build and compile LangGraph StateGraph
         self.graph = self._build_graph()
@@ -153,14 +156,23 @@ class RAGGraphService:
     # --------------------------------------------------------------------------
 
     def detect_language_node(self, state: ChatState) -> Dict[str, Any]:
-        """Node 1: Deterministic language detection (< 0.2ms)."""
+        """Node 1: Deterministic language detection and English query normalization (< 0.2ms - 15ms)."""
         t0 = time.perf_counter()
         question = state["question"]
         lang = self.prompt_service.detect_language(question)
+        normalized_q = question
+        if lang != "en":
+            try:
+                normalized_q = self.translation_service.translate_query_to_english(question, source_language=lang)
+            except Exception as e:
+                logger.warning(f"Query translation fallback error: {e}")
+                normalized_q = question
+
         timings = state.get("timings", {})
         timings["language_detection_ms"] = (time.perf_counter() - t0) * 1000
         return {
             "detected_language": lang,
+            "normalized_english_question": normalized_q,
             "timings": timings
         }
 
@@ -178,14 +190,6 @@ class RAGGraphService:
             return "birthday"
         if any(w in q for w in ["teacher", "school teacher"]):
             return "school teacher's name"
-        if any(w in q for w in ["father", "dad"]):
-            return "father's name"
-        if any(w in q for w in ["mother", "mom", "moms"]):
-            return "mother's name"
-        if any(w in q for w in ["parents", "parent"]):
-            return "parents' names"
-        if any(w in q for w in ["stargaz", "terrace", "moonlight"]):
-            return "stargazing"
         if any(w in q for w in ["hero", "actor"]):
             return "favorite hero"
         if any(w in q for w in ["movie", "film"]):
@@ -236,9 +240,8 @@ class RAGGraphService:
         """
         Synthesizes a direct, canonical answer directly from a trusted memory.
         Enforces Section 10 Fact-Lock mode for simple factual queries.
-        Strictly returns None if the memory text does not contain facts relevant to the question.
         """
-        q_lower = question.lower().strip()
+        q_lower = question.lower()
         m_text = (memory_item.get("text") or "").strip()
         if not m_text:
             return None
@@ -248,138 +251,139 @@ class RAGGraphService:
         for prefix in ["Akku:", "Saki:", "Answer:", "Note:"]:
             if clean_text.lower().startswith(prefix.lower()):
                 clean_text = clean_text[len(prefix):].strip()
-        clean_lower = clean_text.lower()
 
-        # 1. Who loves Akku / Lover / Boyfriend
-        if any(p in q_lower for p in ["who loves akku", "who love akku", "who is akku's lover", "akkus lover", "akku's boyfriend", "who is akku's boyfriend"]):
-            return "Saki loves Akku the most! He is her loving boyfriend and created this entire AI world with love as a birthday gift for her. ❤️"
-
-        # 2. Original / Real Name (ONLY when question explicitly asks for original/real/actual name)
+        # 1. Original Name
         if any(w in q_lower for w in ["original name", "real name", "actual name", "original_name"]):
+            has_name_fact = any(w in clean_text.lower() for w in ["name is", "name was", "original name", "real name", "actual name", "akshatha", "saketh"])
+            if not has_name_fact:
+                return None
             if any(w in q_lower for w in ["akku", "her", "she"]):
-                if "akshatha" in clean_lower:
+                if "akshatha" in clean_text.lower():
                     return "Akku's original name is Akshatha. ❤️"
-                return None
+                elif "saketh" in clean_text.lower():
+                    return None
             elif any(w in q_lower for w in ["saki", "his", "he", "him"]):
-                if "saketh" in clean_lower:
+                if "saketh" in clean_text.lower():
                     return "Saki's original name is Saketh. ❤️"
-                return None
+                elif "akshatha" in clean_text.lower():
+                    return None
             else:
-                if "akshatha" in clean_lower and "saketh" not in clean_lower:
+                if "akshatha" in clean_text.lower():
                     return "Akku's original name is Akshatha. ❤️"
-                elif "saketh" in clean_lower and "akshatha" not in clean_lower:
+                elif "saketh" in clean_text.lower():
                     return "Saki's original name is Saketh. ❤️"
+            formatted = re.sub(r'\bAkku\s+original\s+name\b', "Akku's original name", clean_text, flags=re.IGNORECASE)
+            return cls._format_grounded_answer(formatted)
+
+        # 2. Birthplace / Where born
+        if any(w in q_lower for w in ["born", "birthplace", "birth place"]):
+            if "tanjavur" in clean_text.lower() or "thanjavur" in clean_text.lower():
+                return "Tanjavur. ❤️"
+            elif any(w in clean_text.lower() for w in ["born in", "born at", "birthplace"]):
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 3. Birthday
+        if any(w in q_lower for w in ["birthday", "bday"]):
+            if "october 20" in clean_text.lower() or "20 october" in clean_text.lower():
+                return "Akku's birthday is on October 20! 🎂❤️"
+            elif any(w in clean_text.lower() for w in ["birthday", "bday"]):
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 4. Favorite Hero / Actor
+        if any(w in q_lower for w in ["hero", "favorite actor", "favourite actor"]):
+            if "thalapathy" in clean_text.lower() or "vijay" in clean_text.lower():
+                return "Akku's favorite hero is Thalapathy Vijay. ❤️"
+            elif any(w in clean_text.lower() for w in ["hero", "actor"]):
+                return cls._format_grounded_answer(clean_text)
+            return None
+
+        # 5. Food, Flowers, General Preferences & Direct Property Inquiries
+        pref_keywords = ["food", "eat", "drink", "dish", "dishes", "ice cream", "icecream", "flower", "flowers", "color", "colour", "hobby", "hobbies", "prefer"]
+        if any(w in q_lower for w in pref_keywords):
+            food_tokens = ["ice cream", "icecream", "chocolate", "vanilla", "mango", "dosa", "samosa", "biryani", "food", "eat", "drink", "dish", "paruppu", "sweet", "tea", "coffee"]
+            flower_tokens = ["flower", "flowers", "jasmine", "rose", "lotus", "lily"]
+            color_tokens = ["color", "colour", "pink", "blue", "red", "yellow", "black", "white", "green", "purple", "lavender"]
+            
+            matched_pref = False
+            if any(w in q_lower for w in ["food", "eat", "drink", "dish", "dishes", "ice cream", "icecream"]):
+                matched_pref = any(ft in clean_text.lower() for ft in food_tokens) or memory_item.get("category") == "food_drinks"
+            elif any(w in q_lower for w in ["flower", "flowers"]):
+                matched_pref = any(ft in clean_text.lower() for ft in flower_tokens)
+            elif any(w in q_lower for w in ["color", "colour"]):
+                matched_pref = any(ct in clean_text.lower() for ct in color_tokens)
+            else:
+                matched_pref = any(w in clean_text.lower() for w in ["like", "likes", "love", "loves", "prefer", "hobby"])
+
+            if not matched_pref:
                 return None
 
-        # 3. Family / Parents (Father & Mother)
-        has_father_q = any(w in q_lower for w in ["father", "dad"])
-        has_mother_q = any(w in q_lower for w in ["mother", "mom", "moms"])
-        has_parents_q = "parent" in q_lower or (has_father_q and has_mother_q)
-
-        if has_parents_q:
-            if "srinivas" in clean_lower and "sushma" in clean_lower:
-                return "Saki's father's name is PYN Srinivas and his mother's name is P Sushma. ❤️"
-            elif "srinivas" in clean_lower:
-                return "Saki's father's name is PYN Srinivas. ❤️"
-            elif "sushma" in clean_lower:
-                return "Saki's mother's name is P Sushma. ❤️"
-            return None
-
-        if has_father_q:
-            if "srinivas" in clean_lower:
-                return "Saki's father's name is PYN Srinivas. ❤️"
-            elif "father" in clean_lower:
-                return cls._format_grounded_answer(clean_text)
-            return None
-
-        if has_mother_q:
-            if "sushma" in clean_lower:
-                return "Saki's mother's name is P Sushma. ❤️"
-            elif "mother" in clean_lower or "mom" in clean_lower:
-                return cls._format_grounded_answer(clean_text)
-            return None
-
-        # 4. Birthplace / Where born
-        if any(w in q_lower for w in ["born", "birthplace", "birth place"]):
-            if "tanjavur" in clean_lower or "thanjavur" in clean_lower:
-                return "Tanjavur. ❤️"
-            elif "born" in clean_lower or "birth" in clean_lower:
-                return cls._format_grounded_answer(clean_text)
-            return None
-
-        # 5. Birthday
-        if any(w in q_lower for w in ["birthday", "bday"]):
-            if "october 20" in clean_lower or "20 october" in clean_lower:
-                return "Akku's birthday is on October 20! 🎂❤️"
-            elif "birthday" in clean_lower or "bday" in clean_lower:
-                return cls._format_grounded_answer(clean_text)
-            return None
-
-        # 6. Favorite Hero / Actor
-        if any(w in q_lower for w in ["hero", "favorite actor", "favourite actor"]):
-            if "thalapathy" in clean_lower or "vijay" in clean_lower:
-                return "Akku's favorite hero is Thalapathy Vijay. ❤️"
-            elif "hero" in clean_lower or "actor" in clean_lower:
-                return cls._format_grounded_answer(clean_text)
-            return None
-
-        # 7. Food, Drinks, Ice Cream & Chocolates
-        if any(w in q_lower for w in ["chocolate", "chocolates"]):
-            if "chocolate" in clean_lower:
-                if clean_text.lower().startswith("she "):
-                    clean_text = "Akku " + clean_text[4:]
-                elif clean_text.lower().startswith("her "):
-                    clean_text = "Akku's " + clean_text[4:]
-                elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
+            if clean_text.lower().startswith("she "):
+                clean_text = "Akku " + clean_text[4:]
+            elif clean_text.lower().startswith("her "):
+                clean_text = "Akku's " + clean_text[4:]
+            elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
+                if not clean_text.lower().startswith("our "):
                     clean_text = f"Akku {clean_text}"
-                return cls._format_grounded_answer(clean_text)
-            return None
+            return cls._format_grounded_answer(clean_text)
 
-        if any(w in q_lower for w in ["ice cream", "icecream"]):
-            if "mango" in clean_lower:
-                return "Akku's favorite ice cream is mango ice cream now. ❤️"
-            elif "vanilla" in clean_lower:
-                return "Akku loves vanilla ice cream. ❤️"
-            elif "ice cream" in clean_lower:
-                return cls._format_grounded_answer(clean_text)
-            return None
+        # 6. Family & Relatives (Father, Mother, Parents)
+        if any(w in q_lower for w in ["father", "dad", "mother", "mom", "parents", "family"]):
+            family_words = ["father", "dad", "mother", "mom", "parent", "parents", "family", "srinivas", "sushma", "amma", "appa"]
+            if not any(fw in clean_text.lower() for fw in family_words):
+                return None
 
-        if any(w in q_lower for w in ["eat", "food", "dish", "dishes"]):
-            food_terms = ["dosa", "ice cream", "biryani", "samosa", "paruppu", "sweet", "chocolate"]
-            if any(term in clean_lower for term in food_terms) or "eat" in clean_lower or "food" in clean_lower:
-                if clean_text.lower().startswith("she "):
-                    clean_text = "Akku " + clean_text[4:]
-                elif clean_text.lower().startswith("her "):
-                    clean_text = "Akku's " + clean_text[4:]
-                elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
-                    clean_text = f"Akku {clean_text}"
-                return cls._format_grounded_answer(clean_text)
-            return None
+            has_dad = any(w in q_lower for w in ["father", "dad"])
+            has_mom = any(w in q_lower for w in ["mother", "mom"])
+            has_both_q = (has_dad and has_mom) or any(w in q_lower for w in ["parents", "both"])
 
-        # 8. Flowers
-        if any(w in q_lower for w in ["flower", "flowers"]):
-            if "jasmine" in clean_lower or "flower" in clean_lower:
-                if clean_text.lower().startswith("she "):
-                    clean_text = "Akku " + clean_text[4:]
-                elif not clean_text.lower().startswith("akku") and not clean_text.lower().startswith("saki"):
-                    clean_text = f"Akku {clean_text}"
-                return cls._format_grounded_answer(clean_text)
-            return None
+            has_dad_in_mem = "srinivas" in clean_text.lower() or "father" in clean_text.lower() or "dad" in clean_text.lower()
+            has_mom_in_mem = "sushma" in clean_text.lower() or "mother" in clean_text.lower() or "mom" in clean_text.lower()
 
-        # 9. Stargazing
-        if any(w in q_lower for w in ["stargaz", "terrace", "moonlight"]):
-            if "stargaz" in clean_lower or "terrace" in clean_lower:
+            if has_both_q and has_dad_in_mem and has_mom_in_mem:
+                if "pyn srinivas" in clean_text.lower() and "p sushma" in clean_text.lower():
+                    return "Saki's father's name is PYN Srinivas and his mother's name is P Sushma. ❤️"
                 return cls._format_grounded_answer(clean_text)
-            return None
+            elif has_dad and not has_mom and has_dad_in_mem:
+                if "pyn srinivas" in clean_text.lower() or "srinivas" in clean_text.lower():
+                    return "Saki's father's name is PYN Srinivas. ❤️"
+                return cls._format_grounded_answer(clean_text)
+            elif has_mom and not has_dad and has_mom_in_mem:
+                if "p sushma" in clean_text.lower() or "sushma" in clean_text.lower():
+                    return "Saki's mother's name is P Sushma. ❤️"
+                return cls._format_grounded_answer(clean_text)
+            return cls._format_grounded_answer(clean_text)
 
-        # 10. Nicknames & Terms of Endearment
+        # 7. Nicknames & Terms of Endearment
         if any(w in q_lower for w in ["nickname", "nicknames", "call each other", "call him", "call her"]):
             if any(w in q_lower for w in ["akku", "her", "she"]):
                 return "Saki affectionately calls Akku 'Akku', 'idli', 'bubbu', 'Achu', and 'chinna pilla'. ❤️"
             elif any(w in q_lower for w in ["saki", "him", "he"]):
                 return "Akku calls Saki 'Saki' and 'Dudu', and affectionately calls him her husband in love notes. ❤️"
+            return "Saki affectionately calls Akku 'Akku', 'idli', 'bubbu', 'Achu', and 'chinna pilla', while Akku calls Saki 'Saki' and 'Dudu'. ❤️"
 
-        # None of the direct canonical fact patterns matched: Let LLM generate!
+        # 8. Songs, Music, Movies, Places, Activities, Education, Career
+        attr_keywords = [
+            "song", "songs", "music", "singer", "movie", "movies", "film", "place", "places", "travel",
+            "pet", "animal", "book", "car", "bike", "game", "subject", "study", "class", "college",
+            "m.tech", "degree", "placement"
+        ]
+        matched_attr = [ak for ak in attr_keywords if ak in q_lower]
+        if matched_attr:
+            if not any(ma in clean_text.lower() for ma in matched_attr):
+                return None
+            if clean_text.lower().startswith("she "):
+                clean_text = "Akku " + clean_text[4:]
+            elif clean_text.lower().startswith("her "):
+                clean_text = "Akku's " + clean_text[4:]
+            return cls._format_grounded_answer(clean_text)
+
+        # 9. Work commitments / Tessell / Professional Responsibilities
+        if any(w in q_lower for w in ["work commitment", "work commitments", "commitments", "tessel", "tessell", "responsibilities", "unavailable"]):
+            if any(w in clean_text.lower() for w in ["tessel", "tessell"]) and any(w in clean_text.lower() for w in ["work", "responsibilities", "commitments", "communication"]):
+                return "Saki mentioned that his reduced communication was due to responsibilities at Tessell, health issues, and the demands of building financial stability. He assured Akku he would make time for her as soon as possible. ❤️"
+
         return None
 
     @classmethod
@@ -546,14 +550,16 @@ class RAGGraphService:
         - Resolves pronouns and conversational follow-ups.
         """
         t0 = time.perf_counter()
-        q = state["question"].lower().strip()
+        orig_q = state["question"]
+        normalized_q = state.get("normalized_english_question") or orig_q
         history = state.get("history", [])
 
-        # Rewrite follow-up questions and resolve pronouns
-        rewritten_q = self._rewrite_query(state["question"], history)
+        # Rewrite follow-up questions and resolve pronouns using normalized English query
+        rewritten_q = self._rewrite_query(normalized_q, history)
+        q = f"{orig_q} {normalized_q}".lower().strip()
 
         personal_keywords = [
-            "akku", "saki", "our", "we", "us", "relationship", "memory", "memories",
+            "akku", "saki", "saketh", "akshatha", "our", "we", "us", "relationship", "memory", "memories",
             "favorite", "favourite", "likes", "loves", "dislikes", "prefers", "told me",
             "remember", "proposal", "propose", "meet", "meeting", "college", "canteen",
             "samosa", "bessie", "beach", "chennai", "sunset", "birthday", "bday", "october 20",
@@ -568,7 +574,8 @@ class RAGGraphService:
 
         general_keywords = [
             "what is python", "what is django", "what is react", "explain quantum",
-            "machine learning", "neural network", "what is photosynthesis", "capital of"
+            "machine learning", "neural network", "what is photosynthesis", "capital of",
+            "explain", "similarity", "cosine", "algorithm", "model", "definition", "concept"
         ]
 
         is_personal = any(kw in q for kw in personal_keywords)
@@ -579,7 +586,7 @@ class RAGGraphService:
             query_intent = "mixed"
         elif is_external:
             query_intent = "external_search"
-        elif is_general and not is_personal:
+        elif is_general or not is_personal:
             query_intent = "general_knowledge"
         else:
             query_intent = "personal_memory"
@@ -587,26 +594,27 @@ class RAGGraphService:
         # Fine-grained Intent Classification (Requirement 15)
         if any(w in q for w in ["after that", "next", "then what", "what else"]):
             detailed_intent = "FOLLOW_UP"
-        elif any(w in q for w in ["when", "date", "year", "month", "timeline", "may 4", "october 20"]):
-            detailed_intent = "DATE"
-        elif any(w in q for w in ["where", "place", "location", "city", "beach", "canteen", "nagpur", "chennai", "mess"]):
-            detailed_intent = "LOCATION"
-        elif any(w in q for w in ["who", "person", "called", "name", "nickname", "parents"]):
-            detailed_intent = "PERSON"
-        elif any(w in q for w in ["favorite", "favourite", "like", "love", "prefer", "flavor", "colour", "color", "pasand"]):
-            detailed_intent = "PREFERENCE"
-        elif any(w in q for w in ["propose", "proposal", "story", "first meet", "incident", "fight", "apolog", "promise"]):
-            detailed_intent = "RELATIONSHIP_EVENT"
-        elif any(w in q for w in ["what did she say", "conversation", "message", "email", "chat"]):
-            detailed_intent = "CONVERSATION"
         elif is_personal:
-            detailed_intent = "PERSONAL_MEMORY"
+            if any(w in q for w in ["when", "date", "year", "month", "timeline", "may 4", "october 20"]):
+                detailed_intent = "DATE"
+            elif any(w in q for w in ["where", "place", "location", "city", "beach", "canteen", "nagpur", "chennai", "mess"]):
+                detailed_intent = "LOCATION"
+            elif any(w in q for w in ["who", "person", "called", "name", "nickname", "parents"]):
+                detailed_intent = "PERSON"
+            elif any(w in q for w in ["favorite", "favourite", "like", "love", "prefer", "flavor", "colour", "color", "pasand"]):
+                detailed_intent = "PREFERENCE"
+            elif any(w in q for w in ["propose", "proposal", "story", "first meet", "incident", "fight", "apolog", "promise"]):
+                detailed_intent = "RELATIONSHIP_EVENT"
+            elif any(w in q for w in ["what did she say", "conversation", "message", "email", "chat"]):
+                detailed_intent = "CONVERSATION"
+            else:
+                detailed_intent = "PERSONAL_MEMORY"
         elif is_external:
             detailed_intent = "EXTERNAL_SEARCH"
         elif is_general:
             detailed_intent = "GENERAL_CHAT"
         else:
-            detailed_intent = "UNKNOWN"
+            detailed_intent = "GENERAL_CHAT"
 
         # Explicit long narrative requests
         deep_complex_triggers = [
@@ -654,18 +662,13 @@ class RAGGraphService:
             query_embedding=query_embedding
         )
 
-        has_high_conf = any(m.get("score", 0) >= 0.72 for m in memories)
-        is_rel_query = any(w in question.lower() for w in ["story", "propose", "proposal", "meet", "connect", "college", "beach", "chennai", "bessie", "mess", "canteen", "marry", "marriage", "academic", "placement"])
-
-        chunks = []
-        if q_type == "complex" or not has_high_conf or is_rel_query or len(memories) == 0:
-            top_k_doc = 2 if q_type == "simple" else 3
-            chunks = self.retrieval_service.retrieve(
-                question=question,
-                top_k=top_k_doc,
-                min_relevance=0.25,
-                query_embedding=query_embedding
-            )
+        top_k_doc = 2 if q_type == "simple" else 3
+        chunks = self.retrieval_service.retrieve(
+            question=question,
+            top_k=top_k_doc,
+            min_relevance=0.25,
+            query_embedding=query_embedding
+        )
 
         dur_ms = (time.perf_counter() - t_start) * 1000
         return {"memories": memories, "chunks": chunks, "duration_ms": dur_ms}
@@ -696,6 +699,14 @@ class RAGGraphService:
                 expanded_tokens.add(t[:-1])
             else:
                 expanded_tokens.add(t + "s")
+
+        if any(t in content_tokens for t in ["mother", "mom", "moms", "mum"]):
+            expanded_tokens.update(["mother", "mom", "moms", "mum", "sushma"])
+        if any(t in content_tokens for t in ["father", "dad", "dads"]):
+            expanded_tokens.update(["father", "dad", "dads", "srinivas"])
+        if any(t in content_tokens for t in ["parent", "parents"]):
+            expanded_tokens.update(["parents", "parent", "father", "mother", "dad", "mom", "moms", "srinivas", "sushma"])
+
         search_tokens = list(expanded_tokens)
 
         if search_tokens:
@@ -761,20 +772,17 @@ class RAGGraphService:
         tokens = [w.lower() for w in re.findall(r'\b[a-zA-Z0-9\u0900-\u097f]{3,}\b', question)]
         stop_words = {
             "what", "when", "where", "which", "who", "whom", "this", "that", "with", "from",
-            "have", "does", "about", "tell", "like", "akku", "akkus", "saki", "sakis", "her", "his", "she",
-            "kya", "hai", "kaun", "enna", "romba", "pidikkum", "istam", "pasand", "the", "and", "or",
-            "name", "names", "fact", "info", "information"
+            "have", "does", "about", "tell", "like", "akku", "akkus", "saki", "her", "his", "she",
+            "kya", "hai", "kaun", "enna", "romba", "pidikkum", "istam", "pasand", "the", "and", "or"
         }
         content_tokens = [t for t in tokens if t not in stop_words] or tokens
 
         # 1. Subject-level scan across active memories
         user_filter = Q(user_id=user_id) | Q(source_type="initial_pdf") | Q(user_id="default_user")
         all_active = PersonalMemory.objects.filter(user_filter, is_active=True)
-        generic_subj_words = {"name", "names", "fact", "info", "information", "preference", "preferences", "remembered", "detail", "details"}
         for m in all_active:
             subj = (m.subject or "").lower()
-            subj_parts = [p for p in subj.split() if len(p) >= 3 and p not in generic_subj_words]
-            if subj_parts and (any(part in q_lower for part in subj_parts) or any(t in subj for t in content_tokens)):
+            if subj and (subj in q_lower or any(part in q_lower for part in subj.split() if len(part) >= 3) or any(t in subj for t in content_tokens)):
                 matched.append({
                     "id": str(m.id),
                     "user_id": str(m.user_id),
@@ -799,7 +807,7 @@ class RAGGraphService:
             cat = "places_travel"
         elif any(w in q_lower for w in ["proposal", "propose", "canteen", "story", "college"]):
             cat = "shared_experiences"
-        elif any(w in q_lower for w in ["original name", "real name", "actual name", "born", "birthplace", "hero", "flower", "flowers", "father", "mother", "mom", "dad", "parent", "parents"]):
+        elif any(w in q_lower for w in ["name", "original name", "born", "birthplace", "hero", "flower", "flowers"]):
             cat = "personal_preferences"
 
         if cat:
@@ -831,7 +839,8 @@ class RAGGraphService:
         """
         t0 = time.perf_counter()
         question = state["question"]
-        rewritten_q = state.get("rewritten_question") or question
+        normalized_q = state.get("normalized_english_question") or question
+        rewritten_q = state.get("rewritten_question") or normalized_q
         user_id = state.get("user_id", "default_user")
         q_type = state.get("question_type", "simple")
         query_intent = state.get("query_intent", "personal_memory")
@@ -842,7 +851,7 @@ class RAGGraphService:
         embedding_ms = (time.perf_counter() - t_embed) * 1000
 
         # 2. Execute retrieval branches with both queries merged for maximal recall
-        search_kw = f"{question} {rewritten_q}" if rewritten_q != question else question
+        search_kw = f"{question} {normalized_q} {rewritten_q}".strip() if normalized_q != question else (f"{question} {rewritten_q}" if rewritten_q != question else question)
         vec_res = self._vector_search_sync(query_embedding, user_id, q_type, rewritten_q, query_intent)
         kw_res = self._keyword_search_sync(search_kw, user_id)
         meta_res = self._metadata_search_sync(search_kw, user_id)
@@ -850,7 +859,7 @@ class RAGGraphService:
         web_res = None
         if query_intent in ("external_search", "general_knowledge") and TavilyService.is_available():
             try:
-                web_res = TavilyService.search(rewritten_q)
+                web_res = TavilyService.get_instance().search(rewritten_q)
             except Exception as e:
                 logger.warning(f"Tavily search non-fatal error: {e}")
 
@@ -893,9 +902,9 @@ class RAGGraphService:
         tokens = [w.lower() for w in re.findall(r'\b[a-zA-Z0-9\u0900-\u097f]{3,}\b', question)]
         stop_words = {
             "what", "when", "where", "which", "who", "whom", "this", "that", "with", "from",
-            "have", "does", "about", "tell", "like", "akku", "akkus", "saki", "sakis", "her", "his", "she",
+            "have", "does", "about", "tell", "like", "akku", "akkus", "saki", "her", "his", "she",
             "kya", "hai", "kaun", "enna", "romba", "pidikkum", "istam", "pasand", "the", "and", "or",
-            "for", "favorite", "favourite", "name", "names"
+            "for", "favorite", "favourite"
         }
         content_tokens = [t for t in tokens if t not in stop_words] or tokens
 
@@ -912,12 +921,6 @@ class RAGGraphService:
                     candidate_map[m_id]["score"] = max(candidate_map[m_id].get("score", 0), item.get("score", 0))
 
         is_past_query = any(w in q_lower for w in ["earlier", "before", "previously", "used to", "past", "last year", "initially"])
-        is_orig_name_q = any(w in q_lower for w in ["original name", "real name", "actual name", "original_name"])
-        is_fam_q = any(w in q_lower for w in ["father", "dad", "mother", "mom", "moms", "parent", "parents", "family"])
-        is_food_q = any(w in q_lower for w in ["eat", "food", "dish", "dishes", "ice cream", "icecream", "chocolate", "dosa"])
-        is_star_q = any(w in q_lower for w in ["stargaz", "terrace", "moonlight"])
-        is_hero_q = any(w in q_lower for w in ["hero", "actor"])
-        is_flower_q = any(w in q_lower for w in ["flower", "flowers"])
 
         # Score & rank every candidate memory
         ranked_memories = []
@@ -928,23 +931,6 @@ class RAGGraphService:
             text_lower = (item.get("text") or "").lower()
             status = item.get("status", "current")
             version = int(item.get("version") or 1)
-
-            # Priority 1: Explicit user memory boost
-            is_user_mem = src_type in ("user_memory", "manual")
-            src_boost = 0.60 if is_user_mem else (0.30 if src_type in ("conversation", "agent_extracted") else 0.0)
-
-            # Temporal / Version boost (Req 9, 20, 30)
-            status_boost = 0.0
-            if is_past_query:
-                if status == "historical":
-                    status_boost = 0.80
-                else:
-                    status_boost = -0.30
-            else:
-                if status == "current":
-                    status_boost = 0.50 + (version * 0.10)
-                elif status == "historical":
-                    status_boost = -0.60  # Deprioritize superseded memories for current questions
 
             # Subject match boost (e.g. Ice Cream in query)
             subj_boost = 0.0
@@ -963,56 +949,45 @@ class RAGGraphService:
                     direct_phrase_boost = 0.40
                     break
 
+            # Priority 1: Explicit user memory boost - only if memory matches query!
+            is_user_mem = src_type in ("user_memory", "manual")
+            is_relevant_match = (subj_boost > 0 or kw_boost > 0 or direct_phrase_boost > 0)
+            src_boost = (0.60 if is_user_mem else (0.30 if src_type in ("conversation", "agent_extracted") else 0.0)) if is_relevant_match else 0.0
+
+            # Temporal / Version boost (Req 9, 20, 30)
+            status_boost = 0.0
+            if is_past_query:
+                if status == "historical":
+                    status_boost = 0.80
+                else:
+                    status_boost = -0.30
+            else:
+                if status == "current":
+                    status_boost = (0.50 + (version * 0.20)) if is_relevant_match else 0.0
+                elif status == "historical":
+                    status_boost = -0.60  # Deprioritize superseded memories for current questions
+
             # Entity match boost (Akku vs Saki)
             entity_boost = 0.0
             is_about_akku = any(w in q_lower for w in ["akku", "her", "she"])
-            is_about_saki = any(w in q_lower for w in ["saki", "sakis", "his", "he", "him"]) and not is_about_akku
+            is_about_saki = any(w in q_lower for w in ["saki", "his", "he", "him"]) and not is_about_akku
             if is_about_akku:
                 if "akku" in text_lower or "akku" in subj or "akshatha" in text_lower:
-                    entity_boost = 0.60
-                elif ("saki" in text_lower or "saketh" in text_lower or "srinivas" in text_lower or "sushma" in text_lower) and not ("akku" in text_lower or "akshatha" in text_lower):
-                    entity_boost = -1.20
+                    entity_boost = 0.40
+                elif ("saki" in text_lower or "saketh" in text_lower) and not ("akku" in text_lower or "akshatha" in text_lower):
+                    entity_boost = -0.60
             elif is_about_saki:
-                if "saki" in text_lower or "saki" in subj or "saketh" in text_lower or "srinivas" in text_lower or "sushma" in text_lower:
-                    entity_boost = 0.80
-                elif ("akku" in text_lower or "akshatha" in text_lower) and not ("saki" in text_lower or "saketh" in text_lower or "srinivas" in text_lower or "sushma" in text_lower):
-                    entity_boost = -1.50
+                if "saki" in text_lower or "saki" in subj or "saketh" in text_lower:
+                    entity_boost = 0.40
+                elif ("akku" in text_lower or "akshatha" in text_lower) and not ("saki" in text_lower or "saketh" in text_lower):
+                    entity_boost = -0.60
 
-            # Semantic Topic Boost & Penalty
-            topic_boost = 0.0
-            if is_fam_q:
-                has_fam = any(w in text_lower or w in subj for w in ["father", "dad", "mother", "mom", "moms", "parent", "parents", "srinivas", "sushma", "family"])
-                topic_boost = 2.0 if has_fam else -2.0
-            elif is_star_q:
-                has_star = any(w in text_lower or w in subj for w in ["stargaz", "terrace", "moonlight"])
-                topic_boost = 2.5 if has_star else -1.5
-            elif is_hero_q:
-                has_hero = any(w in text_lower or w in subj for w in ["thalapathy", "vijay", "hero", "actor"])
-                topic_boost = 2.5 if has_hero else -1.5
-            elif is_flower_q:
-                has_flower = any(w in text_lower or w in subj for w in ["flower", "flowers", "jasmine", "rose"])
-                topic_boost = 2.5 if has_flower else -1.5
-            elif is_food_q:
-                has_food = any(w in text_lower or w in subj for w in ["dosa", "ice cream", "biryani", "samosa", "eat", "food", "paruppu", "sweet", "chocolate", "vanilla", "mango"])
-                topic_boost = 2.0 if has_food else -1.0
-            elif is_orig_name_q:
-                if is_about_akku and "akshatha" in text_lower:
-                    topic_boost = 2.5
-                elif is_about_saki and "saketh" in text_lower:
-                    topic_boost = 2.5
-                else:
-                    topic_boost = -1.5
-            else:
-                # If question does NOT ask about original names, penalize "Original Name" cards so they do not hijack
-                if "original name" in subj or "original name" in text_lower:
-                    topic_boost = -1.5
+            composite_score = base_score + src_boost + status_boost + subj_boost + kw_boost + direct_phrase_boost + entity_boost
 
-            composite_score = base_score + src_boost + status_boost + subj_boost + kw_boost + direct_phrase_boost + entity_boost + topic_boost
-
-            # Explicit user memory with verified topic match receives top priority
-            if is_user_mem and (subj_boost > 0 or topic_boost > 0 or direct_phrase_boost > 0) and topic_boost >= 0:
+            # Explicit user memory with topic match receives guaranteed top priority
+            if is_user_mem and is_relevant_match:
                 if not is_past_query and status == "current":
-                    composite_score = max(composite_score, 2.5 + version * 0.15)
+                    composite_score = max(composite_score, 2.0 + version * 0.15)
                 elif is_past_query and status == "historical":
                     composite_score = max(composite_score, 2.0)
 
@@ -1047,27 +1022,39 @@ class RAGGraphService:
             citations = citations[:2]
 
         # Check evidence sufficiency, conflict detection, and Fact-Lock mode (Req 6, 8, 9, 10, 11)
-        topic = self._extract_fact_topic(state["question"])
+        normalized_q = state.get("normalized_english_question") or state["question"]
+        q_lower = state["question"].lower()
+        norm_lower = normalized_q.lower()
+        combined_q_lower = f"{q_lower} {norm_lower}"
+
+        topic = self._extract_fact_topic(normalized_q) or self._extract_fact_topic(state["question"])
         evidence_sufficient = True
         unknown_message = None
         fact_locked_answer = None
         grounded = True
 
         # 1. Conflict Detection across active memories (Section 11)
-        conflict_msg = self._detect_memory_conflicts(ranked_memories, topic, question)
+        conflict_msg = self._detect_memory_conflicts(ranked_memories, topic, normalized_q) or self._detect_memory_conflicts(ranked_memories, topic, question)
         if conflict_msg:
             fact_locked_answer = conflict_msg
             evidence_sufficient = True
             grounded = True
         else:
             # 2. Fact-Lock Mode for Simple Factual Questions (Section 10)
-            if any(p in q_lower for p in ["who loves akku", "who love akku", "who is akku's lover", "akkus lover", "akku's boyfriend", "who is akku's boyfriend"]):
-                fact_locked_answer = "Saki loves Akku the most! He is her loving boyfriend and created this entire AI world with love as a birthday gift for her. ❤️"
+            if any(p in combined_q_lower for p in ["who loves akku", "who love akku", "who is akku's lover", "akkus lover", "akku's boyfriend", "who is akku's boyfriend"]):
+                eng_lover_ans = "Saki loves Akku the most! He is her loving boyfriend and created this entire AI world with love as a birthday gift for her. ❤️"
+                lang = state.get("detected_language", "en")
+                if lang != "en":
+                    fact_locked_answer = self.translation_service.translate_answer_to_target_language(
+                        eng_lover_ans, target_language=lang, original_question=question
+                    ) or eng_lover_ans
+                else:
+                    fact_locked_answer = eng_lover_ans
                 evidence_sufficient = True
                 grounded = True
             elif ranked_memories:
-                is_about_akku = any(w in q_lower for w in ["akku", "her", "she"])
-                is_about_saki = any(w in q_lower for w in ["saki", "his", "he", "him"]) and not is_about_akku
+                is_about_akku = any(w in combined_q_lower for w in ["akku", "her", "she", "अक्कू", "అక్కు", "அக்கு"])
+                is_about_saki = any(w in combined_q_lower for w in ["saki", "his", "he", "him", "साकी", "సాకీ", "சாக்கி"]) and not is_about_akku
                 cand_m = None
                 for m in ranked_memories:
                     m_txt = (m.get("text") or "").lower()
@@ -1075,6 +1062,12 @@ class RAGGraphService:
                         continue
                     if is_about_saki and ("akku" in m_txt or "akshatha" in m_txt) and not ("saki" in m_txt or "saketh" in m_txt):
                         continue
+                    if any(w in combined_q_lower for w in ["father", "dad", "mother", "mom", "parent", "parents"]):
+                        if not any(pw in m_txt for pw in ["father", "mother", "mom", "dad", "parent", "parents", "srinivas", "sushma"]):
+                            continue
+                    if any(w in combined_q_lower for w in ["work commitment", "work commitments", "tessel", "tessell", "commitments", "responsibilities"]):
+                        if not any(ww in m_txt for ww in ["tessel", "tessell", "work", "responsibilities", "commitments"]):
+                            continue
                     cand_m = m
                     break
                 top_m = cand_m or ranked_memories[0]
@@ -1083,17 +1076,66 @@ class RAGGraphService:
                 top_subj_lower = (top_m.get("subject") or "").lower()
 
                 # Check if top memory answers the fact
-                fact_cand = self._synthesize_fact_lock_answer(question, top_m)
-                if fact_cand and top_score >= 0.70:
-                    fact_locked_answer = fact_cand
+                fact_cand = self._synthesize_fact_lock_answer(normalized_q, top_m) or self._synthesize_fact_lock_answer(question, top_m)
+                topic_matched = False
+                if topic:
+                    topic_words = set(re.findall(r'\b\w{3,}\b', topic.lower())) - {"akku", "her", "she", "what", "favorite", "favourite"}
+                    if topic_words and (topic_words.intersection(set(re.findall(r'\b\w{3,}\b', top_text_lower))) or topic_words.intersection(set(re.findall(r'\b\w{3,}\b', top_subj_lower)))):
+                        topic_matched = True
+                elif any(t in top_text_lower or t in top_subj_lower for t in content_tokens):
+                    topic_matched = True
+
+                if any(k in combined_q_lower for k in ["original name", "real name", "actual name", "असली नाम", "అసలు పేరు", "உண்மையான பெயர்"]) and ("akshatha" in top_text_lower or "saketh" in top_text_lower):
+                    topic_matched = True
+                if any(k in combined_q_lower for k in ["born", "birthplace", "birth place", "जन्मस्थान", "పుట్టిన", "பிறந்த"]) and ("tanjavur" in top_text_lower or "thanjavur" in top_text_lower):
+                    topic_matched = True
+                if any(k in combined_q_lower for k in ["birthday", "bday", "जन्मदिन", "పుట్టినరోజు", "பிறந்தநாள்"]) and ("october 20" in top_text_lower or "20 october" in top_text_lower):
+                    topic_matched = True
+                if any(k in combined_q_lower for k in ["father", "dad", "mother", "mom", "parents", "माता", "पिता", "తల్లి", "తండ్రి", "அம்மா", "அப்பா"]) and any(w in top_text_lower for w in ["srinivas", "sushma", "father", "mother", "mom", "moms", "dad", "dads"]):
+                    topic_matched = True
+                if any(k in combined_q_lower for k in ["work commitment", "work commitments", "commitments", "tessel", "tessell", "responsibilities"]) and any(w in top_text_lower for w in ["tessel", "tessell", "work", "responsibilities", "commitments"]):
+                    topic_matched = True
+
+                is_food_query = any(w in combined_q_lower for w in ["eat", "food", "dish", "dishes", "खाना", "తిండి", "உணவு"]) and (
+                    top_m.get("category") == "food_drinks" or any(w in top_text_lower for w in ["dosa", "ice cream", "eat", "food", "biryani", "samosa", "paruppu"])
+                )
+                if is_food_query:
+                    topic_matched = True
+
+                if fact_cand and topic_matched and top_score >= 0.70:
+                    lang = state.get("detected_language", "en")
+                    if lang != "en":
+                        translated_fact = self.translation_service.translate_answer_to_target_language(
+                            fact_cand, target_language=lang, original_question=question
+                        )
+                        fact_locked_answer = translated_fact or fact_cand
+                    else:
+                        fact_locked_answer = fact_cand
                     evidence_sufficient = True
                     grounded = True
+
+            # Check if any retrieved document chunk directly fact-locks the answer
+            if not fact_locked_answer and final_chunks:
+                for chunk in final_chunks:
+                    c_cand = self._synthesize_fact_lock_answer(normalized_q, {"text": chunk.get("text", "")}) or self._synthesize_fact_lock_answer(question, {"text": chunk.get("text", "")})
+                    if c_cand:
+                        lang = state.get("detected_language", "en")
+                        if lang != "en":
+                            translated_fact = self.translation_service.translate_answer_to_target_language(
+                                c_cand, target_language=lang, original_question=question
+                            )
+                            fact_locked_answer = translated_fact or c_cand
+                        else:
+                            fact_locked_answer = c_cand
+                        evidence_sufficient = True
+                        grounded = True
+                        break
 
             # 3. Relevance Threshold & Anti-Hallucination check (Section 6 & 1)
             if not fact_locked_answer:
                 relevance_thresh = getattr(settings, 'RELEVANCE_THRESHOLD', 0.70)
                 is_personal_q = state.get("query_intent", "personal_memory") in ("personal_memory", "relationship_conversation") or any(
-                    kw in question.lower() for kw in ["akku", "saki", "our", "relationship", "we", "us", "her", "she", "his"]
+                    kw in combined_q_lower for kw in ["akku", "saki", "our", "relationship", "we", "us", "her", "she", "his"]
                 )
 
                 has_mem_above_thresh = bool(
@@ -1103,17 +1145,22 @@ class RAGGraphService:
                     any(t in c.get("text", "").lower() for t in content_tokens)
                     for c in final_chunks
                 )
-                is_core_anchor = any(w in question.lower() for w in [
+                is_core_anchor = any(w in combined_q_lower for w in [
                     "proposal", "propose", "canteen", "samosa", "meet", "meeting", "beach", "bessie",
-                    "birthday", "bday", "october 20", "m.tech", "data engineering", "placement", "chennai",
-                    "who loves akku", "who love akku", "lover", "boyfriend"
+                    "birthday", "bday", "october 20", "m.tech", "data engineering", "placement", "chennai"
                 ])
 
                 # Anti-Hallucination Topic Filter for Specific Property Inquiries (Section 1 & 6)
                 if topic:
                     topic_words = set(re.findall(r'\b\w{3,}\b', topic.lower())) - {"akku", "her", "she", "what", "favorite", "favourite"}
                     distinctive_words = topic_words - {"name", "names", "detail", "details", "info", "information"}
-                    check_words = distinctive_words if distinctive_words else topic_words
+                    check_words = set(distinctive_words if distinctive_words else topic_words)
+                    if any(w in check_words for w in ["mother", "mom", "moms", "mum"]):
+                        check_words.update(["mother", "mom", "moms", "mum", "amma", "sushma"])
+                    if any(w in check_words for w in ["father", "dad", "dads"]):
+                        check_words.update(["father", "dad", "dads", "appa", "srinivas"])
+                    if any(w in check_words for w in ["parent", "parents"]):
+                        check_words.update(["parent", "parents", "father", "mother", "dad", "mom", "moms", "srinivas", "sushma"])
                     mem_matches_topic = any(
                         any(tw in (m.get("text") or "").lower() or tw in (m.get("subject") or "").lower() for tw in check_words)
                         for m in final_memories
@@ -1140,6 +1187,20 @@ class RAGGraphService:
                             unknown_message = f"నా దగ్గర {clean_topic} గురించిన జ్ఞాపకం ఇంకా భద్రపరచలేదు, సాకీ ❤️."
                         elif lang == "ta":
                             unknown_message = f"அக்குவின் {clean_topic} பற்றிய நினைவு என்னிடம் இன்னும் சேமிக்கப்படவில்லை, சாகி ❤️."
+                        elif lang == "es":
+                            unknown_message = f"Todavía no tengo un recuerdo guardado sobre {clean_topic}, Saki. ❤️"
+                        elif lang == "fr":
+                            unknown_message = f"Je n'ai pas encore de souvenir enregistré concernant {clean_topic}, Saki. ❤️"
+                        elif lang == "de":
+                            unknown_message = f"Ich habe dazu noch keine gespeicherte Erinnerung über {clean_topic}, Saki. ❤️"
+                        elif lang == "kn":
+                            unknown_message = f"ನನ್ನ ಬಳಿ {clean_topic} ಕುರಿತು ಉಳಿಸಿದ ನೆನಪು ಇನ್ನೂ ಇಲ್ಲ, ಸಾಕಿ ❤️."
+                        elif lang == "ml":
+                            unknown_message = f"എന്റെ അടുത്ത് {clean_topic} സംബന്ധിച്ച് സൂಕ್ಷിച്ച ഓർമ്മ ഇതുവരെ ഇല്ല, സാക്കി ❤️."
+                        elif lang == "tanglish":
+                            unknown_message = f"Enakku {clean_topic} pathi saved memory innum illa, Saki ❤️."
+                        elif lang == "teluglish":
+                            unknown_message = f"Naa daggara {clean_topic} gurinchi saved memory inka ledu, Saki ❤️."
                         else:
                             unknown_message = f"I don't have a reliable saved memory for {clean_topic} yet. ❤️"
                     else:
@@ -1147,6 +1208,16 @@ class RAGGraphService:
                             unknown_message = "मेरे पास अभी यह जानकारी सहेजी नहीं गई है ❤️।"
                         elif lang == "hinglish":
                             unknown_message = "Mere paas abhi yeh saved memory me nahi hai ❤️."
+                        elif lang == "te":
+                            unknown_message = "నా దగ్గర ఈ సమాచారం భద్రపరచలేదు, సాకీ ❤️."
+                        elif lang == "ta":
+                            unknown_message = "என்னிடம் இந்த தகவல் இன்னும் சேமிக்கப்படவில்லை, சாகி ❤️."
+                        elif lang == "es":
+                            unknown_message = "Todavía no tengo esa información en mis recuerdos guardados, Saki. ❤️"
+                        elif lang == "fr":
+                            unknown_message = "Je n'ai pas encore cette information dans mes souvenirs enregistrés, Saki. ❤️"
+                        elif lang == "de":
+                            unknown_message = "Ich habe diese Information noch nicht in meinen gespeicherten Erinnerungen, Saki. ❤️"
                         else:
                             unknown_message = "I don't have that information in my saved memories yet. ❤️"
 
@@ -1447,6 +1518,30 @@ class RAGGraphService:
             else:
                 answer = "I remember our beautiful moments together, grounded right here in our relationship memories! ❤️"
 
+        # 4. Multilingual Alignment: If user asked in non-English, ensure answer is in the user's language
+        if lang != "en" and state.get("evidence_sufficient", True) and not state.get("fact_locked_answer"):
+            needs_trans = False
+            if lang == "hi" and not any('\u0900' <= c <= '\u097f' for c in answer[:100]):
+                needs_trans = True
+            elif lang == "te" and not any('\u0c00' <= c <= '\u0c7f' for c in answer[:100]):
+                needs_trans = True
+            elif lang == "ta" and not any('\u0b80' <= c <= '\u0bff' for c in answer[:100]):
+                needs_trans = True
+            elif lang in ("es", "fr", "de", "it", "kn", "ml", "bn", "mr", "gu", "pa", "ar") and self.translation_service.is_available():
+                needs_trans = True
+
+            if needs_trans:
+                try:
+                    translated_ans = self.translation_service.translate_answer_to_target_language(
+                        answer,
+                        target_language=lang,
+                        original_question=state.get("question")
+                    )
+                    if translated_ans:
+                        answer = translated_ans
+                except Exception as e:
+                    logger.warning(f"Response translation non-fatal error: {e}")
+
         timings["grounding_check_ms"] = (time.perf_counter() - t0) * 1000
 
         return {
@@ -1513,37 +1608,39 @@ class RAGGraphService:
             question.strip(),
             re.IGNORECASE
         )
-        if explicit_remember:
-            new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
-            self.clear_cache()
+        is_q = MemoryExtractor.is_question(question) or question.strip().endswith('?')
+        if explicit_remember and not is_q:
             saved_fact = explicit_remember.group(1).strip()
-            answer = f"Got it, Saki! ❤️ I've saved that memory to my heart: '{saved_fact}'. I'll remember it forever!"
-            total_sec = round(time.perf_counter() - start_time, 2)
-            asst_msg = self.conversation_service.add_message(
-                conversation=conversation,
-                role="assistant",
-                content=answer,
-                metadata={
+            if not MemoryExtractor.is_question(saved_fact):
+                new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
+                self.clear_cache()
+                answer = f"Got it, Saki! ❤️ I've saved that memory to my heart: '{saved_fact}'. I'll remember it forever!"
+                total_sec = round(time.perf_counter() - start_time, 2)
+                asst_msg = self.conversation_service.add_message(
+                    conversation=conversation,
+                    role="assistant",
+                    content=answer,
+                    metadata={
+                        "citations": [],
+                        "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
+                        "new_memories_saved": [m.memory_text for m in new_memories],
+                        "latency_seconds": total_sec,
+                        "model": "memory_agent"
+                    }
+                )
+                return {
+                    "conversation_id": str(conversation.id),
+                    "user_message_id": str(user_msg.id),
+                    "assistant_message_id": str(asst_msg.id),
+                    "question": question,
+                    "answer": answer,
                     "citations": [],
                     "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
                     "new_memories_saved": [m.memory_text for m in new_memories],
-                    "latency_seconds": total_sec,
+                    "latency": total_sec,
+                    "timings": {"total_ms": total_sec * 1000},
                     "model": "memory_agent"
                 }
-            )
-            return {
-                "conversation_id": str(conversation.id),
-                "user_message_id": str(user_msg.id),
-                "assistant_message_id": str(asst_msg.id),
-                "question": question,
-                "answer": answer,
-                "citations": [],
-                "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
-                "new_memories_saved": [m.memory_text for m in new_memories],
-                "latency": total_sec,
-                "timings": {"total_ms": total_sec * 1000},
-                "model": "memory_agent"
-            }
 
         # 4. Check instant response cache if no prior conversation turns in session
         if not history and cache_key in self._answer_cache:
@@ -1689,25 +1786,27 @@ class RAGGraphService:
             question.strip(),
             re.IGNORECASE
         )
-        if explicit_remember:
-            new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
-            self.clear_cache()
+        is_q = MemoryExtractor.is_question(question) or question.strip().endswith('?')
+        if explicit_remember and not is_q:
             saved_fact = explicit_remember.group(1).strip()
-            answer = f"Got it, Saki! ❤️ I've saved that memory to my heart: '{saved_fact}'. I'll remember it forever!"
-            total_sec = round(time.perf_counter() - start_time, 2)
-            asst_msg = self.conversation_service.add_message(
-                conversation=conversation,
-                role="assistant",
-                content=answer,
-                metadata={
-                    "citations": [],
-                    "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
-                    "new_memories_saved": [m.memory_text for m in new_memories],
-                    "grounded": True,
-                    "latency_seconds": total_sec,
-                    "model": "memory_agent"
-                }
-            )
+            if not MemoryExtractor.is_question(saved_fact):
+                new_memories = self.memory_extractor.extract_memories_from_text(question, source=source, user_id=user_id)
+                self.clear_cache()
+                answer = f"Got it, Saki! ❤️ I've saved that memory to my heart: '{saved_fact}'. I'll remember it forever!"
+                total_sec = round(time.perf_counter() - start_time, 2)
+                asst_msg = self.conversation_service.add_message(
+                    conversation=conversation,
+                    role="assistant",
+                    content=answer,
+                    metadata={
+                        "citations": [],
+                        "personal_memories": [{"text": saved_fact, "category": "user_memory"}],
+                        "new_memories_saved": [m.memory_text for m in new_memories],
+                        "grounded": True,
+                        "latency_seconds": total_sec,
+                        "model": "memory_agent"
+                    }
+                )
             yield {
                 "event": "context",
                 "data": {
