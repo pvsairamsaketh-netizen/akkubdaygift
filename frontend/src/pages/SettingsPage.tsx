@@ -257,7 +257,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           <span>Local Privacy Guarantee</span>
         </div>
         <p className="text-xs text-stone-600 leading-relaxed">
-          All memories, audio recordings, and uploaded PDFs are stored strictly on this MacBook Air (M4). No telemetry or external cloud APIs are invoked for chat memories.
+          All memories and uploaded PDFs are stored strictly within the private Akku AI database. No telemetry or external cloud APIs are invoked for chat memories.
         </p>
 
         <div className="pt-2 flex flex-wrap items-center justify-between gap-3">

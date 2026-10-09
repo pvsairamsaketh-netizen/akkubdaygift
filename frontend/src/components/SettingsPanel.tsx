@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Cpu, Database, Volume2, Mic, RefreshCw, CheckCircle2, Shield, Heart } from 'lucide-react';
+import { X, Cpu, Database, RefreshCw, CheckCircle2, Shield, Heart } from 'lucide-react';
 import { api } from '../services/api';
 
 interface SettingsPanelProps {
@@ -57,9 +57,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <div className="p-3 rounded-2xl bg-cream-50 border border-cream-200 flex items-start space-x-3">
             <Cpu className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-semibold text-stone-800">Apple Silicon M4 Local Deployment</h4>
+              <h4 className="font-semibold text-stone-800">Local LLM & Vector Architecture</h4>
               <p className="text-stone-500 text-[11px] mt-0.5">
-                Target: MacBook Air M4 (16 GB Unified Memory). Metal Performance Shaders (MPS) hardware acceleration enabled.
+                Metal Performance Shaders (MPS) hardware acceleration and local Ollama inference enabled.
               </p>
             </div>
           </div>
@@ -93,34 +93,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 BAAI/bge-small-en
               </span>
             </div>
-
-            {/* Speech-to-Text */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200">
-              <div className="flex items-center space-x-2">
-                <Mic className="w-4 h-4 text-rose-500" />
-                <div>
-                  <div className="font-medium text-stone-800">Speech Recognition (ASR)</div>
-                  <div className="text-[10px] text-stone-400">faster-whisper local engine</div>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-medium text-[11px] border border-rose-200">
-                Whisper base.en
-              </span>
-            </div>
-
-            {/* Text-to-Speech */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-50 border border-stone-200">
-              <div className="flex items-center space-x-2">
-                <Volume2 className="w-4 h-4 text-rose-500" />
-                <div>
-                  <div className="font-medium text-stone-800">Spoken Voice (TTS)</div>
-                  <div className="text-[10px] text-stone-400">Kokoro-82M neural model</div>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-medium text-[11px] border border-rose-200">
-                af_heart / Neural
-              </span>
-            </div>
           </div>
 
           {/* Document Ingestion & Vector Index Management */}
@@ -152,7 +124,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <div className="flex items-start space-x-2 pt-2 text-[11px] text-stone-500">
             <Shield className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <span>
-              100% Private & Local: All messages, audio recordings, and document vectors stay entirely on your Mac. No cloud APIs required.
+              100% Private: All messages, saved memories, and document vectors stay strictly private and secure. No unauthorized external access.
             </span>
           </div>
         </div>

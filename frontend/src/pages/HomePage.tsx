@@ -119,7 +119,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Feature Navigation Glassmorphic Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 my-10 sm:my-12">
-        {/* Card 1: Chat with Voice & Memory */}
+        {/* Card 1: Chat with Memory */}
         <div 
           onClick={() => onNavigate('chat')}
           className="group relative bg-white/80 hover:bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-7 border border-rose-100/90 shadow-sm hover:shadow-xl hover:shadow-rose-100/60 hover:border-rose-200 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1.5"
@@ -128,9 +128,9 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="w-12 h-12 rounded-2xl bg-rose-50 group-hover:bg-rose-100/80 flex items-center justify-center text-rose-500 mb-4 group-hover:scale-110 transition-all shadow-inner">
               <MessageCircleHeart className="w-6 h-6" />
             </div>
-            <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900 mb-1.5">Akku AI Voice Chat</h3>
+            <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900 mb-1.5">Chat with Akku AI</h3>
             <p className="text-sm text-stone-600 leading-relaxed font-light">
-              Speak or type in any language. Akku answers naturally using our relationship memories and speaks aloud using local voice synthesis.
+              Ask in any language (English, Hindi, Hinglish, Telugu, Tamil). Akku answers accurately and naturally using our verified relationship memories and documents.
             </p>
           </div>
           <div className="mt-6 flex items-center justify-between text-xs font-semibold text-rose-600">

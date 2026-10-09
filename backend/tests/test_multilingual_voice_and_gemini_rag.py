@@ -13,8 +13,6 @@ from memories.services.memory_extractor import MemoryExtractor
 from chat.services.rag_graph import RAGGraphService
 from chat.services.gemini_translation_service import GeminiTranslationService
 from chat.services.multilingual_service import MultilingualService
-from voice.services.tts_service import TTSService
-from voice.services.audio_validation import AudioValidator
 
 
 @pytest.fixture(autouse=True)
@@ -173,27 +171,16 @@ class TestMultilingualVoiceAndIntelligence:
         assert "vanilla" in ans_lower
         assert "chocolate" in ans_lower
 
-    def test_f_voice_assistant_pipeline_and_status(self):
+    def test_f_multilingual_language_detection(self):
         """
-        TEST F: Voice assistant components
-        Verify voice status endpoint, TTS language voice routing, and audio validation.
+        TEST F: Multilingual language detection
+        Verify accurate script and language detection across Hindi, Telugu, Tamil, and English.
         """
-        client = APIClient()
-        status_res = client.get(reverse('voice-status'))
-        assert status_res.status_code == 200
-        assert status_res.data["voice_enabled"] is True
-
-        tts = TTSService.get_instance()
-        # Verify voice routing
-        assert tts._detect_language_voice("नमस्ते साकी") == "hi-IN-SwaraNeural"
-        assert tts._detect_language_voice("నమస్కారం సాకీ") == "te-IN-ShrutiNeural"
-        assert tts._detect_language_voice("வணக்கம் சாக்கி") == "ta-IN-PallaviNeural"
-        assert tts._detect_language_voice("Hola Saki") == "es-ES-ElviraNeural"
-
-        # Audio validator
-        validator = AudioValidator()
-        is_valid, err = validator.validate_file(None)
-        assert is_valid is False
+        multi = MultilingualService.get_instance()
+        assert multi.detect_language("नमस्ते साकी") in ("hi", "hindi")
+        assert multi.detect_language("నమస్కారం సాకీ") in ("te", "telugu")
+        assert multi.detect_language("வணக்கம் சாக்கி") in ("ta", "tamil")
+        assert multi.detect_language("Hello Saki") in ("en", "english")
 
     def test_g_translation_fidelity_safeguards(self):
         """

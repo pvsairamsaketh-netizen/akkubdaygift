@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
-import { Copy, Check, Volume2, Heart, User, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import { Copy, Check, Heart, User, Sparkles, ShieldCheck, Zap } from 'lucide-react';
 import type { Message } from '../types/chat';
 import { SourceCitation } from './SourceCitation';
 
 interface ChatMessageProps {
   message: Message;
-  onSpeak?: (text: string) => void;
-  isPlaying?: boolean;
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({
-  message,
-  onSpeak,
-  isPlaying
+  message
 }) => {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -140,22 +136,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
-
-                {/* Speak Aloud Button */}
-                {onSpeak && (
-                  <button
-                    onClick={() => onSpeak(message.content)}
-                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                      isPlaying
-                        ? 'text-rose-600 bg-rose-100 animate-pulse'
-                        : 'hover:bg-rose-50 hover:text-rose-700 text-stone-400'
-                    }`}
-                    title="Listen with Voice"
-                    aria-label="Listen with Voice"
-                  >
-                    <Volume2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
 
                 {/* Like / Love Reaction */}
                 <button

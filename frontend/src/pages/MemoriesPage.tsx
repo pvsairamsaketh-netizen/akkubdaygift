@@ -6,8 +6,7 @@ import {
   Plus, 
   Trash2, 
   Edit3, 
-  Mic, 
-  FileText, 
+  MessageSquare, 
   X,
   Loader2,
   CheckCircle,
@@ -174,7 +173,7 @@ export const MemoriesPage: React.FC = () => {
             </span>
           </div>
           <p className="text-stone-600 text-sm mt-1">
-            Every little thing you tell Akku through voice or text is automatically remembered here for days, weeks, and months.
+            Every little thing you tell Akku in chat is automatically remembered here for days, weeks, and months.
           </p>
         </div>
 
@@ -316,15 +315,9 @@ export const MemoriesPage: React.FC = () => {
 
               <div className="pt-3 border-t border-rose-50 flex items-center justify-between text-[11px] text-stone-400">
                 <div className="flex items-center gap-1.5">
-                  {mem.source === 'voice' ? (
-                    <span title="Captured from Voice">
-                      <Mic className="w-3 h-3 text-rose-500" />
-                    </span>
-                  ) : (
-                    <span title="Captured from Text">
-                      <FileText className="w-3 h-3 text-stone-400" />
-                    </span>
-                  )}
+                  <span title={mem.source === 'voice' ? "Captured from conversation" : "Captured from text"}>
+                    <MessageSquare className="w-3 h-3 text-stone-400" />
+                  </span>
                   <span>{new Date(mem.conversation_timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
                 <div className="flex items-center gap-1.5">

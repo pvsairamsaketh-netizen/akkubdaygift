@@ -18,7 +18,6 @@ export interface Message {
     citations?: Citation[];
     latency_seconds?: number;
     model?: string;
-    audio_url?: string;
     chunks_count?: number;
     [key: string]: any;
   };

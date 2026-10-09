@@ -6,17 +6,11 @@ import { EmptyState } from '../components/EmptyState';
 import { ChatMessage } from '../components/ChatMessage';
 import { TypingIndicator } from '../components/TypingIndicator';
 import { ChatInput } from '../components/ChatInput';
-import { VoiceInput } from '../components/VoiceInput';
-import { AudioPlayer } from '../components/AudioPlayer';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { useConversations } from '../hooks/useConversations';
 import { useChat } from '../hooks/useChat';
-import { useVoice } from '../hooks/useVoice';
-import { api } from '../services/api';
 import { QuickAddMemoryModal } from '../components/QuickAddMemoryModal';
 import { useMemoryPhotos } from '../context/MemoryPhotoContext';
-import { HeyAkkuAssistant } from '../components/HeyAkkuAssistant';
-import { wakeWordAssistant } from '../services/wakeWordService';
 
 export const ChatPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,30 +35,6 @@ export const ChatPage: React.FC = () => {
     sendMessage
   } = useChat(activeId);
 
-  const {
-    isRecording,
-    recordingSeconds,
-    isTranscribing,
-    transcriptionPreview,
-    voiceError,
-    autoSpeak,
-    setAutoSpeak,
-    isPlayingAudio,
-    currentAudioUrl,
-    startRecording,
-    stopRecording,
-    cancelRecording,
-    confirmTranscription,
-    discardTranscription,
-    playAudio,
-    pauseAudio,
-    stopAudio,
-    replayAudio
-  } = useVoice((text) => {
-    // When transcription is confirmed by user, send it to chat
-    handleSendMessage(text);
-  });
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -73,7 +43,7 @@ export const ChatPage: React.FC = () => {
     scrollToBottom();
   }, [messages, chatLoading]);
 
-  const handleSendMessage = async (text: string, isFromVoice: boolean = false) => {
+  const handleSendMessage = async (text: string) => {
     if (!text || !text.trim() || chatLoading) return;
 
     // Trigger photo immediately before starting async LLM streaming
@@ -86,19 +56,7 @@ export const ChatPage: React.FC = () => {
       setActiveId(newConv.id);
     }
 
-    await sendMessage(
-      text,
-      targetConvId,
-      autoSpeak && !isFromVoice,
-      (audioUrl) => {
-        playAudio(audioUrl);
-      },
-      async (answer) => {
-        if (isFromVoice || autoSpeak) {
-          await wakeWordAssistant.speakAnswer(answer);
-        }
-      }
-    );
+    await sendMessage(text, targetConvId);
     refreshConversations();
   };
 
@@ -109,12 +67,12 @@ export const ChatPage: React.FC = () => {
         conversations={conversations}
         activeId={activeId}
         onSelect={(id) => {
-          triggerMemoryPhoto('memory');
           setActiveId(id);
+          setSidebarOpen(false);
         }}
-        onNew={async () => {
-          triggerMemoryPhoto('memory');
-          await createNewConversation("New Memory Chat");
+        onNew={() => {
+          createNewConversation("New Memory Chat");
+          setSidebarOpen(false);
         }}
         onRename={renameConversation}
         onDelete={deleteConversation}
@@ -122,9 +80,9 @@ export const ChatPage: React.FC = () => {
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Main Content Area */}
+      {/* Main Chat Interface */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Top Header */}
+        {/* Top Header with Hamburger for Mobile */}
         <div className="flex items-center">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -136,11 +94,7 @@ export const ChatPage: React.FC = () => {
           <div className="flex-1">
             <Header
               onOpenSettings={() => setSettingsOpen(true)}
-              voiceEnabled={true}
               totalVectors={13}
-              voiceAssistantSlot={
-                <HeyAkkuAssistant onQuestionCaptured={(q) => handleSendMessage(q, true)} />
-              }
             />
           </div>
         </div>
@@ -155,12 +109,6 @@ export const ChatPage: React.FC = () => {
                 <ChatMessage
                   key={msg.id}
                   message={msg}
-                  onSpeak={(text) => {
-                    api.speakText(text).then((res) => {
-                      if (res.audio_url) playAudio(res.audio_url);
-                    }).catch(console.error);
-                  }}
-                  isPlaying={isPlayingAudio}
                 />
               ))}
 
@@ -171,47 +119,16 @@ export const ChatPage: React.FC = () => {
           )}
         </main>
 
-        {/* Input Bar & Voice Controls */}
+        {/* Input Bar */}
         <div className="p-3 sm:p-4 bg-gradient-to-t from-white via-white/90 to-transparent">
           <div className="max-w-3xl mx-auto">
-            {/* Voice Input States (Recording / Transcription Preview modal) */}
-            <VoiceInput
-              isRecording={isRecording}
-              recordingSeconds={recordingSeconds}
-              isTranscribing={isTranscribing}
-              transcriptionPreview={transcriptionPreview}
-              voiceError={voiceError}
-              onStopRecording={stopRecording}
-              onCancelRecording={cancelRecording}
-              onConfirmTranscription={confirmTranscription}
-              onDiscardTranscription={discardTranscription}
-            />
-
-            {/* Chat Text Input */}
             <ChatInput
               onSend={handleSendMessage}
-              onStartVoice={startRecording}
               onOpenAddMemory={() => setIsQuickMemoryOpen(true)}
-              isRecording={isRecording}
-              disabled={chatLoading || isTranscribing}
-              autoSpeak={autoSpeak}
-              onToggleAutoSpeak={() => setAutoSpeak(!autoSpeak)}
+              disabled={chatLoading}
             />
           </div>
         </div>
-
-        {/* Floating Audio Playback Controls (visible when audio is playing or ready) */}
-        {currentAudioUrl && (
-          <AudioPlayer
-            isPlaying={isPlayingAudio}
-            onPlay={() => {
-              if (currentAudioUrl) playAudio(currentAudioUrl);
-            }}
-            onPause={pauseAudio}
-            onStop={stopAudio}
-            onReplay={replayAudio}
-          />
-        )}
       </div>
 
       {/* Settings Modal */}

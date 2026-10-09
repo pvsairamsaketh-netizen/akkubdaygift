@@ -1,18 +1,14 @@
 import React from 'react';
-import { Heart, Settings, Sparkles, Volume2, Cpu, ShieldCheck, Zap } from 'lucide-react';
+import { Heart, Settings, Sparkles, Cpu, ShieldCheck, Zap } from 'lucide-react';
 
 interface HeaderProps {
   onOpenSettings: () => void;
-  voiceEnabled: boolean;
   totalVectors?: number;
-  voiceAssistantSlot?: React.ReactNode;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
-  voiceEnabled,
-  totalVectors = 8,
-  voiceAssistantSlot
+  totalVectors = 8
 }) => {
   return (
     <header className="h-16 border-b border-rose-200/60 bg-white/80 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between z-20 sticky top-0 shadow-xs">
@@ -44,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right: Agent Capabilities & Status Pills */}
       <div className="flex items-center space-x-2 sm:space-x-3">
-        {/* Real Agent Model Pill (ChatGPT/Gemini style) */}
+        {/* Real Agent Model Pill */}
         <div 
           className="hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-full bg-stone-50 border border-stone-200/80 text-stone-700 text-xs shadow-2xs"
           title="Qwen 3.8 8B Local LLM with ChromaDB Grounding"
@@ -72,19 +68,6 @@ export const Header: React.FC<HeaderProps> = ({
           <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
           <span>Fast SSE</span>
         </div>
-
-        {/* Voice Badge */}
-        <div className={`flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-medium border ${
-          voiceEnabled 
-            ? 'bg-rose-50 border-rose-200 text-rose-700' 
-            : 'bg-stone-100 border-stone-200 text-stone-500'
-        }`}>
-          <Volume2 className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{voiceEnabled ? 'Voice Ready' : 'Voice Off'}</span>
-        </div>
-
-        {/* Voice Assistant Widget */}
-        {voiceAssistantSlot}
 
         {/* Settings Button */}
         <button

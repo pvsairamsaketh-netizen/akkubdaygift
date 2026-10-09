@@ -300,14 +300,14 @@ class RAGGraphService:
             return None
 
         # 5. Food, Flowers, General Preferences & Direct Property Inquiries
-        pref_keywords = ["food", "eat", "drink", "dish", "dishes", "ice cream", "icecream", "flower", "flowers", "color", "colour", "hobby", "hobbies", "prefer"]
+        pref_keywords = ["food", "eat", "drink", "dish", "dishes", "ice cream", "icecream", "chocolate", "chocolates", "sweet", "sweets", "snack", "snacks", "flower", "flowers", "color", "colour", "hobby", "hobbies", "prefer"]
         if any(w in q_lower for w in pref_keywords):
-            food_tokens = ["ice cream", "icecream", "chocolate", "vanilla", "mango", "dosa", "samosa", "biryani", "food", "eat", "drink", "dish", "paruppu", "sweet", "tea", "coffee"]
+            food_tokens = ["ice cream", "icecream", "chocolate", "chocolates", "vanilla", "mango", "dosa", "samosa", "biryani", "food", "eat", "drink", "dish", "paruppu", "sweet", "sweets", "tea", "coffee"]
             flower_tokens = ["flower", "flowers", "jasmine", "rose", "lotus", "lily"]
             color_tokens = ["color", "colour", "pink", "blue", "red", "yellow", "black", "white", "green", "purple", "lavender"]
             
             matched_pref = False
-            if any(w in q_lower for w in ["food", "eat", "drink", "dish", "dishes", "ice cream", "icecream"]):
+            if any(w in q_lower for w in ["food", "eat", "drink", "dish", "dishes", "ice cream", "icecream", "chocolate", "chocolates", "sweet", "sweets"]):
                 matched_pref = any(ft in clean_text.lower() for ft in food_tokens) or memory_item.get("category") == "food_drinks"
             elif any(w in q_lower for w in ["flower", "flowers"]):
                 matched_pref = any(ft in clean_text.lower() for ft in flower_tokens)
@@ -1096,8 +1096,8 @@ class RAGGraphService:
                 if any(k in combined_q_lower for k in ["work commitment", "work commitments", "commitments", "tessel", "tessell", "responsibilities"]) and any(w in top_text_lower for w in ["tessel", "tessell", "work", "responsibilities", "commitments"]):
                     topic_matched = True
 
-                is_food_query = any(w in combined_q_lower for w in ["eat", "food", "dish", "dishes", "खाना", "తిండి", "உணவு"]) and (
-                    top_m.get("category") == "food_drinks" or any(w in top_text_lower for w in ["dosa", "ice cream", "eat", "food", "biryani", "samosa", "paruppu"])
+                is_food_query = any(w in combined_q_lower for w in ["eat", "food", "dish", "dishes", "chocolate", "chocolates", "sweet", "sweets", "खाना", "తిండి", "உணவு"]) and (
+                    top_m.get("category") == "food_drinks" or any(w in top_text_lower for w in ["dosa", "ice cream", "chocolate", "eat", "food", "biryani", "samosa", "paruppu"])
                 )
                 if is_food_query:
                     topic_matched = True

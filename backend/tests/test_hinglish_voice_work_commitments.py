@@ -13,7 +13,6 @@ import pytest
 from memories.models import PersonalMemory
 from chat.services.rag_graph import RAGGraphService
 from chat.services.prompt_service import PromptService
-from voice.services.asr_service import ASRService
 from chat.services.retrieval_service import RetrievalService
 
 @pytest.mark.django_db
@@ -53,17 +52,8 @@ class TestHinglishVoiceAndWorkCommitments:
         assert res.get("grounded", False) is True
 
     def test_2_phonetic_asr_misrecognized_speech(self):
-        """Test raw phonetic ASR transcription: Thoda Mirko Saki ke vark komitment ke baare mein bataasikte hukya."""
-        asr = ASRService.get_instance()
+        """Test colloquial typed Hinglish: Thoda Mirko Saki ke vark komitment ke baare mein bataasikte hukya."""
         raw_text = "Thoda Mirko Saki ke vark komitment ke baare mein bataasikte hukya."
-        corrected = asr.apply_vocabulary_corrections(raw_text)
-        
-        # Verify phonetic corrections
-        assert "work commitments" in corrected.lower()
-        assert "mereko" in corrected.lower()
-        assert "bata sakte ho kya" in corrected.lower()
-
-        # Run through RAG pipeline
         svc = RAGGraphService()
         res = svc.answer_question(raw_text)
         answer = res.get("answer", "")
@@ -110,20 +100,9 @@ class TestHinglishVoiceAndWorkCommitments:
         assert matched is True
 
     def test_7_devanagari_misrecognized_hinglish_favourite_hero(self):
-        """Test user-reported spoken scenario: 'अर अप्रा में अप्रो एकूका पेवरे पहौर कोने.' (misheard 'thoda mereko akku ka favourite hero kon hai')"""
-        asr = ASRService.get_instance()
-        raw_garbled = "अर अप्रा में अप्रो एकूका पेवरे पहौर कोने."
-        
-        # 1. Verify phonetic & Devanagari transliteration
-        corrected = asr.apply_vocabulary_corrections(raw_garbled)
-        assert "Akku ka" in corrected
-        assert "favourite" in corrected.lower()
-        assert "hero" in corrected.lower()
-        assert "kaun hai" in corrected.lower()
-        
-        # 2. Verify RAG graph handles missing favourite hero honestly without inventing actors
+        """Test asking for unrecorded favourite hero: 'Thoda mereko batao akku ka favourite hero kaun hai'"""
         svc = RAGGraphService()
-        res = svc.answer_question(corrected)
+        res = svc.answer_question("Thoda mereko batao akku ka favourite hero kaun hai")
         answer = res.get("answer", "")
         
         # Must honestly admit no saved memory about favourite hero exists

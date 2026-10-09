@@ -18,9 +18,7 @@ def health_check(request):
         "version": "1.0.0",
         "models": {
             "llm": settings.OLLAMA_MODEL,
-            "embedding": settings.EMBEDDING_MODEL,
-            "asr": settings.ASR_MODEL if settings.VOICE_ENABLED else "disabled",
-            "tts": settings.TTS_PROVIDER if settings.VOICE_ENABLED else "disabled"
+            "embedding": settings.EMBEDDING_MODEL
         }
     })
 
@@ -30,7 +28,6 @@ urlpatterns = [
     path('api/documents/', include('documents.urls')),
     path('api/knowledge/', include('documents.urls')),
     path('api/', include('chat.urls')),
-    path('api/voice/', include('voice.urls')),
     path('api/', include('memories.urls')),
     path('api/academics/', include('academics.urls')),
 ]

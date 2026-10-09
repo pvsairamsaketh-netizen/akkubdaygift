@@ -1,5 +1,4 @@
 import type { ConversationSummary, ConversationDetail } from '../types/chat';
-import type { VoiceStatus, VoiceChatResponse } from '../types/voice';
 
 const isLocalDev = typeof window !== 'undefined' && (window.location.port === '5173' || window.location.hostname === 'localhost' && window.location.port !== '80');
 const API_BASE = import.meta.env.VITE_API_URL || (isLocalDev ? 'http://localhost:8000/api' : '/api');
@@ -173,65 +172,6 @@ export const api = {
       callbacks?.onError?.(err);
       throw err;
     }
-  },
-
-  // Voice
-  async transcribeAudio(audioBlob: Blob, language: string = 'auto'): Promise<{ text: string; language: string }> {
-    const formData = new FormData();
-    formData.append('audio', audioBlob, 'recording.webm');
-    formData.append('language', language);
-
-    const res = await fetch(`${API_BASE}/voice/transcribe/`, {
-      method: 'POST',
-      body: formData
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Failed to transcribe audio");
-    }
-    return res.json();
-  },
-
-  async voiceChat(
-    audioBlob: Blob,
-    conversation_id?: string,
-    synthesize_voice: boolean = true,
-    voice_preset: string = 'af_heart'
-  ): Promise<VoiceChatResponse> {
-    const formData = new FormData();
-    formData.append('audio', audioBlob, 'recording.webm');
-    if (conversation_id) formData.append('conversation_id', conversation_id);
-    formData.append('synthesize_voice', String(synthesize_voice));
-    formData.append('voice_preset', voice_preset);
-
-    const res = await fetch(`${API_BASE}/voice/chat/`, {
-      method: 'POST',
-      body: formData
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Failed to process voice chat");
-    }
-    return res.json();
-  },
-
-  async speakText(text: string, voice: string = 'af_heart', speed: number = 1.0): Promise<{ audio_url: string }> {
-    const res = await fetch(`${API_BASE}/voice/speak/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voice, speed })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "TTS synthesis failed");
-    }
-    return res.json();
-  },
-
-  async getVoiceStatus(): Promise<VoiceStatus> {
-    const res = await fetch(`${API_BASE}/voice/status/`);
-    if (!res.ok) throw new Error("Failed to fetch voice status");
-    return res.json();
   },
 
   // Document Management

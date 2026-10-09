@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     # Project apps
     'documents.apps.DocumentsConfig',
     'chat.apps.ChatConfig',
-    'voice.apps.VoiceConfig',
     'memories.apps.MemoriesConfig',
     'academics.apps.AcademicsConfig',
 ]
@@ -159,23 +158,7 @@ RAG_CHUNK_SIZE = int(os.getenv('RAG_CHUNK_SIZE', '800'))
 RAG_CHUNK_OVERLAP = int(os.getenv('RAG_CHUNK_OVERLAP', '100'))
 MAX_CONTEXT_TOKENS = int(os.getenv('MAX_CONTEXT_TOKENS', '1536'))
 
-# Voice Settings
-VOICE_ENABLED = os.getenv('VOICE_ENABLED', 'true').lower() in ('true', '1', 't')
-ASR_PROVIDER = os.getenv('ASR_PROVIDER', 'faster_whisper')
-ASR_MODEL = os.getenv('ASR_MODEL', 'small')
-ASR_LANGUAGE = os.getenv('ASR_LANGUAGE', 'en')
-ASR_DEVICE = os.getenv('ASR_DEVICE', 'auto')
-TTS_PROVIDER = os.getenv('TTS_PROVIDER', 'kokoro')
-TTS_FALLBACK = os.getenv('TTS_FALLBACK', 'edge_tts')
-TTS_VOICE = os.getenv('TTS_VOICE', 'af_heart')
-TTS_SPEED = float(os.getenv('TTS_SPEED', '1.0'))
-VOICE_MAX_DURATION_SECONDS = int(os.getenv('VOICE_MAX_DURATION_SECONDS', '60'))
-VOICE_MAX_UPLOAD_MB = int(os.getenv('VOICE_MAX_UPLOAD_MB', '15'))
-VOICE_RETAIN_AUDIO = os.getenv('VOICE_RETAIN_AUDIO', 'false').lower() in ('true', '1', 't')
-VOICE_VAD_ENABLED = os.getenv('VOICE_VAD_ENABLED', 'false').lower() in ('true', '1', 't')
-
 # Ensure required media and data directories exist
 os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
 os.makedirs(MEDIA_ROOT, exist_ok=True)
-os.makedirs(MEDIA_ROOT / 'temp_audio', exist_ok=True)
-os.makedirs(MEDIA_ROOT / 'tts_audio', exist_ok=True)
+

@@ -44,10 +44,7 @@ export function useChat(activeConversationId: string | null) {
 
   const sendMessage = async (
     question: string,
-    targetConversationId?: string | null,
-    autoSpeak: boolean = false,
-    onSpeechReady?: (audioUrl: string) => void,
-    onAnswerReady?: (answer: string) => void
+    targetConversationId?: string | null
   ) => {
     const trimmedQuestion = question.trim();
     if (!trimmedQuestion || loading) return;
@@ -170,20 +167,6 @@ export function useChat(activeConversationId: string | null) {
               }
               return m;
             }));
-
-            if (onAnswerReady && finalAnswer) {
-              onAnswerReady(finalAnswer);
-            }
-
-            if (autoSpeak && finalAnswer) {
-              api.speakText(finalAnswer)
-                .then(ttsRes => {
-                  if (ttsRes?.audio_url && onSpeechReady) {
-                    onSpeechReady(ttsRes.audio_url);
-                  }
-                })
-                .catch(err => console.warn("Auto-speak failed:", err));
-            }
           },
           onError: (err) => {
             console.error("[CHAT] SSE stream error:", err);
@@ -225,14 +208,6 @@ export function useChat(activeConversationId: string | null) {
           }
         };
         setMessages(prev => prev.map(m => m.id === tempAsstId ? assistantMsg : m));
-        if (onAnswerReady && res.answer) {
-          onAnswerReady(res.answer);
-        }
-        if (autoSpeak && res.answer && onSpeechReady) {
-          api.speakText(res.answer).then(ttsRes => {
-            if (ttsRes?.audio_url) onSpeechReady(ttsRes.audio_url);
-          }).catch(console.warn);
-        }
       }
     } catch (err: any) {
       console.warn("Stream error, falling back to sync:", err);
@@ -253,14 +228,6 @@ export function useChat(activeConversationId: string | null) {
           }
         };
         setMessages(prev => prev.map(m => m.id === tempAsstId ? assistantMsg : m));
-        if (onAnswerReady && res.answer) {
-          onAnswerReady(res.answer);
-        }
-        if (autoSpeak && res.answer && onSpeechReady) {
-          api.speakText(res.answer).then(ttsRes => {
-            if (ttsRes?.audio_url) onSpeechReady(ttsRes.audio_url);
-          }).catch(console.warn);
-        }
       } catch (fallbackErr: any) {
         setError(fallbackErr.message);
         setMessages(prev => prev.map(m => {

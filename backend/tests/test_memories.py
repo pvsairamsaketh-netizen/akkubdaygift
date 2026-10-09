@@ -16,7 +16,6 @@ from memories.models import PersonalMemory, PersonalVocabulary, BirthdayConfig
 from memories.services.memory_store import MemoryVectorStore
 from memories.services.memory_extractor import MemoryExtractor
 from memories.services.memory_retriever import MemoryRetriever
-from voice.services.asr_service import ASRService
 
 @pytest.mark.django_db
 def test_automatic_memory_extraction_small_detail():
@@ -94,18 +93,14 @@ def test_memory_deletion():
 
 @pytest.mark.django_db
 def test_personal_vocabulary_voice_adaptation():
-    PersonalVocabulary.objects.create(
+    vocab = PersonalVocabulary.objects.create(
         term="Besant Nagar",
         category="place",
         misrecognitions=["pesant nagar", "besant nagerr"]
     )
-    
-    asr = ASRService.get_instance()
-    raw_whisper_text = "we walked around pesant nagar beach"
-    corrected = asr.apply_vocabulary_corrections(raw_whisper_text)
-    
-    assert "Besant Nagar" in corrected
-    assert "pesant nagar" not in corrected
+    assert vocab.term == "Besant Nagar"
+    assert "pesant nagar" in vocab.misrecognitions
+    assert vocab.category == "place"
 
 @pytest.mark.django_db
 def test_memories_api_crud():
