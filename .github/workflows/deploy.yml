@@ -62,7 +62,7 @@ jobs:
           npm run build
 
   # ============================================================================
-  # 2. CD (Continuous Deployment): Build & Deploy to AWS EC2 via SSH
+  # 2. CD (Continuous Deployment): Deploy to AWS EC2 via SSH
   # ============================================================================
   cd:
     name: Continuous Deployment (AWS EC2)
@@ -71,38 +71,49 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to AWS EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY || secrets.EC2_KEY || secrets.SSH_KEY || secrets.SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.EC2_HOST || '51.21.128.149' }}
+          USER: ${{ secrets.EC2_USER || 'ubuntu' }}
+        run: |
+          set -e
+          if [ -z "$SSH_KEY" ]; then
+            echo "❌ No SSH key secret found (checked EC2_SSH_KEY, EC2_KEY, SSH_KEY, SSH_PRIVATE_KEY)!"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          echo "🚀 Connecting to EC2 host ($USER@$HOST)..."
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i ~/.ssh/deploy_key $USER@$HOST "
             set -e
-            echo "🚀 Starting automated deployment on AWS EC2..."
-            
+            echo '🚀 Updating repository on AWS EC2...'
             cd ~/akkubdaygift
             git fetch origin main
             git reset --hard origin/main
 
-            # Prune old build cache to preserve EC2 disk space
+            # Free build cache to avoid disk exhaustion
             docker builder prune -a -f || true
             docker image prune -f || true
 
-            # Build and launch updated containers
-            echo "🔄 Launching updated containers with docker compose..."
+            # Build and restart containers
+            echo '🔄 Launching updated containers with docker compose...'
             docker compose -f docker-compose.yml up -d --build --remove-orphans
 
-            # Automated Health Check
-            echo "🏥 Running deployment health check..."
+            # Health Check
+            echo '🏥 Running deployment health check...'
             for i in {1..20}; do
               if curl -s -f http://localhost:8085/api/health/ > /dev/null; then
-                echo "✅ Deployment SUCCESSFUL! Health check passed."
+                echo '✅ Deployment SUCCESSFUL! Health check passed.'
                 exit 0
               fi
-              echo "Waiting for backend service to become ready ($i/20)..."
+              echo 'Waiting for backend service to become ready (\$i/20)...'
               sleep 3
             done
 
-            echo "❌ Health check timed out! Container logs:"
+            echo '❌ Health check timed out!'
             docker compose -f docker-compose.yml logs --tail=60
             exit 1
+          "
