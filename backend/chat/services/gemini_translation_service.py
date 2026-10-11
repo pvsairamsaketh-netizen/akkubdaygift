@@ -187,8 +187,16 @@ class GeminiTranslationService:
         if any(w in q_lower for w in ["फूल", "పువ్వు", "மலர்", "பூ", "flower", "flowers"]):
             return "What are Akku's favorite flowers?"
 
+        # Favorite heroine / actress
+        if any(w in q_lower for w in ["हीरोइन", "अभिनेत्री", "హీరోయిన్", "நடிகை"]) or re.search(r'\b(?:heroine|actress)\b', q_lower):
+            if "saki" in q_lower:
+                return "Who is Saki's favorite heroine?"
+            return "Who is Akku's favorite heroine?"
+
         # Favorite hero / movie
-        if any(w in q_lower for w in ["हीरो", "अभिनेता", "హీరో", "நடிகர்", "hero", "actor"]):
+        if any(w in q_lower for w in ["हीरो", "अभिनेता", "హీరో", "நடிகர்"]) or re.search(r'\b(?:hero|actor)\b', q_lower):
+            if "saki" in q_lower:
+                return "Who is Saki's favorite hero?"
             return "Who is Akku's favorite hero?"
         if any(w in q_lower for w in ["फिल्म", "मूवी", "సినిమా", "படம்", "திரைப்படம்", "movie", "film"]):
             return "What is Akku's favorite movie?"
@@ -208,7 +216,13 @@ class GeminiTranslationService:
             if any(w in q_lower for w in ["saki", "his", "సాకీ", "சாக்கி", "साकी", "uske", "unke", "mereko", "bata"]):
                 return "What were Saki's work commitments and responsibilities at Tessell?"
 
-        # Favourite hero, actor, actress, movie
+        # Favourite heroine, actress
+        if any(w in q_lower for w in ["favourite heroine", "favorite heroine", "favourite actress", "favorite actress", "heroine kon", "heroine kaun", "heroine koun"]):
+            if "saki" in q_lower:
+                return "Who is Saki's favourite heroine or actress?"
+            return "Who is Akku's favourite heroine or actress?"
+
+        # Favourite hero, actor
         if any(w in q_lower for w in ["favourite hero", "favorite hero", "favourite actor", "favorite actor", "hero kon", "hero kaun", "hero koun", "heero kon", "heero kaun"]):
             if "saki" in q_lower:
                 return "Who is Saki's favourite hero or actor?"
@@ -220,7 +234,9 @@ class GeminiTranslationService:
             sub = colloquial_pattern.group(1).strip()
             if any(w in sub for w in ["work", "vark", "commitment", "komitment", "tessel", "job", "career"]):
                 return "What were Saki's work commitments and responsibilities at Tessell?"
-            if any(w in sub for w in ["hero", "actor", "actress"]):
+            if any(w in sub for w in ["heroine", "actress"]):
+                return "Who is Akku's favourite heroine or actress?"
+            if any(w in sub for w in ["hero", "actor"]):
                 return "Who is Akku's favourite hero or actor?"
             if "saki" in q_lower:
                 return f"Tell me about Saki's {sub}"
@@ -299,6 +315,42 @@ class GeminiTranslationService:
                 return "సాకీ అక్కుని అందరికంటే ఎక్కువగా ప్రేమిస్తున్నాడు! ❤️"
             elif target_lang == "ta":
                 return "சாக்கி அக்குவை எல்லாவற்றையும் விட அதிகமாக நேசிக்கிறார்! ❤️"
+
+        # Favorite heroine mappings
+        if "sai pallavi" in ans.lower() and any(w in ans.lower() for w in ["heroine", "actress"]):
+            if target_lang == "hi":
+                return "अक्कू की पसंदीदा हीरोइन साई पल्लवी हैं। ❤️"
+            elif target_lang == "te":
+                return "అక్కుకు ఇష్టమైన హీరోయిన్ సాయి పల్లవి. ❤️"
+            elif target_lang == "ta":
+                return "அக்குவுக்கு மிகவும் பிடித்த நடிகை சாய் பல்லவி. ❤️"
+            elif target_lang == "hinglish":
+                return "Akku ki favourite heroine Sai Pallavi hai. ❤️"
+            elif target_lang == "tanglish":
+                return "Akku-voda favourite heroine Sai Pallavi. ❤️"
+            elif target_lang == "teluglish":
+                return "Akku favourite heroine Sai Pallavi. ❤️"
+            elif target_lang == "es":
+                return "La actriz favorita de Akku es Sai Pallavi. ❤️"
+            elif target_lang == "fr":
+                return "L'actrice préférée d'Akku est Sai Pallavi. ❤️"
+            elif target_lang == "de":
+                return "Akkus Lieblingsschauspielerin ist Sai Pallavi. ❤️"
+
+        # Favorite hero mappings
+        if "vijay" in ans.lower() and any(w in ans.lower() for w in ["hero", "actor"]):
+            if target_lang == "hi":
+                return "अक्कू के पसंदीदा हीरो थलपति विजय हैं। ❤️"
+            elif target_lang == "te":
+                return "అక్కుకు ఇష్టమైన హీరో దళపతి విజయ్. ❤️"
+            elif target_lang == "ta":
+                return "அக்குவுக்கு மிகவும் பிடித்த நடிகர் தளபதி விஜய். ❤️"
+            elif target_lang == "hinglish":
+                return "Akku ke favourite hero Thalapathy Vijay hain. ❤️"
+            elif target_lang == "tanglish":
+                return "Akku-voda favourite hero Thalapathy Vijay. ❤️"
+            elif target_lang == "teluglish":
+                return "Akku favourite hero Thalapathy Vijay. ❤️"
 
         return answer
 

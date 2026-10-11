@@ -190,7 +190,9 @@ class RAGGraphService:
             return "birthday"
         if any(w in q for w in ["teacher", "school teacher"]):
             return "school teacher's name"
-        if any(w in q for w in ["hero", "actor"]):
+        if re.search(r'\b(?:heroine|actress)\b', q):
+            return "favorite heroine"
+        if re.search(r'\b(?:hero|actor)\b', q):
             return "favorite hero"
         if any(w in q for w in ["movie", "film"]):
             return "favorite movie"
@@ -291,12 +293,24 @@ class RAGGraphService:
                 return cls._format_grounded_answer(clean_text)
             return None
 
-        # 4. Favorite Hero / Actor
-        if any(w in q_lower for w in ["hero", "favorite actor", "favourite actor"]):
+        # 4a. Favorite Heroine / Actress
+        if re.search(r'\b(?:heroine|actress|favourite\s+actress|favorite\s+actress|favourite\s+heroine|favorite\s+heroine)\b', q_lower):
+            if any(w in clean_text.lower() for w in ["sai pallavi", "pallavi"]):
+                return "Akku's favourite heroine is Sai Pallavi. ❤️"
+            elif any(w in clean_text.lower() for w in ["heroine", "actress"]):
+                formatted = re.sub(r'\bakku\s+favourite\s+heroine\b', "Akku's favourite heroine", clean_text, flags=re.IGNORECASE)
+                formatted = re.sub(r'\bakku\s+favorite\s+heroine\b', "Akku's favorite heroine", formatted, flags=re.IGNORECASE)
+                return cls._format_grounded_answer(formatted)
+            return None
+
+        # 4b. Favorite Hero / Actor
+        if re.search(r'\b(?:hero|actor|favourite\s+actor|favorite\s+actor|favourite\s+hero|favorite\s+hero)\b', q_lower):
             if "thalapathy" in clean_text.lower() or "vijay" in clean_text.lower():
                 return "Akku's favorite hero is Thalapathy Vijay. ❤️"
-            elif any(w in clean_text.lower() for w in ["hero", "actor"]):
-                return cls._format_grounded_answer(clean_text)
+            elif re.search(r'\b(?:hero|actor)\b', clean_text.lower()):
+                formatted = re.sub(r'\bakku\s+favourite\s+hero\b', "Akku's favourite hero", clean_text, flags=re.IGNORECASE)
+                formatted = re.sub(r'\bakku\s+favorite\s+hero\b', "Akku's favorite hero", formatted, flags=re.IGNORECASE)
+                return cls._format_grounded_answer(formatted)
             return None
 
         # 5. Food, Flowers, General Preferences & Direct Property Inquiries
@@ -398,7 +412,7 @@ class RAGGraphService:
 
         # Canonical identity facts (name, birthplace, birthday, hero) do NOT conflict unless two memories
         # give contradictory values specifically for the SAME target person.
-        canonical_fact_keywords = ["original name", "real name", "actual name", "birthplace", "born", "birthday", "bday", "hero"]
+        canonical_fact_keywords = ["original name", "real name", "actual name", "birthplace", "born", "birthday", "bday", "hero", "heroine", "actor", "actress"]
         is_canonical_fact = any(w in q_lower for w in canonical_fact_keywords)
 
         active_mems = []
@@ -807,11 +821,14 @@ class RAGGraphService:
             cat = "places_travel"
         elif any(w in q_lower for w in ["proposal", "propose", "canteen", "story", "college"]):
             cat = "shared_experiences"
-        elif any(w in q_lower for w in ["name", "original name", "born", "birthplace", "hero", "flower", "flowers"]):
+        elif any(w in q_lower for w in ["name", "original name", "born", "birthplace", "hero", "heroine", "actor", "actress", "flower", "flowers"]):
             cat = "personal_preferences"
 
         if cat:
-            mems = PersonalMemory.objects.filter(user_filter, category=cat, is_active=True)[:10]
+            cat_query = Q(category=cat)
+            if cat == "personal_preferences":
+                cat_query |= Q(category__in=["likes_dislikes", "favorite", "movie"])
+            mems = PersonalMemory.objects.filter(user_filter, is_active=True).filter(cat_query)[:10]
             for m in mems:
                 if not any(item["id"] == str(m.id) for item in matched):
                     matched.append({
@@ -1095,6 +1112,10 @@ class RAGGraphService:
                     topic_matched = True
                 if any(k in combined_q_lower for k in ["work commitment", "work commitments", "commitments", "tessel", "tessell", "responsibilities"]) and any(w in top_text_lower for w in ["tessel", "tessell", "work", "responsibilities", "commitments"]):
                     topic_matched = True
+                if any(k in combined_q_lower for k in ["heroine", "actress", "नायिका", "నటి", "நடிகை"]) and any(w in top_text_lower for w in ["heroine", "actress", "pallavi"]):
+                    topic_matched = True
+                if any(k in combined_q_lower for k in ["hero", "actor", "नायक", "నటుడు", "நடிகర్"]) and any(w in top_text_lower for w in ["hero", "actor", "vijay", "thalapathy"]):
+                    topic_matched = True
 
                 is_food_query = any(w in combined_q_lower for w in ["eat", "food", "dish", "dishes", "chocolate", "chocolates", "sweet", "sweets", "खाना", "తిండి", "உணவு"]) and (
                     top_m.get("category") == "food_drinks" or any(w in top_text_lower for w in ["dosa", "ice cream", "chocolate", "eat", "food", "biryani", "samosa", "paruppu"])
@@ -1161,6 +1182,10 @@ class RAGGraphService:
                         check_words.update(["father", "dad", "dads", "appa", "srinivas"])
                     if any(w in check_words for w in ["parent", "parents"]):
                         check_words.update(["parent", "parents", "father", "mother", "dad", "mom", "moms", "srinivas", "sushma"])
+                    if any(w in check_words for w in ["heroine", "actress"]):
+                        check_words.update(["heroine", "actress", "pallavi", "films", "film", "movie", "movies"])
+                    if any(w in check_words for w in ["hero", "actor"]):
+                        check_words.update(["hero", "actor", "vijay", "thalapathy", "films", "film", "movie", "movies"])
                     mem_matches_topic = any(
                         any(tw in (m.get("text") or "").lower() or tw in (m.get("subject") or "").lower() for tw in check_words)
                         for m in final_memories
