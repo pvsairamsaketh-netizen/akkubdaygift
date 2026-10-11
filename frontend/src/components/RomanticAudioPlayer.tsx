@@ -72,7 +72,7 @@ export const RomanticAudioPlayer: React.FC<RomanticAudioPlayerProps> = () => {
 
   return (
     <div 
-      className="group relative flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-gradient-to-r from-rose-50/90 via-pink-50/90 to-rose-50/90 backdrop-blur-md border border-rose-200/80 shadow-xs text-xs text-rose-900 transition-all hover:bg-rose-100/80 hover:shadow-sm shrink-0 whitespace-nowrap"
+      className="group relative flex items-center gap-2 h-8 px-2.5 sm:px-3 rounded-full bg-gradient-to-r from-rose-50/90 via-pink-50/90 to-rose-50/90 backdrop-blur-md border border-rose-200/80 shadow-xs text-xs text-rose-900 transition-all hover:bg-rose-100/80 hover:shadow-sm shrink-0 whitespace-nowrap"
       title="Alaakaa Loova — Our Romantic Song ❤️"
     >
       {/* Spinning vinyl disk icon when playing */}
@@ -86,10 +86,10 @@ export const RomanticAudioPlayer: React.FC<RomanticAudioPlayerProps> = () => {
       {/* Track info & mini sound wave equalizer */}
       <div className="flex flex-col shrink-0">
         <div className="flex items-center gap-1.5">
-          <span className="font-semibold text-rose-950 tracking-tight hidden min-[1200px]:inline whitespace-nowrap">
+          <span className="font-semibold text-rose-950 tracking-tight hidden min-[1440px]:inline whitespace-nowrap">
             Alaakaa Loova
           </span>
-          <span className="font-medium text-rose-800 min-[1200px]:hidden whitespace-nowrap text-xs">
+          <span className="font-medium text-rose-800 min-[1440px]:hidden whitespace-nowrap text-xs">
             Song
           </span>
           {isPlaying && (

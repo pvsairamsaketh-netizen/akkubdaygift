@@ -83,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'settings', label: 'Settings', icon: <Sliders className="w-3.5 h-3.5 text-rose-500 shrink-0" /> },
   ];
 
-  // Top 5 items for medium screens (1000px - 1239px)
+  // Top 5 items for medium screens (1000px - 1439px)
   const primaryFive = [navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]]; // Home, Chat, Birthday, Memories, Academics
   // Secondary 2 items inside More dropdown for medium screens
   const secondaryTwo = [navItems[4], navItems[6]]; // Library, Settings
@@ -98,17 +98,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   // Fixed uniform bounding box classes for all navbar buttons
-  const navBtnBase = "w-[96px] h-8.5 rounded-full flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 select-none";
+  const navBtnBase = "w-[84px] h-8 rounded-full flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 select-none";
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-rose-100/90 shadow-xs transition-all w-full">
       <div className="w-full px-3 sm:px-5 lg:px-6">
-        <div className="navbar flex items-center justify-between h-16 w-full min-w-0 gap-3">
+        <div className="navbar flex items-center justify-between h-16 w-full gap-3">
           
           {/* ========================================================== */}
           {/* GROUP 1 & 2: BRAND LOGO + LEFT-ALIGNED NAVIGATION          */}
           {/* ========================================================== */}
-          <div className="navbar-left flex items-center min-w-0 flex-1 justify-start gap-2.5 sm:gap-3.5">
+          <div className="navbar-left flex items-center shrink-0 justify-start gap-2.5 sm:gap-3.5">
             {/* Brand Logo (Always compact, never pushes nav buttons) */}
             <div 
               onClick={() => handleSelect('home')}
@@ -123,8 +123,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
 
-            {/* Desktop Left Navigation (>= 1320px: All 7 Items with Fixed Pink BBox Size) */}
-            <nav className="primary-navigation hidden min-[1320px]:flex items-center gap-1.5 lg:gap-2 justify-start min-w-0">
+            {/* Desktop Left Navigation (>= 1440px: All 7 Items with Fixed Pink BBox Size) */}
+            <nav className="primary-navigation hidden min-[1440px]:flex items-center gap-1.5 justify-start shrink-0">
               {navItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
@@ -144,8 +144,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               })}
             </nav>
 
-            {/* Medium Desktop Left Navigation (1000px - 1319px: Top 5 + More Dropdown) */}
-            <nav className="primary-navigation hidden min-[1000px]:flex min-[1320px]:hidden items-center gap-1.5 justify-start min-w-0">
+            {/* Medium Desktop Left Navigation (1000px - 1439px: Top 5 + More Dropdown, zero overlap) */}
+            <nav className="primary-navigation hidden min-[1000px]:flex min-[1440px]:hidden items-center gap-1.5 justify-start shrink-0">
               {primaryFive.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
@@ -181,7 +181,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
 
                 {moreDropdownOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-48 rounded-2xl bg-white/95 backdrop-blur-md border border-rose-100 shadow-xl py-2 z-50 animate-fade-in flex flex-col gap-1">
+                  <div className="absolute left-0 top-full mt-2 w-44 rounded-2xl bg-white/95 backdrop-blur-md border border-rose-100 shadow-xl py-2 z-50 animate-fade-in flex flex-col gap-1">
                     {secondaryTwo.map((item) => {
                       const isActive = activeTab === item.id;
                       return (
@@ -210,13 +210,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* ========================================================== */}
           {/* GROUP 3: RIGHT ACTIONS (Open Surprise + Audio Player)      */}
           {/* ========================================================== */}
-          <div className="navbar-right flex items-center gap-2 sm:gap-3 ml-auto shrink-0">
+          <div className="navbar-right flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Open Surprise Button */}
             {(onOpenSurprise || onOpenEnvelope) && (
               <button
                 id="nav-open-surprise-btn"
                 onClick={handleSurpriseClick}
-                className="group relative flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-gradient-to-r from-rose-500/10 via-pink-500/15 to-rose-500/10 hover:from-rose-500 hover:via-pink-500 hover:to-rose-600 text-rose-800 hover:text-white text-xs font-semibold shadow-xs hover:shadow-sm transition-all hover:scale-105 active:scale-95 border border-rose-200/80 hover:border-transparent cursor-pointer shrink-0 whitespace-nowrap"
+                className="group relative flex items-center gap-1.5 h-8 px-3 rounded-full bg-gradient-to-r from-rose-500/10 via-pink-500/15 to-rose-500/10 hover:from-rose-500 hover:via-pink-500 hover:to-rose-600 text-rose-800 hover:text-white text-xs font-semibold shadow-xs hover:shadow-sm transition-all hover:scale-105 active:scale-95 border border-rose-200/80 hover:border-transparent cursor-pointer shrink-0 whitespace-nowrap"
                 title="Open Romantic Surprise"
                 aria-label="Open surprise"
               >
@@ -225,9 +225,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ) : (
                   <Lock className="w-3.5 h-3.5 text-rose-600 group-hover:text-white transition-colors shrink-0" />
                 )}
-                <span className="hidden sm:inline font-sans whitespace-nowrap">
-                  <span className="hidden min-[1200px]:inline">Open </span>Surprise
-                </span>
+                <span className="font-sans whitespace-nowrap">Surprise</span>
                 <span className="text-xs shrink-0">💌</span>
               </button>
             )}
