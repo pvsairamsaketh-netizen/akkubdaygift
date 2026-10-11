@@ -271,15 +271,15 @@ export const MemoriesPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {memories.map((mem) => (
             <div
               key={mem.id}
-              className="bg-white/90 backdrop-blur rounded-2xl p-5 border border-rose-100/80 shadow-sm hover:shadow-md hover:border-rose-200 transition-all flex flex-col justify-between group"
+              className="bg-white/85 hover:bg-white/95 backdrop-blur-xl rounded-3xl p-6 border border-rose-200/70 shadow-sm hover:shadow-xl hover:shadow-rose-200/50 hover:border-rose-300 transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 capitalize">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 capitalize border border-rose-200/60 font-mono">
                     {mem.category.replace('_', ' ')}
                   </span>
                   <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
