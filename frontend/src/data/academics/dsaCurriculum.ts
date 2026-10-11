@@ -462,62 +462,84 @@ export const DSA_CURRICULUM_DAYS: DayLesson[] = [
     "prerequisites": [
       "Day 103 foundational knowledge"
     ],
-    "learnContent": "### Day 104: Searching & Sorting: Binary Search, Lower/Upper Bound & Comparison Sorts\n\n#### \ud83d\udca1 Real-Life Intuition & Analogy\n> Searching for a word in a dictionary: you flip right to the middle, check if your target comes before or after, and discard half the book in a single step.\n\n---\n\n#### \ud83d\udcd0 Architectural Flowchart & System Blueprint\n```text\nBinary Search on Sorted Array:\nArray: [2, 5, 8, 12, 16, 23, 38, 56, 72, 91]   Target = 23\nStep 1: Low = 0, High = 9, Mid = 4 (val = 16) -> 23 > 16 -> Low = Mid + 1 = 5\nStep 2: Low = 5, High = 9, Mid = 7 (val = 56) -> 23 < 56 -> High = Mid - 1 = 6\nStep 3: Low = 5, High = 6, Mid = 5 (val = 23) -> Found at Index 5!\n```\n\n---\n\n#### \ud83d\udd2c In-Depth Engineering & Algorithmic Breakdown\n\n##### 1. What Problem Does This Solve?\nIn technical coding interviews and enterprise software engineering, choosing the wrong data structure degrades performance from milliseconds to hours.\nUnderstanding Searching & Sorting ensures:\n- **Optimal Time Complexity**: Eliminates redundant nested operations through systematic search space reduction.\n- **Controlled Space Overhead**: Balances in-memory caching against heap memory constraints.\n- **Edge-Case Resilience**: Safely handles empty collections, duplicate keys, boundary overflows, and scale limits.\n\n##### 2. How It Works Under the Hood\n1. **Memory Allocation**: Contiguous memory vs node pointer dereferences on the heap.\n2. **Operations & Invariants**: The strict invariant rules governing search, insertion, deletion, and balancing.\n3. **Step-by-Step Dry Run**: Tracing pointer movements, index boundaries, and stack states.\n\n##### 3. Multi-Language Implementation Paradigm\n- **Python**: Idiomatic list slices, collections.deque, heapq, and dictionary hash tables.\n- **C++**: High-performance STL vector, unordered_map, priority_queue, and raw pointer control.\n- **Java**: Standard java.util collections (ArrayList, HashMap, PriorityQueue, LinkedList).\n\n---\n\n#### \ud83c\udfc6 Top FAANG & Placement Interview Traps\n- Always verify boundary conditions: N=0, N=1, negative numbers, duplicates, and integer overflow.\n- Interviewers always ask: \"Can we do better than this? What is the amortized cost?",
+    "learnContent": "### Day 104: Searching & Sorting: Binary Search, Lower/Upper Bound & Comparison Sorts\n\n#### 💡 Real-Life Intuition & Analogy\n> Searching for a word in an alphabetical dictionary: you flip right to the middle. If your word comes after the middle word, you discard the entire first half of the book in a single step.\n\n---\n\n#### 📐 The Idea in 30 Seconds\nBinary search is an optimal divide-and-conquer search algorithm on sorted collections. At every step, it checks the middle element and halves the remaining search interval, achieving O(log N) logarithmic time.\n\n---\n\n#### 💻 Standard Python Implementation\n```python\ndef binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        mid_value = arr[mid]\n\n        if mid_value == target:\n            return mid\n        elif mid_value < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1\n```",
     "examples": [
       {
-        "title": "Optimal Searching & Sorting Implementation",
-        "explanation": "Standard production implementation across Python, C++, and Java.",
+        "title": "Optimal Binary Search (Python)",
+        "explanation": "Standard iterative divide-and-conquer implementation with O(log n) time and O(1) space.",
         "language": "python",
-        "code": "# Optimal Implementation for Day 104: Searching & Sorting\ndef solve():\n    print('Executing Day 104 optimal solution')\n\nsolve()",
-        "output": "Executing Day 104 optimal solution"
+        "code": "def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        mid_value = arr[mid]\n\n        if mid_value == target:\n            return mid\n        elif mid_value < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1\n\n# Test with target 50 on sorted array\narr = [10, 20, 30, 40, 50]\ntarget = 50\nprint('Index of 50:', binary_search(arr, target))",
+        "output": "Index of 50: 4"
       }
     ],
     "practiceExercise": {
       "id": "dsa_ex_104",
-      "title": "Searching & Sorting Hands-on Coding",
+      "title": "Binary Search: Find Target in Sorted Array",
       "language": "python",
-      "problemStatement": "Implement the optimal algorithm for Searching & Sorting. Your code should achieve the optimal Big-O bounds and pass all test cases.",
-      "starterCode": "def solution(arr):\n    # Write your optimal code here\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
-      "solutionCode": "def solution(arr):\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
+      "problemStatement": "Given a sorted array of integers `arr` and an integer `target`, return the index of `target` if it is present. If `target` is not present, return `-1`. Your algorithm must run in O(log n) runtime complexity.",
+      "starterCode": "def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    \n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n            \n    return -1\n\nprint(binary_search([10, 20, 30, 40, 50], 50))",
+      "solutionCode": "def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return -1",
       "hints": [
-        "Think about whether you need extra space or if you can solve this in-place.",
-        "Consider two pointers, a frequency map, or a monotonic structure."
+        "Initialize two pointers: low = 0 and high = len(arr) - 1.",
+        "Calculate mid using integer division: mid = (low + high) // 2.",
+        "If arr[mid] < target, eliminate the left half by setting low = mid + 1.",
+        "Remember that Python uses zero-based indexing, so the fifth element is index 4."
       ],
       "testCases": [
         {
-          "input": "[1, 2, 3]",
-          "expected_output": "3"
+          "input": "arr = [10, 20, 30, 40, 50], target = 50",
+          "expected_output": "4"
+        },
+        {
+          "input": "arr = [10, 20, 30, 40, 50], target = 30",
+          "expected_output": "2"
+        },
+        {
+          "input": "arr = [10, 20, 30, 40, 50], target = 25",
+          "expected_output": "-1"
         }
       ]
     },
     "mcqs": [
       {
         "id": "dsa_mcq_104_1",
-        "question": "What is the average time complexity of standard operations in Searching & Sorting?",
+        "question": "What is the worst-case time complexity of binary search on a sorted array of size N?",
         "options": [
-          "O(1) to O(N log N) depending on the specific operation",
-          "Always O(N^3)",
-          "Always O(2^N)",
-          "Undefined"
+          "O(log N)",
+          "O(N)",
+          "O(N log N)",
+          "O(1)"
         ],
         "correctIndex": 0,
-        "explanation": "Searching & Sorting operations are designed to achieve optimal asymptotic bounds."
+        "explanation": "At each step, binary search cuts the remaining search space strictly in half, requiring at most log2(N) comparisons."
+      },
+      {
+        "id": "dsa_mcq_104_2",
+        "question": "Why can binary search NOT be safely applied to an unsorted array?",
+        "options": [
+          "Because eliminating a half requires the invariant that all elements to the left/right are smaller/larger",
+          "Because Python lists do not support index lookups on unsorted data",
+          "Because the array will throw an IndexError",
+          "Because it causes an infinite recursion loop"
+        ],
+        "correctIndex": 0,
+        "explanation": "Binary search relies on the monotonicity of sorted order to safely prune half the search space. Without sorted order, the target could exist anywhere in the discarded half."
       }
     ],
     "interviewQuestions": [
       {
         "id": "dsa_iq_104_1",
-        "question": "How would you explain the trade-offs of Searching & Sorting during a FAANG technical interview?",
+        "question": "How would you explain the difference between Linear Search and Binary Search to an interviewer?",
         "difficulty": "Intermediate",
         "topic": "DSA Foundations (Days 101-105)",
         "tags": [
           "search_sort",
           "DSA",
-          "Interview",
+          "Binary Search",
           "Interview Essential"
         ],
-        "hint": "Discuss time complexity, auxiliary memory space, and edge case handling.",
-        "solution": "Start with the core definition, explain why a naive solution is sub-optimal, show how Searching & Sorting reduces complexity, and state the exact Big-O bounds."
+        "hint": "Compare worst-case time complexities O(N) vs O(log N), space complexity O(1), and the prerequisite of sorted data.",
+        "solution": "Linear search checks items sequentially (O(N) time) and works on any unsorted list. Binary search halves the interval (O(log N) time, O(1) space) but strictly requires sorted input. For 1 million items, binary search needs at most 20 comparisons versus 1 million for linear search."
       }
     ],
     "cheatSheet": {
