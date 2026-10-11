@@ -118,3 +118,40 @@ def test_progress_api():
     assert data['streak_count'] == 5
     assert data['completed_days'] == [1, 2, 3]
     assert data['completion_percentage'] == 3.0
+
+@pytest.mark.django_db
+def test_academic_tutor_api_arrays_topic():
+    client = APIClient()
+
+    # 1. Test Arrays Kadane's query
+    payload = {
+        'topic_id': 'day_102',
+        'day_number': 102,
+        'lesson_title': "Arrays Deep Dive: Static vs Dynamic, Prefix Sum, Kadane's & Two Pointers",
+        'lesson_subject': 'dsa',
+        'lesson_summary': 'Arrays contiguous memory allocation, Kadane max subarray, Prefix Sum',
+        'question': 'How does Kadane algorithm handle all negative numbers?'
+    }
+    res = client.post('/api/academics/tutor/', payload, format='json', HTTP_X_USER_ID='akku')
+    assert res.status_code == 200
+    data = res.json()
+    assert data['success'] is True
+    assert 'Kadane' in data['answer'] or 'negative' in data['answer'].lower()
+    assert data['topic_id'] == 'day_102'
+
+    # 2. Test Empty Question Validation
+    empty_res = client.post('/api/academics/tutor/', {'question': ''}, format='json')
+    assert empty_res.status_code == 400
+    assert empty_res.json()['success'] is False
+
+    # 3. Test Two Pointers query
+    tp_payload = {
+        'topic_id': 'day_102',
+        'day_number': 102,
+        'lesson_title': "Arrays Deep Dive",
+        'question': 'When can we use two pointer technique?'
+    }
+    tp_res = client.post('/api/academics/tutor/', tp_payload, format='json')
+    assert tp_res.status_code == 200
+    assert 'two pointer' in tp_res.json()['answer'].lower()
+

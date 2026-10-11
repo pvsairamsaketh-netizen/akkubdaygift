@@ -7,7 +7,8 @@ from academics.views import (
     CodeRunnerView,
     NotesListView,
     NotesDetailView,
-    ProgressView
+    ProgressView,
+    AcademicTutorView
 )
 
 urlpatterns = [
@@ -26,4 +27,7 @@ urlpatterns = [
 
     # Academic Progress
     path('progress/', ProgressView.as_view(), name='academics_progress'),
+
+    # Academic AI Tutor
+    path('tutor/', AcademicTutorView.as_view(), name='academics_tutor'),
 ]

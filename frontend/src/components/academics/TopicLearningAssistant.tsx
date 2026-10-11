@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, X, User, Lightbulb } from 'lucide-react';
 import type { DayLesson } from '../../types/academics';
+import { api } from '../../services/api';
 
 interface TopicLearningAssistantProps {
   lesson: DayLesson;
@@ -36,35 +37,60 @@ export const TopicLearningAssistant: React.FC<TopicLearningAssistantProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const userText = input.trim();
+  const handleSend = async (overrideText?: string) => {
+    const userText = (overrideText || input).trim();
+    if (!userText || isTyping) return;
+
     const newMessages: Message[] = [...messages, { sender: 'user', text: userText }];
     setMessages(newMessages);
-    setInput('');
+    if (!overrideText) setInput('');
     setIsTyping(true);
+    setErrorMessage(null);
 
-    // Contextual Socratic tutor response
-    setTimeout(() => {
+    try {
+      // Call dedicated academic tutor endpoint
+      const response = await api.academics.askTutor({
+        question: userText,
+        topic_id: lesson.id || `day_${lesson.dayNumber}`,
+        day_number: lesson.dayNumber,
+        lesson_title: lesson.title,
+        lesson_subject: lesson.subject,
+        lesson_summary: lesson.description || '',
+        conversation_history: messages.slice(-4)
+      });
+
+      if (response && response.answer) {
+        setMessages(prev => [...prev, { sender: 'assistant', text: response.answer }]);
+      } else {
+        throw new Error("No answer returned");
+      }
+    } catch (err: any) {
+      console.warn("Academic Tutor network or backend issue, using pedagogical fallback:", err);
+      setErrorMessage("Using offline pedagogical tutor knowledge base.");
+      // Controlled pedagogical fallback so user experience is never blocked
       let reply = '';
       const q = userText.toLowerCase();
 
       if (q.includes('analogy') || q.includes('real life') || q.includes('simple')) {
-        reply = lesson.realLifeAnalogy?.analogy || `Think of this like an organized library: instead of searching through every single book one by one on the floor, we use a catalog system that points you directly to the exact shelf!`;
+        reply = lesson.realLifeAnalogy?.analogy || `Think of **${lesson.title}** like an organized library: instead of searching through every single book one by one on the floor, we use a catalog coordinate index that points you directly to the exact shelf!`;
       } else if (q.includes('why') || q.includes('need') || q.includes('use')) {
-        reply = `We need this in production data systems because:\n1. It avoids expensive full-table scans and keeps queries fast.\n2. It prevents data corruption and memory leaks at scale.\n3. It is a standard design pattern expected by interviewers!`;
+        reply = `We need **${lesson.title}** in production data systems because:\n1. It avoids expensive full-table scans or quadratic $O(N^2)$ loops.\n2. It prevents memory overflow and out-of-bounds corruption.\n3. It is a standard design pattern expected by interviewers!`;
+      } else if (q.includes('kadane') || q.includes('subarray')) {
+        reply = `**Kadane's Algorithm Invariant:**\nAt index \`i\`, \`current_sum = max(nums[i], current_sum + nums[i])\`.\nWhen all numbers are negative, initialize \`max_so_far = nums[0]\` (not 0) so the least-negative value is correctly returned in $O(N)$ time with $O(1)$ space.`;
       } else if (q.includes('mistake') || q.includes('trap') || q.includes('wrong')) {
-        reply = `The most common mistake here is:\n- Forgetting to handle edge cases like empty inputs, null values, or duplicate keys.\n- Modifying objects in-place instead of creating clean copies in data pipelines.`;
+        reply = `The most common mistakes in **${lesson.title}** are:\n- Forgetting boundary cases like empty arrays, single elements, or null values.\n- Off-by-one index arithmetic.\n- Accidental $O(N)$ slicing inside loops instead of two pointers.`;
       } else if (q.includes('interview') || q.includes('placement') || q.includes('company')) {
-        reply = lesson.whyItMattersInPlacements || `In interviews, companies like Amazon, Google, and Microsoft test this to see if you can write clean, scalable code that handles boundary conditions properly.`;
+        reply = lesson.whyItMattersInPlacements || `In technical interviews, product companies evaluate this to see if you can analyze time/space complexity, maintain loop invariants, and handle edge cases cleanly.`;
       } else {
-        reply = `Regarding **${lesson.title}**: ${lesson.description}\n\nKey takeaway: Break the problem down into small steps. Validate your input, apply the core transformation, and return the clean output. Would you like me to walk through a small code example?`;
+        reply = `Regarding **${lesson.title}**: ${lesson.description}\n\n**Core Principle:** Break the problem down into small steps. Validate input bounds, apply the optimal transformation, and verify asymptotic complexity. Would you like to dry-run an example together?`;
       }
 
       setMessages(prev => [...prev, { sender: 'assistant', text: reply }]);
+    } finally {
       setIsTyping(false);
-    }, 600);
+    }
   };
 
   const samplePrompts = [
@@ -144,6 +170,11 @@ export const TopicLearningAssistant: React.FC<TopicLearningAssistantProps> = ({
               <span>Thinking with Day {lesson.dayNumber} context...</span>
             </div>
           )}
+          {errorMessage && (
+            <div className="text-[10px] text-amber-400/80 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20">
+              {errorMessage}
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -184,7 +215,7 @@ export const TopicLearningAssistant: React.FC<TopicLearningAssistantProps> = ({
             }`}
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim()}
             className="p-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white transition-colors cursor-pointer shadow-sm"
           >

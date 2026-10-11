@@ -455,6 +455,27 @@ export const api = {
       });
       if (!res.ok) throw new Error("Failed to update academic progress");
       return res.json();
+    },
+
+    async askTutor(payload: {
+      question: string;
+      topic_id?: string;
+      day_number?: number;
+      lesson_title?: string;
+      lesson_subject?: string;
+      lesson_summary?: string;
+      conversation_history?: Array<{ sender: string; text: string }>;
+    }) {
+      const res = await fetch(`${API_BASE}/academics/tutor/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ...payload, user_id: getUserId() })
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Academic Tutor request failed (${res.status})`);
+      }
+      return res.json();
     }
   }
 };

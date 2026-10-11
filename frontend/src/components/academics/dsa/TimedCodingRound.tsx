@@ -26,7 +26,7 @@ export const TimedCodingRound: React.FC<TimedCodingRoundProps> = ({
   // Round Configuration
   const roundConfig = {
     easy: { name: 'Day 126: Easy Placement Coding Round', count: 10, minutes: 60, difficulty: 'Easy' },
-    medium: { name: 'Day 127: Medium Coding Round', count: 6, minutes: 90, difficulty: 'Medium' },
+    medium: { name: 'Day 127: Medium Coding Round', count: 7, minutes: 90, difficulty: 'Medium' },
     hard: { name: 'Day 128: Hard FAANG Coding Round', count: 4, minutes: 120, difficulty: 'Hard' }
   }[activeRound];
 

@@ -465,11 +465,18 @@ export const DSA_CURRICULUM_DAYS: DayLesson[] = [
     "learnContent": "### Day 104: Searching & Sorting: Binary Search, Lower/Upper Bound & Comparison Sorts\n\n#### 💡 Real-Life Intuition & Analogy\n> Searching for a word in an alphabetical dictionary: you flip right to the middle. If your word comes after the middle word, you discard the entire first half of the book in a single step.\n\n---\n\n#### 📐 The Idea in 30 Seconds\nBinary search is an optimal divide-and-conquer search algorithm on sorted collections. At every step, it checks the middle element and halves the remaining search interval, achieving O(log N) logarithmic time.\n\n---\n\n#### 💻 Standard Python Implementation\n```python\ndef binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        mid_value = arr[mid]\n\n        if mid_value == target:\n            return mid\n        elif mid_value < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1\n```",
     "examples": [
       {
-        "title": "Optimal Binary Search (Python)",
-        "explanation": "Standard iterative divide-and-conquer implementation with O(log n) time and O(1) space.",
+        "title": "Optimal Binary Search with Lower/Upper Bound Logic (Python)",
+        "explanation": "Standard iterative divide-and-conquer implementation with O(log N) time and O(1) auxiliary space.",
         "language": "python",
-        "code": "def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n\n    while low <= high:\n        mid = (low + high) // 2\n        mid_value = arr[mid]\n\n        if mid_value == target:\n            return mid\n        elif mid_value < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1\n\n# Test with target 50 on sorted array\narr = [10, 20, 30, 40, 50]\ntarget = 50\nprint('Index of 50:', binary_search(arr, target))",
-        "output": "Index of 50: 4"
+        "code": "def binary_search(arr, target):\n    \"\"\"\n    Finds exact target index in a sorted array.\n    Prerequisite: arr must be sorted ascending.\n    Time: O(log N) | Space: O(1)\n    \"\"\"\n    low, high = 0, len(arr) - 1\n\n    while low <= high:\n        # Prevent integer overflow in fixed-width languages\n        mid = low + (high - low) // 2\n        mid_value = arr[mid]\n\n        if mid_value == target:\n            return mid\n        elif mid_value < target:\n            low = mid + 1\n        else:\n            high = mid - 1\n\n    return -1\n\ndef lower_bound(arr, target):\n    \"\"\"First index where arr[i] >= target.\"\"\"\n    low, high, ans = 0, len(arr) - 1, len(arr)\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] >= target:\n            ans = mid\n            high = mid - 1\n        else:\n            low = mid + 1\n    return ans\n\n# Test on sorted collection\narr = [10, 20, 30, 40, 50]\nprint('Search 50 index:', binary_search(arr, 50))\nprint('Lower bound of 25:', lower_bound(arr, 25))",
+        "output": "Search 50 index: 4\nLower bound of 25: 2"
+      },
+      {
+        "title": "In-Place Quick Sort with Lomuto Partitioning (Python)",
+        "explanation": "Comparison-based divide-and-conquer sorting algorithm. Average time O(N log N), auxiliary space O(log N).",
+        "language": "python",
+        "code": "def quick_sort(arr, low=0, high=None):\n    if high is None:\n        high = len(arr) - 1\n    if low < high:\n        pi = partition(arr, low, high)\n        quick_sort(arr, low, pi - 1)\n        quick_sort(arr, pi + 1, high)\n    return arr\n\ndef partition(arr, low, high):\n    pivot = arr[high]\n    i = low - 1\n    for j in range(low, high):\n        if arr[j] <= pivot:\n            i += 1\n            arr[i], arr[j] = arr[j], arr[i]\n    arr[i + 1], arr[high] = arr[high], arr[i + 1]\n    return i + 1\n\nnums = [5, 2, 8, 1, 3]\nprint('Sorted array:', quick_sort(nums))",
+        "output": "Sorted array: [1, 2, 3, 5, 8]"
       }
     ],
     "practiceExercise": {
@@ -610,59 +617,71 @@ export const DSA_CURRICULUM_DAYS: DayLesson[] = [
     "learnContent": "### Day 105: Recursion & Backtracking: State Trees, Subsets, Permutations & N-Queens\n\n#### \ud83d\udca1 Real-Life Intuition & Analogy\n> Exploring a maze: you follow a path forward, and if you hit a dead end, you backtrack one step, turn down another corridor, and keep searching until you reach the exit.\n\n---\n\n#### \ud83d\udcd0 Architectural Flowchart & System Blueprint\n```text\nDecision Tree for Subsets of [1, 2]:\n                     []\n                   /    \\\n          Pick 1  [1]     []  Skip 1\n                 /   \\   /   \\\n         Pick 2 [1,2] [1] [2]  [] (All 2^N subsets generated!)\n```\n\n---\n\n#### \ud83d\udd2c In-Depth Engineering & Algorithmic Breakdown\n\n##### 1. What Problem Does This Solve?\nIn technical coding interviews and enterprise software engineering, choosing the wrong data structure degrades performance from milliseconds to hours.\nUnderstanding Recursion & Backtracking ensures:\n- **Optimal Time Complexity**: Eliminates redundant nested operations through systematic search space reduction.\n- **Controlled Space Overhead**: Balances in-memory caching against heap memory constraints.\n- **Edge-Case Resilience**: Safely handles empty collections, duplicate keys, boundary overflows, and scale limits.\n\n##### 2. How It Works Under the Hood\n1. **Memory Allocation**: Contiguous memory vs node pointer dereferences on the heap.\n2. **Operations & Invariants**: The strict invariant rules governing search, insertion, deletion, and balancing.\n3. **Step-by-Step Dry Run**: Tracing pointer movements, index boundaries, and stack states.\n\n##### 3. Multi-Language Implementation Paradigm\n- **Python**: Idiomatic list slices, collections.deque, heapq, and dictionary hash tables.\n- **C++**: High-performance STL vector, unordered_map, priority_queue, and raw pointer control.\n- **Java**: Standard java.util collections (ArrayList, HashMap, PriorityQueue, LinkedList).\n\n---\n\n#### \ud83c\udfc6 Top FAANG & Placement Interview Traps\n- Always verify boundary conditions: N=0, N=1, negative numbers, duplicates, and integer overflow.\n- Interviewers always ask: \"Can we do better than this? What is the amortized cost?",
     "examples": [
       {
-        "title": "Optimal Recursion & Backtracking Implementation",
-        "explanation": "Standard production implementation across Python, C++, and Java.",
+        "title": "Subsets Generation via Backtracking State Tree (Python)",
+        "explanation": "Canonical backtracking pattern: Choose, Explore, Un-choose. Generates all 2^N subsets without duplicate allocations.",
         "language": "python",
-        "code": "# Optimal Implementation for Day 105: Recursion & Backtracking\ndef solve():\n    print('Executing Day 105 optimal solution')\n\nsolve()",
-        "output": "Executing Day 105 optimal solution"
+        "code": "def subsets(nums):\n    \"\"\"\n    Generates all 2^N subsets of unique integers.\n    Time: O(N * 2^N) | Space: O(N) auxiliary call stack.\n    \"\"\"\n    result = []\n\n    def backtrack(start_idx, current_path):\n        # Base step: record current subset snapshot\n        result.append(list(current_path))\n\n        for i in range(start_idx, len(nums)):\n            # 1. Choose candidate\n            current_path.append(nums[i])\n            # 2. Explore subtree\n            backtrack(i + 1, current_path)\n            # 3. Un-choose (Backtrack step)\n            current_path.pop()\n\n    backtrack(0, [])\n    return result\n\n# Test on sample collection [1, 2]\nres = subsets([1, 2])\nprint('Generated Subsets:', res)",
+        "output": "Generated Subsets: [[], [1], [1, 2], [2]]"
       }
     ],
     "practiceExercise": {
       "id": "dsa_ex_105",
-      "title": "Recursion & Backtracking Hands-on Coding",
+      "title": "Generate All Permutations (State-Space Tree)",
       "language": "python",
-      "problemStatement": "Implement the optimal algorithm for Recursion & Backtracking. Your code should achieve the optimal Big-O bounds and pass all test cases.",
-      "starterCode": "def solution(arr):\n    # Write your optimal code here\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
-      "solutionCode": "def solution(arr):\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
+      "problemStatement": "Given an array `nums` of distinct integers, return all possible permutations. You must implement an in-place swap backtracking approach that runs in O(N * N!) time.",
+      "starterCode": "def permute(nums):\n    result = []\n    def backtrack(first=0):\n        if first == len(nums):\n            result.append(list(nums))\n            return\n        for i in range(first, len(nums)):\n            nums[first], nums[i] = nums[i], nums[first]\n            backtrack(first + 1)\n            nums[first], nums[i] = nums[i], nums[first]\n            \n    backtrack(0)\n    return result\n\nprint(permute([1, 2, 3]))",
+      "solutionCode": "def permute(nums):\n    result = []\n    def backtrack(first=0):\n        if first == len(nums):\n            result.append(list(nums))\n            return\n        for i in range(first, len(nums)):\n            nums[first], nums[i] = nums[i], nums[first]\n            backtrack(first + 1)\n            nums[first], nums[i] = nums[i], nums[first]\n    backtrack(0)\n    return result",
       "hints": [
-        "Think about whether you need extra space or if you can solve this in-place.",
-        "Consider two pointers, a frequency map, or a monotonic structure."
+        "A permutation of size N has N! possible arrangements.",
+        "Fix the element at index `first` by swapping with index `i`, recursively permute the suffix from `first + 1`, and then restore the swap (un-choose)."
       ],
       "testCases": [
         {
-          "input": "[1, 2, 3]",
-          "expected_output": "3"
+          "input": "[1, 2]",
+          "expected_output": "[[1, 2], [2, 1]]"
         }
       ]
     },
     "mcqs": [
       {
         "id": "dsa_mcq_105_1",
-        "question": "What is the average time complexity of standard operations in Recursion & Backtracking?",
+        "question": "What is the maximum depth of the recursive call stack when generating subsets of an array of size N?",
         "options": [
-          "O(1) to O(N log N) depending on the specific operation",
-          "Always O(N^3)",
-          "Always O(2^N)",
-          "Undefined"
+          "O(N)",
+          "O(2^N)",
+          "O(N!)",
+          "O(1)"
         ],
         "correctIndex": 0,
-        "explanation": "Recursion & Backtracking operations are designed to achieve optimal asymptotic bounds."
+        "explanation": "Even though there are 2^N total subsets generated, the maximum depth of the call stack at any point during DFS traversal is bounded by N (the size of the array)."
+      },
+      {
+        "id": "dsa_mcq_105_2",
+        "question": "In the standard backtracking template (Choose, Explore, Un-choose), why is the 'Un-choose' step required?",
+        "options": [
+          "To restore the shared state so subsequent sibling recursive branches start with a clean prefix",
+          "To terminate the Python interpreter gracefully",
+          "To force a garbage collection cycle",
+          "It is completely optional and can be omitted"
+        ],
+        "correctIndex": 0,
+        "explanation": "Because state (e.g. current_path or array) is passed by reference across recursive frames, mutating it during exploration must be reversed (popped/un-swapped) before testing the next branch."
       }
     ],
     "interviewQuestions": [
       {
         "id": "dsa_iq_105_1",
-        "question": "How would you explain the trade-offs of Recursion & Backtracking during a FAANG technical interview?",
-        "difficulty": "Intermediate",
-        "topic": "DSA Foundations (Days 101-105)",
+        "question": "How do you solve the N-Queens problem and what are the diagonal attack check invariants?",
+        "difficulty": "Advanced",
+        "topic": "Recursion & Backtracking",
         "tags": [
           "recursion",
-          "DSA",
-          "Interview",
-          "Advanced"
+          "backtracking",
+          "n-queens",
+          "FAANG"
         ],
-        "hint": "Discuss time complexity, auxiliary memory space, and edge case handling.",
-        "solution": "Start with the core definition, explain why a naive solution is sub-optimal, show how Recursion & Backtracking reduces complexity, and state the exact Big-O bounds."
+        "hint": "Use sets for columns, positive diagonals (row + col), and negative diagonals (row - col) for O(1) conflict lookups.",
+        "solution": "Place one queen per row. For each column in the current row, check if col, (row - col), or (row + col) are occupied in constant time using hash sets. If safe, mark them occupied, recurse to row + 1, and on return, remove them from the hash sets (backtrack)."
       }
     ],
     "cheatSheet": {
@@ -3193,28 +3212,32 @@ export const DSA_CURRICULUM_DAYS: DayLesson[] = [
     "learnContent": "### Day 126: Easy Coding Round: 10 Timed Problems, 60-Minute Assessment Engine\n\n#### \ud83d\udca1 Real-Life Intuition & Analogy\n> The placement screening round: 10 fundamental algorithmic challenges testing array manipulations, string transformations, and basic hashing.\n\n---\n\n#### \ud83d\udcd0 Architectural Flowchart & System Blueprint\n```text\nPlacement Assessment Protocol:\n[Timer: 60:00] ---> 10 Easy Problems ---> Automated Test Harness\nReal-time Feedback: Passed / Failed test cases, Memory & Execution Timing.\n```\n\n---\n\n#### \ud83d\udd2c In-Depth Engineering & Algorithmic Breakdown\n\n##### 1. What Problem Does This Solve?\nIn technical coding interviews and enterprise software engineering, choosing the wrong data structure degrades performance from milliseconds to hours.\nUnderstanding Easy Coding Round ensures:\n- **Optimal Time Complexity**: Eliminates redundant nested operations through systematic search space reduction.\n- **Controlled Space Overhead**: Balances in-memory caching against heap memory constraints.\n- **Edge-Case Resilience**: Safely handles empty collections, duplicate keys, boundary overflows, and scale limits.\n\n##### 2. How It Works Under the Hood\n1. **Memory Allocation**: Contiguous memory vs node pointer dereferences on the heap.\n2. **Operations & Invariants**: The strict invariant rules governing search, insertion, deletion, and balancing.\n3. **Step-by-Step Dry Run**: Tracing pointer movements, index boundaries, and stack states.\n\n##### 3. Multi-Language Implementation Paradigm\n- **Python**: Idiomatic list slices, collections.deque, heapq, and dictionary hash tables.\n- **C++**: High-performance STL vector, unordered_map, priority_queue, and raw pointer control.\n- **Java**: Standard java.util collections (ArrayList, HashMap, PriorityQueue, LinkedList).\n\n---\n\n#### \ud83c\udfc6 Top FAANG & Placement Interview Traps\n- Always verify boundary conditions: N=0, N=1, negative numbers, duplicates, and integer overflow.\n- Interviewers always ask: \"Can we do better than this? What is the amortized cost?",
     "examples": [
       {
-        "title": "Optimal Easy Coding Round Implementation",
-        "explanation": "Standard production implementation across Python, C++, and Java.",
+        "title": "Two Sum Problem (Optimal Hash Map Strategy)",
+        "explanation": "One-pass hash table lookup reducing brute-force O(N²) quadratic nested loops down to optimal O(N) time.",
         "language": "python",
-        "code": "# Optimal Implementation for Day 126: Easy Coding Round\ndef solve():\n    print('Executing Day 126 optimal solution')\n\nsolve()",
-        "output": "Executing Day 126 optimal solution"
+        "code": "def two_sum(nums, target):\n    \"\"\"\n    Finds indices of two numbers that sum up to target.\n    Time: O(N) | Space: O(N)\n    \"\"\"\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n\n# Test on sample array\nnums = [2, 7, 11, 15]\ntarget = 9\nprint('Two Sum Indices:', two_sum(nums, target))",
+        "output": "Two Sum Indices: [0, 1]"
       }
     ],
     "practiceExercise": {
       "id": "dsa_ex_126",
-      "title": "Easy Coding Round Hands-on Coding",
+      "title": "Valid Anagram (Character Frequency Hash Table)",
       "language": "python",
-      "problemStatement": "Implement the optimal algorithm for Easy Coding Round. Your code should achieve the optimal Big-O bounds and pass all test cases.",
-      "starterCode": "def solution(arr):\n    # Write your optimal code here\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
-      "solutionCode": "def solution(arr):\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
+      "problemStatement": "Given two strings `s` and `t`, return `True` if `t` is an anagram of `s`, and `False` otherwise. You must solve this in O(N) time complexity.",
+      "starterCode": "def is_anagram(s: str, t: str) -> bool:\n    # Write your optimal O(N) frequency solution here\n    if len(s) != len(t):\n        return False\n    count = {}\n    for ch in s:\n        count[ch] = count.get(ch, 0) + 1\n    for ch in t:\n        if ch not in count or count[ch] == 0:\n            return False\n        count[ch] -= 1\n    return True\n\nprint(is_anagram('anagram', 'nagaram'))",
+      "solutionCode": "def is_anagram(s: str, t: str) -> bool:\n    if len(s) != len(t):\n        return False\n    count = {}\n    for ch in s:\n        count[ch] = count.get(ch, 0) + 1\n    for ch in t:\n        if ch not in count or count[ch] == 0:\n            return False\n        count[ch] -= 1\n    return True",
       "hints": [
-        "Think about whether you need extra space or if you can solve this in-place.",
-        "Consider two pointers, a frequency map, or a monotonic structure."
+        "If lengths differ, they cannot be anagrams.",
+        "Count frequencies of characters in string s, then decrement frequencies for string t."
       ],
       "testCases": [
         {
-          "input": "[1, 2, 3]",
-          "expected_output": "3"
+          "input": "s = 'anagram', t = 'nagaram'",
+          "expected_output": "True"
+        },
+        {
+          "input": "s = 'rat', t = 'car'",
+          "expected_output": "False"
         }
       ]
     },
@@ -3316,28 +3339,32 @@ export const DSA_CURRICULUM_DAYS: DayLesson[] = [
     "learnContent": "### Day 127: Medium Coding Round: 7 Timed Placement Problems, 90-Minute Assessment\n\n#### \ud83d\udca1 Real-Life Intuition & Analogy\n> The technical coding test at top product firms: two-pointer optimizations, tree traversals, sliding windows, and monotonic stacks.\n\n---\n\n#### \ud83d\udcd0 Architectural Flowchart & System Blueprint\n```text\nAssessment Pipeline:\n7 Medium Problems | 90 Minutes | Hidden Test Cases & Edge Cases\nComplexity Analyzer: Evaluates time and auxiliary space bounds.\n```\n\n---\n\n#### \ud83d\udd2c In-Depth Engineering & Algorithmic Breakdown\n\n##### 1. What Problem Does This Solve?\nIn technical coding interviews and enterprise software engineering, choosing the wrong data structure degrades performance from milliseconds to hours.\nUnderstanding Medium Coding Round ensures:\n- **Optimal Time Complexity**: Eliminates redundant nested operations through systematic search space reduction.\n- **Controlled Space Overhead**: Balances in-memory caching against heap memory constraints.\n- **Edge-Case Resilience**: Safely handles empty collections, duplicate keys, boundary overflows, and scale limits.\n\n##### 2. How It Works Under the Hood\n1. **Memory Allocation**: Contiguous memory vs node pointer dereferences on the heap.\n2. **Operations & Invariants**: The strict invariant rules governing search, insertion, deletion, and balancing.\n3. **Step-by-Step Dry Run**: Tracing pointer movements, index boundaries, and stack states.\n\n##### 3. Multi-Language Implementation Paradigm\n- **Python**: Idiomatic list slices, collections.deque, heapq, and dictionary hash tables.\n- **C++**: High-performance STL vector, unordered_map, priority_queue, and raw pointer control.\n- **Java**: Standard java.util collections (ArrayList, HashMap, PriorityQueue, LinkedList).\n\n---\n\n#### \ud83c\udfc6 Top FAANG & Placement Interview Traps\n- Always verify boundary conditions: N=0, N=1, negative numbers, duplicates, and integer overflow.\n- Interviewers always ask: \"Can we do better than this? What is the amortized cost?",
     "examples": [
       {
-        "title": "Optimal Medium Coding Round Implementation",
-        "explanation": "Standard production implementation across Python, C++, and Java.",
+        "title": "3Sum Problem (Sorting + Two Opposing Pointers)",
+        "explanation": "Sorts array in O(N log N) then uses opposing two pointers to find unique triplets summing to 0 in O(N²) time without duplicate trie allocations.",
         "language": "python",
-        "code": "# Optimal Implementation for Day 127: Medium Coding Round\ndef solve():\n    print('Executing Day 127 optimal solution')\n\nsolve()",
-        "output": "Executing Day 127 optimal solution"
+        "code": "def three_sum(nums):\n    \"\"\"\n    Finds all unique triplets [nums[i], nums[j], nums[k]] that sum to 0.\n    Time: O(N²) | Space: O(1) auxiliary.\n    \"\"\"\n    nums.sort()\n    res = []\n    for i in range(len(nums) - 2):\n        if i > 0 and nums[i] == nums[i - 1]:\n            continue\n        left, right = i + 1, len(nums) - 1\n        while left < right:\n            total = nums[i] + nums[left] + nums[right]\n            if total == 0:\n                res.append([nums[i], nums[left], nums[right]])\n                while left < right and nums[left] == nums[left + 1]:\n                    left += 1\n                while left < right and nums[right] == nums[right - 1]:\n                    right -= 1\n                left += 1\n                right -= 1\n            elif total < 0:\n                left += 1\n            else:\n                right -= 1\n    return res\n\nprint('3Sum triplets:', three_sum([-1, 0, 1, 2, -1, -4]))",
+        "output": "3Sum triplets: [[-1, -1, 2], [-1, 0, 1]]"
       }
     ],
     "practiceExercise": {
       "id": "dsa_ex_127",
-      "title": "Medium Coding Round Hands-on Coding",
+      "title": "Container With Most Water (Greedy Two Pointers)",
       "language": "python",
-      "problemStatement": "Implement the optimal algorithm for Medium Coding Round. Your code should achieve the optimal Big-O bounds and pass all test cases.",
-      "starterCode": "def solution(arr):\n    # Write your optimal code here\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
-      "solutionCode": "def solution(arr):\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
+      "problemStatement": "Given `height` of n vertical lines, find two lines that together with the x-axis form a container that contains the most water. Return the maximum amount of water a container can store.",
+      "starterCode": "def max_area(height: list[int]) -> int:\n    # Write your optimal O(N) two-pointer solution here\n    left, right = 0, len(height) - 1\n    max_water = 0\n    while left < right:\n        width = right - left\n        h = min(height[left], height[right])\n        max_water = max(max_water, width * h)\n        if height[left] < height[right]:\n            left += 1\n        else:\n            right -= 1\n    return max_water\n\nprint(max_area([1, 8, 6, 2, 5, 4, 8, 3, 7]))",
+      "solutionCode": "def max_area(height: list[int]) -> int:\n    left, right = 0, len(height) - 1\n    max_water = 0\n    while left < right:\n        width = right - left\n        h = min(height[left], height[right])\n        max_water = max(max_water, width * h)\n        if height[left] < height[right]:\n            left += 1\n        else:\n            right -= 1\n    return max_water",
       "hints": [
-        "Think about whether you need extra space or if you can solve this in-place.",
-        "Consider two pointers, a frequency map, or a monotonic structure."
+        "The area is limited by the shorter vertical line: area = min(height[left], height[right]) * (right - left).",
+        "Always advance the pointer corresponding to the shorter line because keeping it can never yield a larger area with narrower width."
       ],
       "testCases": [
         {
-          "input": "[1, 2, 3]",
-          "expected_output": "3"
+          "input": "height = [1, 8, 6, 2, 5, 4, 8, 3, 7]",
+          "expected_output": "49"
+        },
+        {
+          "input": "height = [1, 1]",
+          "expected_output": "1"
         }
       ]
     },
@@ -3439,28 +3466,32 @@ export const DSA_CURRICULUM_DAYS: DayLesson[] = [
     "learnContent": "### Day 128: Hard Coding Round: 4 FAANG-Level Coding Problems, 120-Minute Assessment\n\n#### \ud83d\udca1 Real-Life Intuition & Analogy\n> The competitive programming challenge: multi-stage Dynamic Programming, Graph shortest paths, Trie prefix queries, and Segment Trees.\n\n---\n\n#### \ud83d\udcd0 Architectural Flowchart & System Blueprint\n```text\nHigh-Difficulty Assessment:\n4 Advanced Problems | 120 Minutes | Hidden Stress Tests\nIncludes: Memory limits (256MB), Time Limits (2.0s), and Big-O verification.\n```\n\n---\n\n#### \ud83d\udd2c In-Depth Engineering & Algorithmic Breakdown\n\n##### 1. What Problem Does This Solve?\nIn technical coding interviews and enterprise software engineering, choosing the wrong data structure degrades performance from milliseconds to hours.\nUnderstanding Hard Coding Round ensures:\n- **Optimal Time Complexity**: Eliminates redundant nested operations through systematic search space reduction.\n- **Controlled Space Overhead**: Balances in-memory caching against heap memory constraints.\n- **Edge-Case Resilience**: Safely handles empty collections, duplicate keys, boundary overflows, and scale limits.\n\n##### 2. How It Works Under the Hood\n1. **Memory Allocation**: Contiguous memory vs node pointer dereferences on the heap.\n2. **Operations & Invariants**: The strict invariant rules governing search, insertion, deletion, and balancing.\n3. **Step-by-Step Dry Run**: Tracing pointer movements, index boundaries, and stack states.\n\n##### 3. Multi-Language Implementation Paradigm\n- **Python**: Idiomatic list slices, collections.deque, heapq, and dictionary hash tables.\n- **C++**: High-performance STL vector, unordered_map, priority_queue, and raw pointer control.\n- **Java**: Standard java.util collections (ArrayList, HashMap, PriorityQueue, LinkedList).\n\n---\n\n#### \ud83c\udfc6 Top FAANG & Placement Interview Traps\n- Always verify boundary conditions: N=0, N=1, negative numbers, duplicates, and integer overflow.\n- Interviewers always ask: \"Can we do better than this? What is the amortized cost?",
     "examples": [
       {
-        "title": "Optimal Hard Coding Round Implementation",
-        "explanation": "Standard production implementation across Python, C++, and Java.",
+        "title": "Trapping Rain Water (Two Pointers O(1) Auxiliary Space)",
+        "explanation": "Evaluates left and right boundary water retention levels simultaneously, computing trapped elevation units in optimal O(N) time with O(1) auxiliary RAM.",
         "language": "python",
-        "code": "# Optimal Implementation for Day 128: Hard Coding Round\ndef solve():\n    print('Executing Day 128 optimal solution')\n\nsolve()",
-        "output": "Executing Day 128 optimal solution"
+        "code": "def trap_rain_water(height):\n    \"\"\"\n    Computes trapped water between elevation map bars.\n    Time: O(N) | Space: O(1)\n    \"\"\"\n    if not height:\n        return 0\n    left, right = 0, len(height) - 1\n    left_max, right_max = height[left], height[right]\n    total_water = 0\n\n    while left < right:\n        if left_max < right_max:\n            left += 1\n            left_max = max(left_max, height[left])\n            total_water += left_max - height[left]\n        else:\n            right -= 1\n            right_max = max(right_max, height[right])\n            total_water += right_max - height[right]\n\n    return total_water\n\nprint('Trapped water units:', trap_rain_water([0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]))",
+        "output": "Trapped water units: 6"
       }
     ],
     "practiceExercise": {
       "id": "dsa_ex_128",
-      "title": "Hard Coding Round Hands-on Coding",
+      "title": "Sliding Window Maximum (Monotonic Deque)",
       "language": "python",
-      "problemStatement": "Implement the optimal algorithm for Hard Coding Round. Your code should achieve the optimal Big-O bounds and pass all test cases.",
-      "starterCode": "def solution(arr):\n    # Write your optimal code here\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
-      "solutionCode": "def solution(arr):\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
+      "problemStatement": "Given an array of integers `nums` and a sliding window of size `k`, return the max sliding window. You must achieve optimal O(N) linear time complexity.",
+      "starterCode": "from collections import deque\n\ndef max_sliding_window(nums: list[int], k: int) -> list[int]:\n    # Write your optimal O(N) monotonic deque solution here\n    q = deque()\n    res = []\n    for i, n in enumerate(nums):\n        while q and nums[q[-1]] < n:\n            q.pop()\n        q.append(i)\n        if q[0] <= i - k:\n            q.popleft()\n        if i >= k - 1:\n            res.append(nums[q[0]])\n    return res\n\nprint(max_sliding_window([1, 3, -1, -3, 5, 3, 6, 7], 3))",
+      "solutionCode": "from collections import deque\ndef max_sliding_window(nums: list[int], k: int) -> list[int]:\n    q = deque()\n    res = []\n    for i, n in enumerate(nums):\n        while q and nums[q[-1]] < n:\n            q.pop()\n        q.append(i)\n        if q[0] <= i - k:\n            q.popleft()\n        if i >= k - 1:\n            res.append(nums[q[0]])\n    return res",
       "hints": [
-        "Think about whether you need extra space or if you can solve this in-place.",
-        "Consider two pointers, a frequency map, or a monotonic structure."
+        "A monotonic decreasing deque stores indices of candidate maximum values.",
+        "Pop smaller elements from the back when a larger element arrives, and pop indices that slide out of window (i - k) from the front."
       ],
       "testCases": [
         {
-          "input": "[1, 2, 3]",
-          "expected_output": "3"
+          "input": "nums = [1, 3, -1, -3, 5, 3, 6, 7], k = 3",
+          "expected_output": "[3, 3, 5, 5, 6, 7]"
+        },
+        {
+          "input": "nums = [1], k = 1",
+          "expected_output": "[1]"
         }
       ]
     },
@@ -3562,28 +3593,33 @@ export const DSA_CURRICULUM_DAYS: DayLesson[] = [
     "learnContent": "### Day 129: DSA Technical Interview: Concept, Coding, Complexity & Live Debugging\n\n#### \ud83d\udca1 Real-Life Intuition & Analogy\n> A one-on-one live technical interview simulation with a Senior Engineer testing communication, approach trade-offs, and optimization paths.\n\n---\n\n#### \ud83d\udcd0 Architectural Flowchart & System Blueprint\n```text\nInterview Workflow:\n1. Candidate hears problem statement.\n2. Explains Brute Force approach & Big-O.\n3. Proposes Optimal approach (e.g. Hashing instead of nested loop).\n4. Handles edge cases (empty array, duplicates, integer overflow).\n5. Writes clean, modular code with dry run.\n```\n\n---\n\n#### \ud83d\udd2c In-Depth Engineering & Algorithmic Breakdown\n\n##### 1. What Problem Does This Solve?\nIn technical coding interviews and enterprise software engineering, choosing the wrong data structure degrades performance from milliseconds to hours.\nUnderstanding DSA Technical Interview ensures:\n- **Optimal Time Complexity**: Eliminates redundant nested operations through systematic search space reduction.\n- **Controlled Space Overhead**: Balances in-memory caching against heap memory constraints.\n- **Edge-Case Resilience**: Safely handles empty collections, duplicate keys, boundary overflows, and scale limits.\n\n##### 2. How It Works Under the Hood\n1. **Memory Allocation**: Contiguous memory vs node pointer dereferences on the heap.\n2. **Operations & Invariants**: The strict invariant rules governing search, insertion, deletion, and balancing.\n3. **Step-by-Step Dry Run**: Tracing pointer movements, index boundaries, and stack states.\n\n##### 3. Multi-Language Implementation Paradigm\n- **Python**: Idiomatic list slices, collections.deque, heapq, and dictionary hash tables.\n- **C++**: High-performance STL vector, unordered_map, priority_queue, and raw pointer control.\n- **Java**: Standard java.util collections (ArrayList, HashMap, PriorityQueue, LinkedList).\n\n---\n\n#### \ud83c\udfc6 Top FAANG & Placement Interview Traps\n- Always verify boundary conditions: N=0, N=1, negative numbers, duplicates, and integer overflow.\n- Interviewers always ask: \"Can we do better than this? What is the amortized cost?",
     "examples": [
       {
-        "title": "Optimal DSA Technical Interview Implementation",
-        "explanation": "Standard production implementation across Python, C++, and Java.",
+        "title": "LRU Cache Design (Hash Map + Doubly Linked List)",
+        "explanation": "Production systems design problem frequently tested at FAANG: achieves guaranteed O(1) time complexity for both get(key) and put(key, value) operations.",
         "language": "python",
-        "code": "# Optimal Implementation for Day 129: DSA Technical Interview\ndef solve():\n    print('Executing Day 129 optimal solution')\n\nsolve()",
-        "output": "Executing Day 129 optimal solution"
+        "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\nclass LRUCache:\n    \"\"\"\n    LRU Cache with O(1) get & put using Doubly Linked List + Dict.\n    \"\"\"\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {} # key -> node\n        # Dummy head and tail nodes\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        prev_node = node.prev\n        next_node = node.next\n        prev_node.next = next_node\n        next_node.prev = prev_node\n\n    def _add(self, node):\n        # Always add right before tail (most recent)\n        prev_tail = self.tail.prev\n        prev_tail.next = node\n        node.prev = prev_tail\n        node.next = self.tail\n        self.tail.prev = node\n\n    def get(self, key: int) -> int:\n        if key in self.cache:\n            node = self.cache[key]\n            self._remove(node)\n            self._add(node)\n            return node.val\n        return -1\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            self._remove(self.cache[key])\n        node = Node(key, value)\n        self.cache[key] = node\n        self._add(node)\n        if len(self.cache) > self.cap:\n            lru = self.head.next\n            self._remove(lru)\n            del self.cache[lru.key]\n\n# Test execution\nlru = LRUCache(2)\nlru.put(1, 10)\nlru.put(2, 20)\nprint('Get key 1:', lru.get(1))\nlru.put(3, 30) # Evicts key 2\nprint('Get evicted key 2:', lru.get(2))",
+        "output": "Get key 1: 10\nGet evicted key 2: -1"
       }
     ],
     "practiceExercise": {
       "id": "dsa_ex_129",
-      "title": "DSA Technical Interview Hands-on Coding",
+      "title": "Course Schedule: Cycle Detection (Kahn's BFS Algorithm)",
       "language": "python",
-      "problemStatement": "Implement the optimal algorithm for DSA Technical Interview. Your code should achieve the optimal Big-O bounds and pass all test cases.",
-      "starterCode": "def solution(arr):\n    # Write your optimal code here\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
-      "solutionCode": "def solution(arr):\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
+      "problemStatement": "There are `numCourses` courses labeled 0 to `numCourses - 1`. Given `prerequisites` pairs [a, b] where course b must be taken before a, return `True` if you can finish all courses (no cyclic dependency), or `False` otherwise.",
+      "starterCode": "from collections import deque\n\ndef can_finish(numCourses: int, prerequisites: list[list[int]]) -> bool:\n    # Write Kahn's algorithm (indegree array + BFS queue)\n    indegree = [0] * numCourses\n    adj = [[] for _ in range(numCourses)]\n    for dest, src in prerequisites:\n        adj[src].append(dest)\n        indegree[dest] += 1\n    q = deque([i for i in range(numCourses) if indegree[i] == 0])\n    taken = 0\n    while q:\n        curr = q.popleft()\n        taken += 1\n        for neighbor in adj[curr]:\n            indegree[neighbor] -= 1\n            if indegree[neighbor] == 0:\n                q.append(neighbor)\n    return taken == numCourses\n\nprint(can_finish(2, [[1, 0]]))",
+      "solutionCode": "from collections import deque\ndef can_finish(numCourses: int, prerequisites: list[list[int]]) -> bool:\n    indegree = [0] * numCourses\n    adj = [[] for _ in range(numCourses)]\n    for dest, src in prerequisites:\n        adj[src].append(dest)\n        indegree[dest] += 1\n    q = deque([i for i in range(numCourses) if indegree[i] == 0])\n    taken = 0\n    while q:\n        curr = q.popleft()\n        taken += 1\n        for neighbor in adj[curr]:\n            indegree[neighbor] -= 1\n            if indegree[neighbor] == 0:\n                q.append(neighbor)\n    return taken == numCourses",
       "hints": [
-        "Think about whether you need extra space or if you can solve this in-place.",
-        "Consider two pointers, a frequency map, or a monotonic structure."
+        "Model courses as a Directed Acyclic Graph (DAG).",
+        "If the graph contains a directed cycle, it is impossible to finish all courses.",
+        "Kahn's algorithm pushes all nodes with indegree 0 into a queue, decrements neighbors' indegrees upon processing, and verifies if all nodes were visited."
       ],
       "testCases": [
         {
-          "input": "[1, 2, 3]",
-          "expected_output": "3"
+          "input": "numCourses = 2, prerequisites = [[1, 0]]",
+          "expected_output": "True"
+        },
+        {
+          "input": "numCourses = 2, prerequisites = [[1, 0], [0, 1]]",
+          "expected_output": "False"
         }
       ]
     },
@@ -3685,92 +3721,118 @@ export const DSA_CURRICULUM_DAYS: DayLesson[] = [
     "learnContent": "### Day 130: Final Placement DSA Simulation: 5-Round Comprehensive Placement Exam\n\n#### \ud83d\udca1 Real-Life Intuition & Analogy\n> The graduation capstone: 5 complete placement rounds, diagnostic competency report, strong/weak topic identification, and personalized revision plan.\n\n---\n\n#### \ud83d\udcd0 Architectural Flowchart & System Blueprint\n```text\nGrand Placement Assessment:\nRound 1: DSA Aptitude MCQs (20 questions)\nRound 2: Algorithmic Coding Challenge (3 questions)\nRound 3: Code Debugging & Output Tracing (5 questions)\nRound 4: Technical Interview Oral Defense (10 questions)\nRound 5: 30-Second Rapid-Fire Blitz (15 questions)\nOutput: Comprehensive Placement Readiness Scorecard & Personalized Action Plan!\n```\n\n---\n\n#### \ud83d\udd2c In-Depth Engineering & Algorithmic Breakdown\n\n##### 1. What Problem Does This Solve?\nIn technical coding interviews and enterprise software engineering, choosing the wrong data structure degrades performance from milliseconds to hours.\nUnderstanding Final Placement DSA Simulation ensures:\n- **Optimal Time Complexity**: Eliminates redundant nested operations through systematic search space reduction.\n- **Controlled Space Overhead**: Balances in-memory caching against heap memory constraints.\n- **Edge-Case Resilience**: Safely handles empty collections, duplicate keys, boundary overflows, and scale limits.\n\n##### 2. How It Works Under the Hood\n1. **Memory Allocation**: Contiguous memory vs node pointer dereferences on the heap.\n2. **Operations & Invariants**: The strict invariant rules governing search, insertion, deletion, and balancing.\n3. **Step-by-Step Dry Run**: Tracing pointer movements, index boundaries, and stack states.\n\n##### 3. Multi-Language Implementation Paradigm\n- **Python**: Idiomatic list slices, collections.deque, heapq, and dictionary hash tables.\n- **C++**: High-performance STL vector, unordered_map, priority_queue, and raw pointer control.\n- **Java**: Standard java.util collections (ArrayList, HashMap, PriorityQueue, LinkedList).\n\n---\n\n#### \ud83c\udfc6 Top FAANG & Placement Interview Traps\n- Always verify boundary conditions: N=0, N=1, negative numbers, duplicates, and integer overflow.\n- Interviewers always ask: \"Can we do better than this? What is the amortized cost?",
     "examples": [
       {
-        "title": "Optimal Final Placement DSA Simulation Implementation",
-        "explanation": "Standard production implementation across Python, C++, and Java.",
+        "title": "Placement Capstone: Merge K Sorted Lists (Min-Heap O(N log K))",
+        "explanation": "Canonical high-frequency FAANG final round problem. Merges K sorted linked lists or sorted arrays using a min-heap priority queue in O(N log K) time and O(K) auxiliary space.",
         "language": "python",
-        "code": "# Optimal Implementation for Day 130: Final Placement DSA Simulation\ndef solve():\n    print('Executing Day 130 optimal solution')\n\nsolve()",
-        "output": "Executing Day 130 optimal solution"
+        "code": "import heapq\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n    def __lt__(self, other):\n        return self.val < other.val\n\ndef merge_k_lists(lists: list[ListNode | None]) -> ListNode | None:\n    \"\"\"\n    Merges K sorted linked lists using a min-heap.\n    Time: O(N log K) where N is total nodes, K is number of lists.\n    Space: O(K) heap memory.\n    \"\"\"\n    heap = []\n    for idx, node in enumerate(lists):\n        if node:\n            heapq.heappush(heap, (node.val, idx, node))\n            \n    dummy = ListNode(0)\n    curr = dummy\n    \n    while heap:\n        val, idx, node = heapq.heappop(heap)\n        curr.next = node\n        curr = curr.next\n        if node.next:\n            heapq.heappush(heap, (node.next.val, idx, node.next))\n            \n    return dummy.next\n\n# Helper to test arrays directly via min-heap\ndef merge_k_sorted_arrays(arrays: list[list[int]]) -> list[int]:\n    heap = []\n    for i, arr in enumerate(arrays):\n        if arr:\n            heapq.heappush(heap, (arr[0], i, 0))\n    result = []\n    while heap:\n        val, arr_i, elem_i = heapq.heappop(heap)\n        result.append(val)\n        if elem_i + 1 < len(arrays[arr_i]):\n            next_val = arrays[arr_i][elem_i + 1]\n            heapq.heappush(heap, (next_val, arr_i, elem_i + 1))\n    return result\n\nprint('Merged 3 Sorted Arrays:', merge_k_sorted_arrays([[1, 4, 7], [2, 5, 8], [3, 6, 9]]))",
+        "output": "Merged 3 Sorted Arrays: [1, 2, 3, 4, 5, 6, 7, 8, 9]"
       }
     ],
     "practiceExercise": {
       "id": "dsa_ex_130",
-      "title": "Final Placement DSA Simulation Hands-on Coding",
+      "title": "Word Ladder: Shortest Transformation Sequence (BFS)",
       "language": "python",
-      "problemStatement": "Implement the optimal algorithm for Final Placement DSA Simulation. Your code should achieve the optimal Big-O bounds and pass all test cases.",
-      "starterCode": "def solution(arr):\n    # Write your optimal code here\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
-      "solutionCode": "def solution(arr):\n    return len(arr)\n\nprint(solution([1, 2, 3]))",
+      "problemStatement": "Given two words, `beginWord` and `endWord`, and a dictionary `wordList`, return the number of words in the shortest transformation sequence from `beginWord` to `endWord`, or 0 if no such sequence exists. Each adjacent pair of words must differ by exactly one letter, and every intermediate word must exist in `wordList`.",
+      "starterCode": "from collections import deque\n\ndef ladder_length(beginWord: str, endWord: str, wordList: list[str]) -> int:\n    word_set = set(wordList)\n    if endWord not in word_set:\n        return 0\n    \n    queue = deque([(beginWord, 1)])\n    visited = {beginWord}\n    \n    while queue:\n        current_word, steps = queue.popleft()\n        if current_word == endWord:\n            return steps\n            \n        for i in range(len(current_word)):\n            for c in 'abcdefghijklmnopqrstuvwxyz':\n                next_word = current_word[:i] + c + current_word[i+1:]\n                if next_word in word_set and next_word not in visited:\n                    visited.add(next_word)\n                    queue.append((next_word, steps + 1))\n                    \n    return 0\n\nprint(ladder_length('hit', 'cog', ['hot', 'dot', 'dog', 'lot', 'log', 'cog']))",
+      "solutionCode": "from collections import deque\n\ndef ladder_length(beginWord: str, endWord: str, wordList: list[str]) -> int:\n    word_set = set(wordList)\n    if endWord not in word_set:\n        return 0\n    queue = deque([(beginWord, 1)])\n    visited = {beginWord}\n    while queue:\n        current_word, steps = queue.popleft()\n        if current_word == endWord:\n            return steps\n        for i in range(len(current_word)):\n            for c in 'abcdefghijklmnopqrstuvwxyz':\n                next_word = current_word[:i] + c + current_word[i+1:]\n                if next_word in word_set and next_word not in visited:\n                    visited.add(next_word)\n                    queue.append((next_word, steps + 1))\n    return 0",
       "hints": [
-        "Think about whether you need extra space or if you can solve this in-place.",
-        "Consider two pointers, a frequency map, or a monotonic structure."
+        "Treat each word as a node in an unweighted graph where edges connect words differing by 1 character.",
+        "Shortest path in an unweighted graph is solved using Breadth-First Search (BFS).",
+        "Use a hash set for O(1) word lookup and avoid cycles by tracking visited words."
       ],
       "testCases": [
         {
-          "input": "[1, 2, 3]",
-          "expected_output": "3"
+          "input": "beginWord = 'hit', endWord = 'cog', wordList = ['hot','dot','dog','lot','log','cog']",
+          "expected_output": "5"
+        },
+        {
+          "input": "beginWord = 'hit', endWord = 'cog', wordList = ['hot','dot','dog','lot','log']",
+          "expected_output": "0"
         }
       ]
     },
     "mcqs": [
       {
         "id": "dsa_mcq_130_1",
-        "question": "What is the average time complexity of standard operations in Final Placement DSA Simulation?",
+        "question": "When merging K sorted arrays with a total of N elements, why is a Min-Heap of size K optimal compared to repeatedly merging arrays pairwise?",
         "options": [
-          "O(1) to O(N log N) depending on the specific operation",
-          "Always O(N^3)",
-          "Always O(2^N)",
-          "Undefined"
+          "It extracts the minimum in O(log K) time per element, guaranteeing O(N log K) overall time and O(K) space",
+          "It uses O(1) time per element without any comparisons",
+          "It converts the problem into a dynamic programming table",
+          "It sorts the arrays in O(N^2) space complexity"
         ],
         "correctIndex": 0,
-        "explanation": "Final Placement DSA Simulation operations are designed to achieve optimal asymptotic bounds."
+        "explanation": "A min-heap of capacity K always holds the current head pointer of each sorted array. Finding the overall minimum takes O(log K), and doing this for all N elements yields O(N log K) time with only O(K) auxiliary space."
+      },
+      {
+        "id": "dsa_mcq_130_2",
+        "question": "Why is Breadth-First Search (BFS) strictly preferred over Depth-First Search (DFS) for finding the shortest transformation sequence in Word Ladder?",
+        "options": [
+          "BFS traverses level-by-level, guaranteeing that the first time the target node is visited, it is along the shortest path",
+          "DFS cannot handle graph cycles",
+          "BFS uses less memory than DFS for deep narrow trees",
+          "BFS runs in O(1) time"
+        ],
+        "correctIndex": 0,
+        "explanation": "In unweighted graphs, BFS explores nodes in increasing order of distance (level by level). Thus, reaching endWord via BFS is guaranteed to have the minimum possible transformation steps."
       }
     ],
     "interviewQuestions": [
       {
         "id": "dsa_iq_130_1",
-        "question": "How would you explain the trade-offs of Final Placement DSA Simulation during a FAANG technical interview?",
-        "difficulty": "Intermediate",
+        "question": "In a FAANG coding round, how do you handle scale when finding the shortest path between two words when the dictionary contains 500,000 words?",
+        "difficulty": "Advanced",
         "topic": "Coding Rounds & Interview Bootcamp (Days 126-130)",
         "tags": [
           "bootcamp",
-          "DSA",
-          "Interview",
-          "Advanced"
+          "graph",
+          "bfs",
+          "two-ended bfs",
+          "system-design"
         ],
-        "hint": "Discuss time complexity, auxiliary memory space, and edge case handling.",
-        "solution": "Start with the core definition, explain why a naive solution is sub-optimal, show how Final Placement DSA Simulation reduces complexity, and state the exact Big-O bounds."
+        "hint": "Think about Bidirectional (two-ended) BFS to reduce the branching factor search space from B^d to 2 * B^(d/2).",
+        "solution": "1. Use Bidirectional BFS: search simultaneously from beginWord and endWord, alternating expansion from the smaller frontier set.\n2. This dramatically cuts the search volume from O(B^d) to O(B^(d/2)).\n3. Pre-process word buckets with wildcard masks (e.g. `*ot` -> `[hot, dot, lot]`) in a hash map to look up 1-edit neighbours in O(L) instead of O(26 * L * dict_size)."
       }
     ],
     "cheatSheet": {
-      "summary": "5-minute rapid revision card for Final Placement DSA Simulation.",
+      "summary": "5-minute comprehensive placement revision card covering Min-Heap, Graph BFS, Monotonic Stack, and Two Pointers.",
       "definitions": [
         {
-          "term": "Final Placement DSA Simulation",
-          "explanation": "Core placement data structure/algorithm from Final Placement Simulation."
+          "term": "Min-Heap K-way Merge",
+          "explanation": "Maintain a heap of size K containing the current element of each of the K streams. Time: O(N log K), Auxiliary Space: O(K)."
+        },
+        {
+          "term": "Bidirectional BFS",
+          "explanation": "Run two simultaneous BFS frontiers from source and target; terminate when the two frontiers intersect. Reduces time complexity exponentially."
         }
       ],
       "syntaxSnippets": [
         {
-          "label": "Python",
+          "label": "Python Heapq",
           "language": "python",
-          "code": "# Python standard idiom"
+          "code": "import heapq\nh = []\nheapq.heappush(h, (val, key))\nsmallest = heapq.heappop(h)"
         },
         {
-          "label": "C++",
+          "label": "C++ Priority Queue",
           "language": "cpp",
-          "code": "// C++ STL idiom"
+          "code": "priority_queue<int, vector<int>, greater<int>> minHeap;\nminHeap.push(val);\nint smallest = minHeap.top(); minHeap.pop();"
         },
         {
-          "label": "Java",
+          "label": "Java PriorityQueue",
           "language": "java",
-          "code": "// Java standard idiom"
+          "code": "PriorityQueue<Integer> minHeap = new PriorityQueue<>();\nminHeap.offer(val);\nint smallest = minHeap.poll();"
         }
       ],
       "commonMistakes": [
-        "Off-by-one boundary errors",
-        "Failing to check null/empty inputs"
+        "Comparing objects without defining `__lt__` or tie-breaker indices in Python heapq tuples",
+        "Using DFS to search for shortest path in an unweighted graph instead of BFS",
+        "Not mutating/restoring state in backtracking (forgetting un-choose step)"
       ],
       "interviewTips": [
-        "Always state Time and Space complexity before coding."
+        "1. Clarify constraints: bounds of N, negative numbers, empty arrays, time limit.",
+        "2. State brute force complexity, then propose the optimal data structure before writing code.",
+        "3. Walk through a dry run on a small example with pointers explicitly written out.",
+        "4. Conclude with time and space complexity analysis."
       ]
     },
     "docLinks": [

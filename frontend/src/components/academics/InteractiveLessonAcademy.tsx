@@ -17,8 +17,10 @@ import { ETLPipelineVisualizer } from './visualizers/ETLPipelineVisualizer';
 import { SparkPartitionVisualizer } from './visualizers/SparkPartitionVisualizer';
 import { KafkaStreamingVisualizer } from './visualizers/KafkaStreamingVisualizer';
 import { PipelineDAGVisualizer } from './visualizers/PipelineDAGVisualizer';
-import { InteractiveCodeRunner } from './visualizers/InteractiveCodeRunner';
 import { SQLPlayground } from './SQLPlayground';
+import { InteractiveCodeRunner } from './visualizers/InteractiveCodeRunner';
+import { RecursionBacktrackingVisualizer } from './visualizers/RecursionBacktrackingVisualizer';
+import { CodeExplanationSection } from './CodeExplanationSection';
 import { getTopicKey, TOPIC_ANALOGIES } from '../../data/academics/academicPedagogy';
 
 interface InteractiveLessonAcademyProps {
@@ -43,6 +45,8 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
   const [noteSaved, setNoteSaved] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  const [day104SubVisualizer, setDay104SubVisualizer] = useState<'sorting' | 'binary_search'>('binary_search');
+
   // Retrieve accurate domain analogy info
   const topicKey = getTopicKey(lesson.subject, lesson.title, lesson.dayNumber);
   const topicInfo = TOPIC_ANALOGIES[topicKey] || TOPIC_ANALOGIES.dsa_complexity;
@@ -52,19 +56,62 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
     const day = lesson.dayNumber;
     const title = (lesson.title + ' ' + lesson.subject).toLowerCase();
 
-    // 1. Complexity & Recursion (Days 101, 102, 103)
+    // 1. Complexity & Recursion Basics (Days 101, 102, 103)
     if (day === 101 || day === 102 || day === 103 || title.includes('complexity') || title.includes('asymptotic') || title.includes('big-o')) {
       return <ComplexityVisualizer />;
     }
 
-    // 2. Binary Search (Day 104 or search title)
-    if (day === 104 || (day >= 101 && title.includes('search') && !title.includes('sort') && !title.includes('tree'))) {
-      return <BinarySearchVisualizer />;
+    // 2. Day 104: Searching & Sorting Modules
+    if (day === 104) {
+      return (
+        <div className="flex flex-col gap-3">
+          <div className={`p-2.5 rounded-xl border flex flex-wrap items-center justify-between text-xs font-semibold gap-2 ${
+            isDark ? 'bg-[#121722] border-stone-800' : 'bg-slate-100 border-slate-300'
+          }`}>
+            <span className={isDark ? 'text-stone-300' : 'text-slate-700'}>
+              Day 104 Core Visualizers: Toggle between Searching & Sorting engines:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setDay104SubVisualizer('binary_search')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  day104SubVisualizer === 'binary_search'
+                    ? 'bg-sky-600 text-white font-bold shadow-sm'
+                    : isDark ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                }`}
+              >
+                🔍 Searching Visualizer
+              </button>
+              <button
+                onClick={() => setDay104SubVisualizer('sorting')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  day104SubVisualizer === 'sorting'
+                    ? 'bg-amber-600 text-white font-bold shadow-sm'
+                    : isDark ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                }`}
+              >
+                ⚡ Sorting Visualizer
+              </button>
+            </div>
+          </div>
+          {day104SubVisualizer === 'sorting' ? <SortingVisualizer /> : <BinarySearchVisualizer />}
+        </div>
+      );
     }
 
-    // 3. Sorting Algorithms (Day 105 or sorting title)
-    if (day === 105 || title.includes('sort')) {
+    // 3. Day 105: Recursion & Backtracking: State Trees, Subsets, Permutations & N-Queens
+    if (day === 105 || title.includes('recursion') || title.includes('backtracking') || title.includes('n-queen') || title.includes('subset') || title.includes('permutation')) {
+      return <RecursionBacktrackingVisualizer />;
+    }
+
+    // General Sorting algorithms link
+    if (title.includes('sort')) {
       return <SortingVisualizer />;
+    }
+
+    // General Searching algorithms link
+    if (title.includes('search') && !title.includes('tree')) {
+      return <BinarySearchVisualizer />;
     }
 
     // 4. Linked Lists (Day 106)
@@ -421,6 +468,16 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
             {primaryExample.code}
           </pre>
         </div>
+
+        {/* Dedicated "Explain the Code" Section (Requirements 3.A through 3.J) */}
+        <CodeExplanationSection
+          code={primaryExample.code}
+          language={primaryExample.language || 'python'}
+          title={primaryExample.title || lesson.title}
+          subject={lesson.subject}
+          dayNumber={lesson.dayNumber}
+          customExplanation={(primaryExample as any).codeExplanation}
+        />
       </div>
 
       {/* ========================================================================= */}
