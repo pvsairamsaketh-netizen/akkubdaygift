@@ -98,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   // Fixed uniform bounding box classes for all navbar buttons
-  const navBtnBase = "w-[104px] h-9 rounded-full flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 select-none";
+  const navBtnBase = "w-[96px] h-8.5 rounded-full flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 select-none";
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-rose-100/90 shadow-xs transition-all w-full">
@@ -123,8 +123,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
 
-            {/* Desktop Left Navigation (>= 1240px: All 7 Items with Fixed Pink BBox Size) */}
-            <nav className="primary-navigation hidden min-[1240px]:flex items-center gap-1.5 lg:gap-2 justify-start min-w-0">
+            {/* Desktop Left Navigation (>= 1320px: All 7 Items with Fixed Pink BBox Size) */}
+            <nav className="primary-navigation hidden min-[1320px]:flex items-center gap-1.5 lg:gap-2 justify-start min-w-0">
               {navItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
@@ -144,8 +144,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               })}
             </nav>
 
-            {/* Medium Desktop Left Navigation (1000px - 1239px: Top 5 + More Dropdown) */}
-            <nav className="primary-navigation hidden min-[1000px]:flex min-[1240px]:hidden items-center gap-1.5 justify-start min-w-0">
+            {/* Medium Desktop Left Navigation (1000px - 1319px: Top 5 + More Dropdown) */}
+            <nav className="primary-navigation hidden min-[1000px]:flex min-[1320px]:hidden items-center gap-1.5 justify-start min-w-0">
               {primaryFive.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
