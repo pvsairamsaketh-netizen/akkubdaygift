@@ -74,37 +74,31 @@ export const RealisticRosePetals: React.FC<RealisticRosePetalsProps> = ({ enable
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rotation);
-      ctx.scale(Math.cos(time * p.oscillationSpeed) * 0.4 + 0.8, 1);
+      ctx.scale(Math.cos(time * p.oscillationSpeed) * 0.5 + 0.8, 1);
 
-      // Create soft velvety petal gradient
-      const grad = ctx.createRadialGradient(0, -p.size * 0.3, p.size * 0.1, 0, 0, p.size);
-      grad.addColorStop(0, 'rgba(255, 228, 230, 0.85)'); // Soft highlight center
-      grad.addColorStop(0.4, p.color);
-      grad.addColorStop(1, 'rgba(190, 18, 60, 0.45)');   // Deeper rose shadow edge
-
-      ctx.fillStyle = grad;
+      ctx.fillStyle = p.color;
       ctx.beginPath();
       // Draw organic curved rose petal shape
       ctx.moveTo(0, -p.size);
       ctx.bezierCurveTo(
-        p.size * 0.85, -p.size * 0.75,
-        p.size * 0.95, p.size * 0.45,
+        p.size * 0.8, -p.size * 0.8,
+        p.size * 0.9, p.size * 0.4,
         0, p.size
       );
       ctx.bezierCurveTo(
-        -p.size * 0.95, p.size * 0.45,
-        -p.size * 0.85, -p.size * 0.75,
+        -p.size * 0.9, p.size * 0.4,
+        -p.size * 0.8, -p.size * 0.8,
         0, -p.size
       );
       ctx.closePath();
       ctx.fill();
 
       // Delicate petal central vein highlight
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, -p.size * 0.7);
-      ctx.quadraticCurveTo(p.size * 0.08, 0, 0, p.size * 0.75);
+      ctx.quadraticCurveTo(p.size * 0.1, 0, 0, p.size * 0.7);
       ctx.stroke();
 
       ctx.restore();

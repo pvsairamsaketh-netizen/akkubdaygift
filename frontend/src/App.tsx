@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Navbar, type NavTab } from './components/Navbar';
 import { FloatingHearts } from './components/FloatingHearts';
 import { RealisticRosePetals } from './components/RealisticRosePetals';
-import { InteractiveHeartBurst } from './components/InteractiveHeartBurst';
 import { RomanticEnvelopeModal } from './components/RomanticEnvelopeModal';
 import { LockedExperience } from './components/LockedExperience';
 import { CinematicRevealOverlay } from './components/CinematicRevealOverlay';
@@ -113,10 +112,9 @@ export function App() {
         {/* 2. POST-UNLOCK BIRTHDAY EXPERIENCE (Revealed only after correct password 2022) */}
         {isUnlocked && (
           <div className="flex-1 flex flex-col animate-fade-in">
-            {/* Ambient Floating Hearts, 3D Rose Petals & Interactive Click Bursts */}
+            {/* Ambient Floating Hearts & 3D Rose Petals */}
             <FloatingHearts count={18} enabled={floatingHeartsEnabled && !reduceMotion} />
             <RealisticRosePetals enabled={floatingHeartsEnabled && !reduceMotion} />
-            {floatingHeartsEnabled && !reduceMotion && <InteractiveHeartBurst />}
 
             {/* Top Navbar with Left-Aligned Elements */}
             <Navbar

@@ -98,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-xl border-b border-rose-200/60 shadow-xs transition-all w-full">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-rose-100/90 shadow-xs transition-all w-full">
       <div className="w-full px-3 sm:px-5 lg:px-6">
         <div className="navbar flex items-center justify-between h-16 w-full min-w-0 gap-3">
           
@@ -109,13 +109,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Brand Logo (Always compact, never pushes nav buttons) */}
             <div 
               onClick={() => handleSelect('home')}
-              className="flex items-center gap-2 cursor-pointer group shrink-0 pr-3 border-r border-rose-200/60"
+              className="flex items-center gap-2 cursor-pointer group shrink-0 pr-2 border-r border-rose-100/80"
               title="Akku & Saki — A Love Journey"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-600 via-pink-500 to-rose-400 flex items-center justify-center shadow-xs shadow-rose-300 group-hover:scale-110 transition-transform shrink-0">
-                <Heart className="w-4 h-4 text-white fill-white animate-heartbeat" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-500 via-pink-400 to-rose-400 flex items-center justify-center shadow-xs shadow-rose-200 group-hover:scale-105 transition-transform shrink-0">
+                <Heart className="w-3.5 h-3.5 text-white fill-white animate-pulse" />
               </div>
-              <span className="font-serif text-base font-bold text-rose-950 tracking-tight whitespace-nowrap hidden sm:inline">
+              <span className="font-serif text-sm font-bold text-rose-950 tracking-tight whitespace-nowrap hidden sm:inline">
                 Akku & Saki
               </span>
             </div>
@@ -128,10 +128,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     key={item.id}
                     onClick={() => handleSelect(item.id)}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                       isActive
-                        ? 'bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 text-white font-semibold shadow-sm shadow-rose-200/80 scale-102'
-                        : 'text-stone-700 hover:text-rose-950 hover:bg-rose-50/90 font-medium'
+                        ? 'bg-rose-500 text-white font-semibold shadow-xs shadow-rose-200'
+                        : 'text-stone-700 hover:text-rose-950 hover:bg-rose-50/80 font-medium'
                     }`}
                   >
                     <span className={isActive ? 'text-white' : ''}>{item.icon}</span>

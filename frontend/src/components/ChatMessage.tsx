@@ -69,8 +69,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         <div
           className={`relative group rounded-3xl px-4 sm:px-5 py-3.5 text-sm leading-relaxed transition-all ${
             isUser
-              ? 'bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 text-white rounded-tr-xs shadow-md shadow-rose-300/40 font-medium'
-              : 'bg-white/90 border border-rose-200/80 text-stone-800 rounded-tl-xs shadow-md shadow-rose-950/5 backdrop-blur-xl hover:border-rose-300 w-full'
+              ? 'bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 text-white rounded-tr-xs shadow-md shadow-rose-200/40 font-medium'
+              : 'bg-white/95 border border-rose-100/90 text-stone-800 rounded-tl-xs shadow-sm backdrop-blur-md hover:border-rose-200 w-full'
           }`}
         >
           {/* Main Text Content */}

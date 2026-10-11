@@ -449,25 +449,11 @@ You are my greatest blessing, my favorite adventure, and my forever love.`;
                   </div>
                 )}
 
-                {/* Footer with Saki Signature & Actions */}
+                {/* Footer with Saki Signature & Enter World Button */}
                 <div className="pt-3 border-t border-rose-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-rose-900 font-serif">
-                      Forever Yours, {creatorName} ❤️
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsOpenFlap(false);
-                        setIsLetterRevealed(false);
-                      }}
-                      className="text-[11px] text-rose-600 hover:text-rose-800 underline underline-offset-2 ml-2 cursor-pointer font-sans"
-                      title="Seal envelope and replay opening surprise"
-                    >
-                      Replay Surprise ↻
-                    </button>
-                  </div>
+                  <span className="text-xs font-semibold text-rose-900 font-serif">
+                    Forever Yours, {creatorName} ❤️
+                  </span>
 
                   <button
                     onClick={() => {
