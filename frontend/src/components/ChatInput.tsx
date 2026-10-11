@@ -10,7 +10,6 @@ interface ChatInputProps {
 const QUICK_PROMPT_SUGGESTIONS = [
   "How did our story begin?",
   "What is Akku's favorite ice cream?",
-  "Tell me about Besant Nagar sunset",
   "When did Saki propose to Akku?",
 ];
 

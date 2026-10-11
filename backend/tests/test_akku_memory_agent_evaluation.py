@@ -58,10 +58,10 @@ class TestAkkuMemoryAgentEvaluation:
         assert any(name in answer for name in ["dudu", "idli", "bubbu", "achu", "chinna pilla", "saki"])
 
     def test_pdf_foundational_facts_places(self, rag_service):
-        """PDF Fact 4: Memorable locations (Besant Nagar / Bessie, Marina Beach, Andhra Mess, Forum Mall)."""
+        """PDF Fact 4: Memorable locations (Marina Beach, Andhra Mess, Forum Mall)."""
         res = rag_service.answer_question("What are some memorable places Saki and Akku visited together?", user_id="test_eval_user")
         answer = res["answer"].lower()
-        assert any(place in answer for place in ["besant nagar", "bessie", "marina", "andhra mess", "forum mall", "canteen"])
+        assert any(place in answer for place in ["marina", "andhra mess", "forum mall", "canteen"])
 
     def test_pdf_foundational_facts_academics_sql(self, rag_service):
         """PDF Fact 5: Academic support (SQL notes, presentations)."""
@@ -226,9 +226,9 @@ class TestAkkuMemoryAgentEvaluation:
         api_client.post(
             reverse('memory-list-create'),
             {
-                "memory_text": "Akku loves watching sunsets at Bessie beach.",
+                "memory_text": "Akku loves watching sunsets at Marina beach.",
                 "category": "places_travel",
-                "subject": "Bessie Beach Sunsets",
+                "subject": "Marina Beach Sunsets",
                 "importance": 0.9
             },
             format='json',

@@ -7,6 +7,7 @@ import {
   Sparkles, 
   ChevronRight
 } from 'lucide-react';
+import { useAcademicsTheme } from '../../../context/AcademicsThemeContext';
 
 interface SimulationRound {
   id: number;
@@ -25,6 +26,7 @@ const ROUNDS: SimulationRound[] = [
 ];
 
 export const FinalDSASimulation: React.FC = () => {
+  const { isDark } = useAcademicsTheme();
   const [activeStep, setActiveStep] = useState<number>(0); // 0 = start, 1..5 = rounds, 6 = final dashboard
   const roundScores: Record<number, number> = {
     1: 90,
@@ -74,7 +76,9 @@ export const FinalDSASimulation: React.FC = () => {
         </div>
 
         {activeStep > 0 && activeStep < 6 && (
-          <div className="flex items-center gap-2 text-xs font-mono font-bold text-purple-300 bg-purple-950/40 px-3 py-1.5 rounded-xl border border-purple-800/40">
+          <div className={`flex items-center gap-2 text-xs font-mono font-bold px-3 py-1.5 rounded-xl border ${
+            isDark ? 'text-purple-300 bg-purple-950/40 border-purple-800/40' : 'text-purple-800 bg-purple-50 border-purple-200 shadow-xs'
+          }`}>
             <span>Round {activeStep} / 5</span>
           </div>
         )}
@@ -122,7 +126,9 @@ export const FinalDSASimulation: React.FC = () => {
             <h3 className="font-bold text-base text-white">
               {ROUNDS[activeStep - 1].name}
             </h3>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-purple-950/40 text-purple-300 border border-purple-800/40">
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono border ${
+              isDark ? 'bg-purple-950/40 text-purple-300 border-purple-800/40' : 'bg-purple-50 text-purple-800 border-purple-200'
+            }`}>
               {ROUNDS[activeStep - 1].timeLimit}
             </span>
           </div>

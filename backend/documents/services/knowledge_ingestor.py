@@ -217,7 +217,7 @@ class KnowledgeIngestor:
         - Proposal event on May 4, 2022
         - Campus routines, meals, and first photo
         - Nicknames and sweet terms
-        - Memorable locations: Besant Nagar beach, Marina Beach, Andhra Mess, Forum Mall
+        - Memorable locations: Marina Beach, Andhra Mess, Forum Mall
         - Distance and travel: Chennai and Nagpur
         - Academics & career: M.Tech Data Engineering, SQL notes, machine learning
         - Family and horoscope/jatakam
@@ -281,10 +281,10 @@ class KnowledgeIngestor:
             "subject": "Memorable Places in Chennai and Travels",
             "speaker": "Both",
             "importance": 0.95,
-            "summary": "Memorable places: Besant Nagar Beach (Bessie), Marina Beach, Andhra Mess, Forum Mall, and college canteen.",
+            "summary": "Memorable places: Marina Beach, Andhra Mess, Forum Mall, and college canteen.",
             "text": (
-                "Memorable Places & Shared Adventures: Their special shared places include Besant Nagar Beach (Bessie) watching the Bay of Bengal waves "
-                "and beautiful sunsets, Marina Beach in Chennai, Andhra Mess eating meals with paruppu podi, Forum Mall trips by bike, "
+                "Memorable Places & Shared Adventures: Their special shared places include Marina Beach in Chennai watching the Bay of Bengal waves "
+                "and beautiful sunsets, Andhra Mess eating meals with paruppu podi, Forum Mall trips by bike, "
                 "walks to the college canteen, park visits, and hosting/pitching together at a Tech It Out college event."
             )
         })
@@ -430,7 +430,7 @@ class KnowledgeIngestor:
              "She said she was willing to learn Telugu and follow the customs of Saki's family, while acknowledging that adapting might take time.",
              6, "Akku's cultural adaptation and learning Telugu"),
             ("What are some memorable places or activities?",
-             "Andhra Mess, Marina Beach, Bessie (Besant Nagar), Forum Mall by bike, park visits, canteen meals, and hosting/pitching at a Tech It Out event.",
+             "Andhra Mess, Marina Beach, Forum Mall by bike, park visits, canteen meals, and hosting/pitching at a Tech It Out event.",
              6, "Memorable places and activities"),
             ("What does Akku call Saki?",
              "She uses names including Saki and Dudu; she also calls him her husband in affectionate, future-oriented messages.",

@@ -94,12 +94,12 @@ def test_memory_deletion():
 @pytest.mark.django_db
 def test_personal_vocabulary_voice_adaptation():
     vocab = PersonalVocabulary.objects.create(
-        term="Besant Nagar",
+        term="Marina Beach",
         category="place",
-        misrecognitions=["pesant nagar", "besant nagerr"]
+        misrecognitions=["marina beach", "marina bech"]
     )
-    assert vocab.term == "Besant Nagar"
-    assert "pesant nagar" in vocab.misrecognitions
+    assert vocab.term == "Marina Beach"
+    assert "marina beach" in vocab.misrecognitions
     assert vocab.category == "place"
 
 @pytest.mark.django_db

@@ -72,7 +72,7 @@ class Migration(migrations.Migration):
                 (
                     "term",
                     models.CharField(
-                        help_text="Correct term (e.g. Akku, Saki, Saketh, Besant Nagar)",
+                        help_text="Correct term (e.g. Akku, Saki, Saketh, Marina Beach)",
                         max_length=100,
                         unique=True,
                     ),

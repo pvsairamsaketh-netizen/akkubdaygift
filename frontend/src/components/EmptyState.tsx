@@ -23,7 +23,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectPrompt }) => {
       icon: Sparkles
     },
     {
-      title: "Tell me about Besant Nagar beach sunset",
+      title: "Tell me about Marina Beach sunset",
       subtitle: "Watching the waves, ocean breeze & quiet promises",
       icon: BookOpen
     },

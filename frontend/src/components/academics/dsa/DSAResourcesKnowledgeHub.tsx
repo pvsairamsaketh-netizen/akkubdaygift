@@ -343,10 +343,14 @@ export const DSAResourcesKnowledgeHub: React.FC<DSAResourcesKnowledgeHubProps> =
                       href={source.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                        isDark
+                          ? 'bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white border-purple-500/40'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-700 shadow-sm hover:shadow'
+                      }`}
                     >
                       <span>Open Sheet</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
                 </div>

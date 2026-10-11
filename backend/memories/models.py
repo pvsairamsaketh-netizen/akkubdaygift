@@ -68,7 +68,7 @@ class PersonalMemory(models.Model):
 
 class PersonalVocabulary(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    term = models.CharField(max_length=100, unique=True, help_text="Correct term (e.g. Akku, Saki, Saketh, Besant Nagar)")
+    term = models.CharField(max_length=100, unique=True, help_text="Correct term (e.g. Akku, Saki, Saketh, Marina Beach)")
     misrecognitions = models.JSONField(default=list, blank=True, help_text="Misrecognized spellings to replace automatically")
     category = models.CharField(max_length=50, default="name")
     created_at = models.DateTimeField(auto_now_add=True)

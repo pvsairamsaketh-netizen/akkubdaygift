@@ -513,8 +513,8 @@ class RAGGraphService:
                 context_topic = "Saki and Akku first met in college"
             elif any(k in combined_history for k in ["andhra mess", "paruppu podi"]):
                 context_topic = "eating at Andhra Mess"
-            elif any(k in combined_history for k in ["beach", "bessie", "besant nagar"]):
-                context_topic = "visiting Besant Nagar Beach"
+            elif any(k in combined_history for k in ["beach", "marina"]):
+                context_topic = "visiting Marina Beach"
             elif any(k in combined_history for k in ["sql", "study", "exam", "presentation"]):
                 context_topic = "Akku helping Saki with SQL notes and exams"
             elif any(k in combined_history for k in ["astrology", "horoscope", "jatakam", "telugu"]):
@@ -562,7 +562,7 @@ class RAGGraphService:
             "akku", "saki", "saketh", "akshatha", "our", "we", "us", "relationship", "memory", "memories",
             "favorite", "favourite", "likes", "loves", "dislikes", "prefers", "told me",
             "remember", "proposal", "propose", "meet", "meeting", "college", "canteen",
-            "samosa", "bessie", "beach", "chennai", "sunset", "birthday", "bday", "october 20",
+            "samosa", "beach", "marina", "chennai", "sunset", "birthday", "bday", "october 20",
             "m.tech", "data engineering", "placement", "ice cream", "color", "colour",
             "song", "music", "movie", "film", "car", "place"
         ]
@@ -803,7 +803,7 @@ class RAGGraphService:
             cat = "food_drinks"
         elif any(w in q_lower for w in ["birthday", "bday", "date", "anniversary", "october"]):
             cat = "important_dates"
-        elif any(w in q_lower for w in ["beach", "chennai", "bessie", "besant", "travel", "city"]):
+        elif any(w in q_lower for w in ["beach", "chennai", "marina", "travel", "city"]):
             cat = "places_travel"
         elif any(w in q_lower for w in ["proposal", "propose", "canteen", "story", "college"]):
             cat = "shared_experiences"
@@ -1146,7 +1146,7 @@ class RAGGraphService:
                     for c in final_chunks
                 )
                 is_core_anchor = any(w in combined_q_lower for w in [
-                    "proposal", "propose", "canteen", "samosa", "meet", "meeting", "beach", "bessie",
+                    "proposal", "propose", "canteen", "samosa", "meet", "meeting", "beach", "marina",
                     "birthday", "bday", "october 20", "m.tech", "data engineering", "placement", "chennai"
                 ])
 
@@ -1437,15 +1437,15 @@ class RAGGraphService:
                     "and campus walks before their friendship blossomed into a deep love journey! ❤️"
                 )
         # 3. Places check
-        elif any(w in q for w in ["place", "places", "bessie", "beach", "andhra mess", "forum mall", "visit"]):
+        elif any(w in q for w in ["place", "places", "marina", "beach", "andhra mess", "forum mall", "visit"]):
             needs_grounding = has_denial or not any(
-                p in answer.lower() for p in ["besant nagar", "bessie", "marina", "andhra mess", "forum mall", "canteen"]
+                p in answer.lower() for p in ["marina", "andhra mess", "forum mall", "canteen"]
             )
             if needs_grounding:
                 logger.warning("Grounding Validator grounded Memorable Places with verified canonical knowledge.")
                 answer = (
-                    "Some of their most memorable places include Besant Nagar Beach (Bessie) watching the Bay of Bengal waves "
-                    "and sunsets, Marina Beach in Chennai, Andhra Mess eating meals with paruppu podi, Forum Mall trips by bike, "
+                    "Some of their most memorable places include Marina Beach in Chennai watching the Bay of Bengal waves "
+                    "and sunsets, Andhra Mess eating meals with paruppu podi, Forum Mall trips by bike, "
                     "and walks to the college canteen! ❤️"
                 )
         # 4. Academics & SQL check

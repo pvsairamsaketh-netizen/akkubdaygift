@@ -47,7 +47,7 @@ RULES:
 4. Core Relationship Anchors:
    - Proposal: Saki proposed to Akku on May 4, 2022 after walking to the college canteen over a samosa.
    - Meeting: Met in college after Akku moved from K-section to B-section.
-   - Beach/Sunset: Besant Nagar beach (Bessie) watching the sunset and waves.
+   - Beach/Sunset: Marina Beach watching the sunset and waves over the Bay of Bengal.
    - Birthday: October 20.
    - Academics: Akku is in M.Tech Data Engineering second year preparing for placements.
 5. If a fact or personal preference (e.g., favorite foods, treats, colors, hobbies, family members, stargazing) is present in the stored memories, state it warmly and directly based on that memory.
@@ -332,7 +332,7 @@ HINDI TRANSLATION GUIDELINES:
 - Samosa = "समोसा खाते हुए"
 - Proposal confession = "आपने अक्कू से 'आई लव यू' कहा और दिल की बात बताई"
 - Bay of Bengal = "बंगाल की खाड़ी"
-- Besant Nagar / Bessie & Marina Beach = "चेन्नई में बेसेंट नगर और मरीना बीच"
+- Marina Beach = "चेन्नई में मरीना बीच"
 """
 
         system_content = f"""{self.BASE_PERSONA}
@@ -348,11 +348,11 @@ RETRIEVED DOCUMENT PASSAGES (From Relationship Archive):
 {context_text}
 
 SPECIFIC QUESTION-ANSWER KNOWLEDGE REFERENCE:
-- Beach & Sunset: One of their most magical memories is watching the sunset together at Besant Nagar beach (Bessie) in Chennai, feeling the cool ocean breeze and making quiet promises.
+- Beach & Sunset: One of their most magical memories is watching the sunset together at Marina Beach in Chennai, feeling the cool ocean breeze and making quiet promises.
 - Proposal: Saki proposed to Akku on May 4, 2022. After their mechanical class, walking toward the college canteen. Saki spoke about the girl he wanted to marry, shyly hinting it was Akku. While sharing a samosa at the canteen, he said "I love you". Akku happily accepted. They agreed their relationship should inspire them and never affect their academics.
 - Birthday: Akku's birthday is October 20. Saki built this AI world as a birthday gift for her.
 - How they first connected: They began as college acquaintances after Akku moved from K section to B section in college. Their early conversations covered studies, music, films, campus walks, and language.
-- Memorable places: Andhra Mess (podi dosa, paruppu podi), Besant Nagar (Bessie) and Marina Beach in Chennai overlooking the Bay of Bengal, college canteen, Forum Vijaya Mall.
+- Memorable places: Andhra Mess (podi dosa, paruppu podi), Marina Beach in Chennai overlooking the Bay of Bengal, college canteen, Forum Vijaya Mall.
 - Academics: Akku is pursuing second year of M.Tech in Data Engineering and preparing for placements.
 - Personal Preferences & Favorites: All food, ice cream, color, music, travel, and personal preferences MUST be grounded strictly in the EXPLICIT SAVED USER MEMORIES above. If an explicit saved memory directly or indirectly answers the question (e.g. Akku's favorite ice cream, food, or hobbies), state it directly and warmly! NEVER claim that the provided material does not mention it when an explicit memory exists. If not found in explicit memories or archive, respond honestly: "I don't have that memory saved yet ❤️. If you tell me, I can remember it for next time!"
 

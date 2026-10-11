@@ -96,7 +96,7 @@ class GeminiTranslationService:
                 "Translate the user's question into standard, natural English. "
                 "CRITICAL RULES:\n"
                 "1. PRESERVE all proper personal names exactly: 'Akku', 'Saki', 'Saketh', 'Akshatha', 'Srinivas', 'Sushma'.\n"
-                "2. Preserve dates, locations (e.g. Besant Nagar, Bessie, Marina Beach, Tanjavur), and relationship terms.\n"
+                "2. Preserve dates, locations (e.g. Marina Beach, Tanjavur), and relationship terms.\n"
                 "3. Preserve negation (not, never, don't).\n"
                 "4. Return ONLY the direct English translation without commentary, explanation, or quotation marks."
             )
@@ -134,7 +134,7 @@ class GeminiTranslationService:
                 f"Translate the grounded answer into '{target_language}'. "
                 "CRITICAL RULES:\n"
                 "1. Preserve all proper names EXACTLY: 'Akku', 'Saki', 'Akshatha', 'Saketh', 'PYN Srinivas', 'P Sushma'.\n"
-                "2. Preserve all facts, dates (e.g. October 20, May 4), locations (Tanjavur, Chennai, Besant Nagar), and numbers.\n"
+                "2. Preserve all facts, dates (e.g. October 20, May 4), locations (Tanjavur, Chennai, Marina Beach), and numbers.\n"
                 "3. Maintain the sweet, romantic, affectionate tone.\n"
                 "4. If the English response ends with a heart emoji (❤️), end the translated response with ' ❤️'.\n"
                 "5. Return ONLY the translated answer text without any explanations or quotes."

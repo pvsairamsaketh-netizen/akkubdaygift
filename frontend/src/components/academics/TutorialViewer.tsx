@@ -87,7 +87,11 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
                   Day {lesson.dayNumber} • Module {lesson.subject.toUpperCase()}
                 </span>
                 {lesson.mrcetUnit && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60 font-semibold">
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${
+                    isDark 
+                      ? 'bg-purple-950/60 text-purple-300 border-purple-800/60' 
+                      : 'bg-purple-50 text-purple-700 border-purple-200 shadow-xs'
+                  }`}>
                     {lesson.mrcetUnit}
                   </span>
                 )}

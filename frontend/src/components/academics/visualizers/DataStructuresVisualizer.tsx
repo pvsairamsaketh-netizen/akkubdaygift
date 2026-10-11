@@ -192,7 +192,9 @@ export const DataStructuresVisualizer: React.FC<{ initialType?: 'stack' | 'queue
           <div className={`p-6 rounded-xl border flex flex-col items-center justify-center min-h-[220px] ${
             isDark ? 'bg-[#070a10] border-stone-800' : 'bg-slate-50 border-slate-200'
           }`}>
-            <div className="w-48 border-x-4 border-b-4 border-sky-600 rounded-b-2xl p-2 flex flex-col-reverse gap-2 bg-sky-950/20 min-h-[170px] justify-start">
+            <div className={`w-48 border-x-4 border-b-4 border-sky-600 rounded-b-2xl p-2 flex flex-col-reverse gap-2 min-h-[170px] justify-start ${
+              isDark ? 'bg-sky-950/20' : 'bg-sky-50/80'
+            }`}>
               {stack.map((val, idx) => {
                 const isTop = idx === stack.length - 1;
                 return (
@@ -217,15 +219,17 @@ export const DataStructuresVisualizer: React.FC<{ initialType?: 'stack' | 'queue
                 </div>
               )}
             </div>
-            <span className="text-[11px] font-mono text-sky-400 mt-2">
+            <span className={`text-[11px] font-mono mt-2 ${
+              isDark ? 'text-sky-400' : 'text-sky-700 font-semibold'
+            }`}>
               Spring-loaded Plate Analogy: Items enter & exit only from the TOP
             </span>
           </div>
 
           <div className={`p-3 rounded-lg border text-xs ${
-            isDark ? 'bg-[#101624] border-stone-800 text-stone-200' : 'bg-white border-slate-300 text-slate-800'
+            isDark ? 'bg-[#101624] border-stone-800 text-stone-200' : 'bg-white border-slate-300 text-slate-800 shadow-xs'
           }`}>
-            <Info className="w-4 h-4 text-sky-400 inline mr-1.5" />
+            <Info className={`w-4 h-4 inline mr-1.5 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} />
             {stackActionMsg}
           </div>
         </div>
@@ -267,7 +271,7 @@ export const DataStructuresVisualizer: React.FC<{ initialType?: 'stack' | 'queue
             isDark ? 'bg-[#070a10] border-stone-800' : 'bg-slate-50 border-slate-200'
           }`}>
             <div className="flex items-center gap-2 overflow-x-auto p-3 w-full justify-center">
-              <span className="text-[11px] font-mono text-rose-400 font-bold shrink-0">FRONT ➔</span>
+              <span className={`text-[11px] font-mono font-bold shrink-0 ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>FRONT ➔</span>
               {queue.map((val, idx) => {
                 const isFront = idx === 0;
                 const isRear = idx === queue.length - 1;
@@ -292,14 +296,14 @@ export const DataStructuresVisualizer: React.FC<{ initialType?: 'stack' | 'queue
                   Queue is Empty
                 </div>
               )}
-              <span className="text-[11px] font-mono text-emerald-400 font-bold shrink-0">➔ REAR</span>
+              <span className={`text-[11px] font-mono font-bold shrink-0 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>➔ REAR</span>
             </div>
           </div>
 
           <div className={`p-3 rounded-lg border text-xs ${
-            isDark ? 'bg-[#101624] border-stone-800 text-stone-200' : 'bg-white border-slate-300 text-slate-800'
+            isDark ? 'bg-[#101624] border-stone-800 text-stone-200' : 'bg-white border-slate-300 text-slate-800 shadow-xs'
           }`}>
-            <Info className="w-4 h-4 text-indigo-400 inline mr-1.5" />
+            <Info className={`w-4 h-4 inline mr-1.5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
             {queueActionMsg}
           </div>
         </div>

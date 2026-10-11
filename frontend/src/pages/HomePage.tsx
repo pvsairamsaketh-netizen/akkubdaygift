@@ -112,7 +112,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         {/* Romantic Proposal Memory Quote Ribbon */}
         <div className="pt-2">
           <p className="font-serif italic text-xs sm:text-sm text-rose-800/80 bg-rose-50/70 border border-rose-200/50 rounded-full px-5 py-1.5 inline-block backdrop-blur-xs">
-            "Besant Nagar shore facing the Bay of Bengal, our favorite songs & every shared smile ✨"
+            "Marina Beach shore facing the Bay of Bengal, our favorite songs & every shared smile ✨"
           </p>
         </div>
       </div>

@@ -200,26 +200,34 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
           </div>
 
           {/* Day Streak Counter */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs ${
-            isDark ? 'bg-[#161b22] border-stone-800' : 'bg-slate-100 border-slate-200'
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-xs ${
+            isDark ? 'bg-[#161b22] border-stone-800 text-stone-200' : 'bg-slate-100 border-slate-200 text-slate-800'
           }`}>
-            <Flame className="w-4 h-4 text-amber-400 fill-amber-400/20 animate-pulse" />
+            <Flame className="w-4 h-4 text-amber-500 fill-amber-500/20 animate-pulse" />
             <span className="font-semibold font-mono">{streak}</span>
             <span className="opacity-75 hidden sm:inline">Streak</span>
           </div>
 
           {/* DE Completion Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-950/40 border border-sky-800/40 text-xs">
-            <Database className="w-3.5 h-3.5 text-sky-400" />
-            <span className="opacity-75">DE:</span>
-            <span className="font-bold text-sky-300 font-mono">{deCompleted}/100</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-xs transition-colors ${
+            isDark
+              ? 'bg-sky-950/50 border-sky-800/60 text-sky-200'
+              : 'bg-sky-50 border-sky-200 text-sky-900 shadow-sm'
+          }`}>
+            <Database className={`w-3.5 h-3.5 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} />
+            <span className={isDark ? 'text-sky-300/80' : 'text-slate-600'}>DE:</span>
+            <span className={`font-bold font-mono ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>{deCompleted}/100</span>
           </div>
 
           {/* DSA Completion Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/40 border border-purple-800/40 text-xs">
-            <Code2 className="w-3.5 h-3.5 text-purple-400" />
-            <span className="opacity-75">DSA:</span>
-            <span className="font-bold text-purple-300 font-mono">{dsaCompleted}/30</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-xs transition-colors ${
+            isDark
+              ? 'bg-purple-950/50 border-purple-800/60 text-purple-200'
+              : 'bg-purple-50 border-purple-200 text-purple-900 shadow-sm'
+          }`}>
+            <Code2 className={`w-3.5 h-3.5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+            <span className={isDark ? 'text-purple-300/80' : 'text-slate-600'}>DSA:</span>
+            <span className={`font-bold font-mono ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{dsaCompleted}/30</span>
           </div>
         </div>
       </div>
@@ -238,12 +246,20 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
           className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTrack === 'de'
               ? 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-lg shadow-sky-900/40 ring-1 ring-sky-400/50'
-              : 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]/60'
+              : isDark
+              ? 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]/60'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
           }`}
         >
-          <Database className="w-4 h-4 text-sky-300" />
+          <Database className={`w-4 h-4 ${activeTrack === 'de' ? 'text-sky-200' : isDark ? 'text-sky-400' : 'text-sky-600'}`} />
           <span>DATA ENGINEERING (Days 1–100)</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-950/80 text-sky-200 border border-sky-700/50">
+          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+            activeTrack === 'de'
+              ? 'bg-sky-950/80 text-sky-200 border-sky-700/50'
+              : isDark
+              ? 'bg-stone-800 text-stone-300 border-stone-700'
+              : 'bg-white text-slate-700 border-slate-300 shadow-xs'
+          }`}>
             {deCompleted}/100
           </span>
         </button>
@@ -258,12 +274,14 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
           className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTrack === 'dsa'
               ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-rose-600 text-white shadow-lg shadow-purple-900/40 ring-1 ring-purple-400/50'
-              : 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]/60'
+              : isDark
+              ? 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]/60'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
           }`}
         >
-          <Code2 className="w-4 h-4 text-purple-300" />
+          <Code2 className={`w-4 h-4 ${activeTrack === 'dsa' ? 'text-purple-200' : isDark ? 'text-purple-400' : 'text-purple-600'}`} />
           <span>DSA & CODING INTERVIEW (Days 101–130)</span>
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-400 text-black font-extrabold uppercase animate-pulse">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-400 text-black font-extrabold uppercase animate-pulse shadow-xs">
             NEW
           </span>
         </button>

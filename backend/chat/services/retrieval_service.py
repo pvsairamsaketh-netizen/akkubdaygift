@@ -35,8 +35,8 @@ class RetrievalService:
         ("मरीना", "marina"): [
             "marina beach", "bay of bengal", "chennai"
         ],
-        ("बेसेंट", "besant", "bessie", "beach", "बीच", "sea", "समुद्र", "सागर", "ocean", "bay of bengal", "arabian"): [
-            "besant nagar", "bessie", "bay of bengal", "marina beach", "chennai"
+        ("beach", "बीच", "sea", "समुद्र", "सागर", "ocean", "bay of bengal", "arabian"): [
+            "bay of bengal", "marina beach", "chennai"
         ],
         ("आंध्र", "andhra", "dosa", "डोसा"): [
             "andhra mess"
@@ -109,7 +109,7 @@ class RetrievalService:
                 exact_tokens.extend(targets)
 
         # Also add any direct English matches
-        for word in ["how did they first connect", "college acquaintances", "k section to b section", "may 4, 2022", "may 4", "2022", "october 20", "oct 20", "birthday", "samosa", "canteen", "proposal", "propose", "marriage", "ice cream", "headache", "bay of bengal", "besant nagar", "marina beach", "work commitments", "responsibilities", "tessel", "tessell"]:
+        for word in ["how did they first connect", "college acquaintances", "k section to b section", "may 4, 2022", "may 4", "2022", "october 20", "oct 20", "birthday", "samosa", "canteen", "proposal", "propose", "marriage", "ice cream", "headache", "bay of bengal", "marina beach", "work commitments", "responsibilities", "tessel", "tessell"]:
             if word in lower_q and word not in exact_tokens:
                 exact_tokens.append(word)
 
