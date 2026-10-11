@@ -123,16 +123,22 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
     <div className="flex flex-col gap-3 font-sans">
       {/* Dismissible Birthday Greeting for Akku */}
       {showBirthdayBanner && (
-        <div className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 border border-amber-500/30 flex items-center justify-between text-xs text-amber-100 shadow-sm animate-fade-in">
+        <div className={`px-4 py-2.5 rounded-xl border flex items-center justify-between text-xs shadow-xs animate-fade-in transition-colors ${
+          isDark
+            ? 'bg-gradient-to-r from-amber-950/40 via-rose-950/30 to-amber-950/40 border-amber-500/30 text-amber-200'
+            : 'bg-gradient-to-r from-rose-50 via-amber-50/80 to-rose-50 border-rose-200/90 text-rose-950 font-medium'
+        }`}>
           <div className="flex items-center gap-2">
-            <Heart className="w-4 h-4 text-rose-400 fill-rose-400 shrink-0 animate-pulse" />
-            <span>
-              <strong>Happy Birthday Akku! ❤️</strong> Built with love by Saki to power your M.Tech Data Engineering & FAANG DSA placement journey.
+            <Heart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+            <span className={isDark ? 'text-amber-200' : 'text-rose-950 font-medium'}>
+              <strong className={isDark ? 'text-amber-100 font-bold' : 'text-rose-900 font-bold'}>Happy Birthday Akku! ❤️</strong> Built with love by Saki to power your M.Tech Data Engineering &amp; FAANG DSA placement journey.
             </span>
           </div>
           <button
             onClick={handleDismissBanner}
-            className="p-1 rounded-md hover:bg-black/20 text-stone-300 hover:text-white transition-colors cursor-pointer"
+            className={`p-1 rounded-md transition-colors cursor-pointer ${
+              isDark ? 'hover:bg-white/10 text-stone-300 hover:text-white' : 'hover:bg-rose-200/60 text-rose-700 hover:text-rose-950'
+            }`}
             title="Dismiss greeting"
           >
             <X className="w-3.5 h-3.5" />

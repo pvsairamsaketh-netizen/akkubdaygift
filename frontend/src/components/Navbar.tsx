@@ -74,28 +74,31 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   // Primary Navigation Items
   const navItems: NavItem[] = [
-    { id: 'home', label: 'Home', icon: <Heart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0" /> },
-    { id: 'chat', label: 'Chat with Akku', icon: <MessageCircleHeart className="w-4 h-4 text-rose-600 shrink-0" /> },
-    { id: 'birthday', label: 'Birthday', icon: <Gift className="w-4 h-4 text-rose-500 shrink-0" />, badge: 'SPECIAL' },
-    { id: 'memories', label: 'Memories', icon: <BookmarkCheck className="w-4 h-4 text-rose-500 shrink-0" /> },
-    { id: 'library', label: 'PDF Library', icon: <FileText className="w-4 h-4 text-rose-500 shrink-0" /> },
-    { id: 'academics', label: 'Academics', icon: <GraduationCap className="w-4 h-4 text-amber-500 shrink-0" />, badge: 'DE100D' },
-    { id: 'settings', label: 'Settings', icon: <Sliders className="w-4 h-4 text-rose-500 shrink-0" /> },
+    { id: 'home', label: 'Home', icon: <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" /> },
+    { id: 'chat', label: 'Chat', icon: <MessageCircleHeart className="w-3.5 h-3.5 text-rose-600 shrink-0" /> },
+    { id: 'birthday', label: 'Birthday', icon: <Gift className="w-3.5 h-3.5 text-rose-500 shrink-0" /> },
+    { id: 'memories', label: 'Memories', icon: <BookmarkCheck className="w-3.5 h-3.5 text-rose-500 shrink-0" /> },
+    { id: 'library', label: 'Library', icon: <FileText className="w-3.5 h-3.5 text-rose-500 shrink-0" /> },
+    { id: 'academics', label: 'Academics', icon: <GraduationCap className="w-3.5 h-3.5 text-amber-500 shrink-0" /> },
+    { id: 'settings', label: 'Settings', icon: <Sliders className="w-3.5 h-3.5 text-rose-500 shrink-0" /> },
   ];
 
-  // Top 4 items for medium screens (1000px - 1399px)
-  const primaryFour = navItems.slice(0, 4);
-  // Secondary 4 items inside More dropdown for medium screens
-  const secondaryFour = navItems.slice(4);
+  // Top 5 items for medium screens (1000px - 1239px)
+  const primaryFive = [navItems[0], navItems[1], navItems[2], navItems[3], navItems[5]]; // Home, Chat, Birthday, Memories, Academics
+  // Secondary 2 items inside More dropdown for medium screens
+  const secondaryTwo = [navItems[4], navItems[6]]; // Library, Settings
 
-  const isSecondaryActive = secondaryFour.some(item => item.id === activeTab);
-  const activeSecondaryItem = secondaryFour.find(item => item.id === activeTab);
+  const isSecondaryActive = secondaryTwo.some(item => item.id === activeTab);
+  const activeSecondaryItem = secondaryTwo.find(item => item.id === activeTab);
 
   const handleSelect = (tab: NavTab) => {
     onTabChange(tab);
     setMobileMenuOpen(false);
     setMoreDropdownOpen(false);
   };
+
+  // Fixed uniform bounding box classes for all navbar buttons
+  const navBtnBase = "w-[104px] h-9 rounded-full flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 select-none";
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-rose-100/90 shadow-xs transition-all w-full">
@@ -120,15 +123,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
 
-            {/* Desktop Left Navigation (>= 1520px: All 8 Items) */}
-            <nav className="primary-navigation hidden min-[1520px]:flex items-center gap-1.5 lg:gap-2 justify-start min-w-0">
+            {/* Desktop Left Navigation (>= 1240px: All 7 Items with Fixed Pink BBox Size) */}
+            <nav className="primary-navigation hidden min-[1240px]:flex items-center gap-1.5 lg:gap-2 justify-start min-w-0">
               {navItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleSelect(item.id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`${navBtnBase} ${
                       isActive
                         ? 'bg-rose-500 text-white font-semibold shadow-xs shadow-rose-200'
                         : 'text-stone-700 hover:text-rose-950 hover:bg-rose-50/80 font-medium'
@@ -136,51 +139,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <span className={isActive ? 'text-white' : ''}>{item.icon}</span>
                     <span>{item.label}</span>
-                    {item.badge && (
-                      <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none uppercase shrink-0 ${
-                        isActive 
-                          ? 'bg-white/25 text-white' 
-                          : item.id === 'academics' 
-                            ? 'bg-amber-100 text-amber-700 border border-amber-200' 
-                            : 'bg-rose-100 text-rose-600 border border-rose-200'
-                      }`}>
-                        {item.badge}
-                      </span>
-                    )}
                   </button>
                 );
               })}
             </nav>
 
-            {/* Medium Desktop Left Navigation (1000px - 1519px: Top 4 + More Dropdown) */}
-            <nav className="primary-navigation hidden min-[1000px]:flex min-[1520px]:hidden items-center gap-1.5 justify-start min-w-0">
-              {primaryFour.map((item) => {
+            {/* Medium Desktop Left Navigation (1000px - 1239px: Top 5 + More Dropdown) */}
+            <nav className="primary-navigation hidden min-[1000px]:flex min-[1240px]:hidden items-center gap-1.5 justify-start min-w-0">
+              {primaryFive.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleSelect(item.id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`${navBtnBase} ${
                       isActive
                         ? 'bg-rose-500 text-white font-semibold shadow-xs shadow-rose-200'
                         : 'text-stone-700 hover:text-rose-950 hover:bg-rose-50/80 font-medium'
                     }`}
                   >
                     <span className={isActive ? 'text-white' : ''}>{item.icon}</span>
-                    <span>
-                      {item.id === 'chat' ? (
-                        <>Chat<span className="hidden min-[1200px]:inline"> with Akku</span></>
-                      ) : (
-                        item.label
-                      )}
-                    </span>
-                    {item.badge && (
-                      <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none uppercase shrink-0 ${
-                        isActive ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-600 border border-rose-200'
-                      }`}>
-                        {item.badge}
-                      </span>
-                    )}
+                    <span>{item.label}</span>
                   </button>
                 );
               })}
@@ -189,10 +168,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="relative shrink-0" ref={moreRef}>
                 <button
                   onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border whitespace-nowrap shrink-0 ${
+                  className={`${navBtnBase} border ${
                     isSecondaryActive
                       ? 'bg-rose-500 text-white border-rose-500 font-semibold shadow-xs'
-                      : 'border-rose-100 text-stone-700 hover:text-rose-900 hover:bg-rose-50/80 bg-white'
+                      : 'border-rose-100 text-stone-700 hover:text-rose-900 hover:bg-rose-50/80 bg-white font-medium'
                   }`}
                   aria-label="More navigation links"
                 >
@@ -202,8 +181,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
 
                 {moreDropdownOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-52 rounded-2xl bg-white/95 backdrop-blur-md border border-rose-100 shadow-xl py-2 z-50 animate-fade-in flex flex-col gap-1">
-                    {secondaryFour.map((item) => {
+                  <div className="absolute left-0 top-full mt-2 w-48 rounded-2xl bg-white/95 backdrop-blur-md border border-rose-100 shadow-xl py-2 z-50 animate-fade-in flex flex-col gap-1">
+                    {secondaryTwo.map((item) => {
                       const isActive = activeTab === item.id;
                       return (
                         <button
@@ -219,17 +198,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                             <span className={isActive ? 'text-white' : ''}>{item.icon}</span>
                             <span className="truncate">{item.label}</span>
                           </div>
-                          {item.badge && (
-                            <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none uppercase shrink-0 ${
-                              isActive 
-                                ? 'bg-white/25 text-white' 
-                                : item.id === 'academics' 
-                                  ? 'bg-amber-100 text-amber-700 border border-amber-200' 
-                                  : 'bg-rose-100 text-rose-600 border border-rose-200'
-                            }`}>
-                              {item.badge}
-                            </span>
-                          )}
                         </button>
                       );
                     })}
@@ -311,27 +279,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleSelect(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                  className={`w-full h-11 flex items-center justify-start gap-2.5 px-4 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                     isActive
                       ? 'bg-rose-500 text-white shadow-sm font-semibold'
                       : 'text-stone-700 hover:bg-rose-50 hover:text-rose-950'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className={isActive ? 'text-white' : ''}>{item.icon}</span>
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge && (
-                    <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                      isActive 
-                        ? 'bg-white/25 text-white' 
-                        : item.id === 'academics' 
-                          ? 'bg-amber-100 text-amber-700 border border-amber-200' 
-                          : 'bg-rose-100 text-rose-600 border border-rose-200'
-                    }`}>
-                      {item.badge}
-                    </span>
-                  )}
+                  <span className={isActive ? 'text-white' : ''}>{item.icon}</span>
+                  <span>{item.label}</span>
                 </button>
               );
             })}
