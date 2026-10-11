@@ -300,7 +300,7 @@ export const CodingLab: React.FC<CodingLabProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                {exercise.hints.slice(0, revealedHintIndex + 1).map((h, i) => (
+                {(exercise.hints || []).slice(0, revealedHintIndex + 1).map((h: string, i: number) => (
                   <div key={i} className={`p-2.5 rounded-lg border text-xs leading-relaxed ${
                     isDark ? 'bg-amber-950/30 border-amber-800/50 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-900'
                   }`}>
@@ -492,7 +492,7 @@ export const CodingLab: React.FC<CodingLabProps> = ({
             {activeBottomTab === 'testcases' && (
               <div className="space-y-2">
                 {exercise.testCases && exercise.testCases.length > 0 ? (
-                  exercise.testCases.map((tc, idx) => (
+                  exercise.testCases.map((tc: any, idx: number) => (
                     <div key={idx} className={`p-2.5 rounded-lg border flex flex-col gap-1 ${
                       isDark ? 'bg-[#161b22] border-stone-800' : 'bg-slate-50 border-slate-200'
                     }`}>

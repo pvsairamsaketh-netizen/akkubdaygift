@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
 import { 
   CheckCircle2, 
-  FileText
+  FileText,
+  Copy, 
+  Check
 } from 'lucide-react';
 import type { DayLesson } from '../../types/academics';
 import { useAcademicsTheme } from '../../context/AcademicsThemeContext';
 import { BinarySearchVisualizer } from './visualizers/BinarySearchVisualizer';
 import { SortingVisualizer } from './visualizers/SortingVisualizer';
 import { DataStructuresVisualizer } from './visualizers/DataStructuresVisualizer';
+import { ComplexityVisualizer } from './visualizers/ComplexityVisualizer';
+import { TreeGraphVisualizer } from './visualizers/TreeGraphVisualizer';
+import { DataModelingVisualizer } from './visualizers/DataModelingVisualizer';
 import { ETLPipelineVisualizer } from './visualizers/ETLPipelineVisualizer';
 import { SparkPartitionVisualizer } from './visualizers/SparkPartitionVisualizer';
 import { KafkaStreamingVisualizer } from './visualizers/KafkaStreamingVisualizer';
 import { PipelineDAGVisualizer } from './visualizers/PipelineDAGVisualizer';
 import { InteractiveCodeRunner } from './visualizers/InteractiveCodeRunner';
 import { SQLPlayground } from './SQLPlayground';
+import { getTopicKey, TOPIC_ANALOGIES } from '../../data/academics/academicPedagogy';
 
 interface InteractiveLessonAcademyProps {
   lesson: DayLesson;
@@ -32,32 +38,33 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
 }) => {
   const { isDark } = useAcademicsTheme();
 
-  // Knowledge check state
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [showExplanations, setShowExplanations] = useState<Record<number, boolean>>({});
   const [noteSaved, setNoteSaved] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  // Retrieve accurate domain analogy info
+  const topicKey = getTopicKey(lesson.subject, lesson.title, lesson.dayNumber);
+  const topicInfo = TOPIC_ANALOGIES[topicKey] || TOPIC_ANALOGIES.dsa_complexity;
 
   // Determine which visualizer to render based on dayNumber / topic
   const renderVisualizer = () => {
     const day = lesson.dayNumber;
     const title = (lesson.title + ' ' + lesson.subject).toLowerCase();
 
-    // 1. Binary Search (Day 104 or any search/binary lesson)
-    if (day === 104 || (day >= 101 && title.includes('search') && !title.includes('sort'))) {
+    // 1. Complexity & Recursion (Days 101, 102, 103)
+    if (day === 101 || day === 102 || day === 103 || title.includes('complexity') || title.includes('asymptotic') || title.includes('big-o')) {
+      return <ComplexityVisualizer />;
+    }
+
+    // 2. Binary Search (Day 104 or search title)
+    if (day === 104 || (day >= 101 && title.includes('search') && !title.includes('sort') && !title.includes('tree'))) {
       return <BinarySearchVisualizer />;
     }
 
-    // 2. Sorting Algorithms (Day 105 or sorting title)
+    // 3. Sorting Algorithms (Day 105 or sorting title)
     if (day === 105 || title.includes('sort')) {
       return <SortingVisualizer />;
-    }
-
-    // 3. Stacks & Queues (Day 107, 108)
-    if (day === 107 || title.includes('stack')) {
-      return <DataStructuresVisualizer initialType="stack" />;
-    }
-    if (day === 108 || title.includes('queue')) {
-      return <DataStructuresVisualizer initialType="queue" />;
     }
 
     // 4. Linked Lists (Day 106)
@@ -65,39 +72,42 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
       return <DataStructuresVisualizer initialType="linked_list" />;
     }
 
-    // 5. Two Pointers (Day 121)
-    if (day === 121 || title.includes('two pointer')) {
+    // 5. Stacks & Queues (Day 107, 108)
+    if (day === 107 || title.includes('stack')) {
+      return <DataStructuresVisualizer initialType="stack" />;
+    }
+    if (day === 108 || title.includes('queue')) {
+      return <DataStructuresVisualizer initialType="queue" />;
+    }
+
+    // 6. Hash Tables (Day 109)
+    if (day === 109 || title.includes('hash')) {
+      return <DataStructuresVisualizer initialType="stack" />;
+    }
+
+    // 7. Trees & BST (Days 110, 111, 112)
+    if (day === 110 || day === 111 || day === 112 || title.includes('tree') || title.includes('bst') || title.includes('heap')) {
+      return <TreeGraphVisualizer initialMode="bst" />;
+    }
+
+    // 8. Graphs (Days 113, 114, 115)
+    if ((day >= 113 && day <= 115) || title.includes('graph')) {
+      return <TreeGraphVisualizer initialMode="graph" />;
+    }
+
+    // 9. Two Pointers & Sliding Window (Days 121, 122)
+    if (day === 121 || day === 122 || title.includes('two pointer') || title.includes('sliding window')) {
       return <DataStructuresVisualizer initialType="two_pointers" />;
     }
 
-    // 6. Data Engineering: ETL / ELT Pipelines (Days 21-35)
-    if ((day >= 20 && day <= 35) || title.includes('etl') || title.includes('pipeline')) {
-      return <ETLPipelineVisualizer />;
-    }
-
-    // 7. Apache Spark Partitions & Shuffles (Days 60-70)
-    if ((day >= 60 && day <= 70) || title.includes('spark') || title.includes('shuffle')) {
-      return <SparkPartitionVisualizer />;
-    }
-
-    // 8. Apache Kafka & Streaming (Days 71-80)
-    if ((day >= 71 && day <= 80) || title.includes('kafka') || title.includes('stream')) {
-      return <KafkaStreamingVisualizer />;
-    }
-
-    // 9. Airflow & Orchestration DAGs (Days 81-90)
-    if ((day >= 81 && day <= 90) || title.includes('airflow') || title.includes('dag') || title.includes('orchestrat')) {
-      return <PipelineDAGVisualizer />;
-    }
-
-    // 10. SQL & Databases (Days 11-19)
-    if ((day >= 11 && day <= 19) || title.includes('sql') || title.includes('table') || title.includes('join')) {
+    // 10. Data Engineering: SQL & Relational Sandbox (Days 11-20)
+    if ((day >= 11 && day <= 20) || title.includes('sql') || title.includes('join') || title.includes('window')) {
       return (
         <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#0b0f17] border-stone-800' : 'bg-white border-slate-200'}`}>
           <div className="mb-3">
-            <h4 className="font-bold text-sm text-sky-400">Interactive SQL Analytical Sandbox</h4>
+            <h4 className="font-bold text-sm text-sky-500">Interactive SQL Analytical Sandbox</h4>
             <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-slate-600'}`}>
-              Run analytical queries against sample e-commerce tables (orders, customers, fact_sales).
+              Execute live analytical queries against relational and Kimball dimensional tables (`orders`, `customers`, `fact_sales`).
             </p>
           </div>
           <SQLPlayground height="320px" />
@@ -105,36 +115,54 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
       );
     }
 
-    // Fallback: Default to Binary Search for DSA or ETL for DE
+    // 11. Data Engineering: ETL / ELT Pipelines (Days 21-35)
+    if ((day >= 21 && day <= 35) || title.includes('etl') || title.includes('pipeline')) {
+      return <ETLPipelineVisualizer />;
+    }
+
+    // 12. Data Engineering: Kimball Data Modeling & SCD (Days 36-50)
+    if ((day >= 36 && day <= 50) || title.includes('model') || title.includes('warehouse') || title.includes('star') || title.includes('scd')) {
+      return <DataModelingVisualizer />;
+    }
+
+    // 13. Data Engineering: Apache Spark (Days 51-70)
+    if ((day >= 51 && day <= 70) || title.includes('spark') || title.includes('shuffle')) {
+      return <SparkPartitionVisualizer />;
+    }
+
+    // 14. Data Engineering: Apache Kafka & Streaming (Days 71-80)
+    if ((day >= 71 && day <= 80) || title.includes('kafka') || title.includes('stream')) {
+      return <KafkaStreamingVisualizer />;
+    }
+
+    // 15. Data Engineering: Airflow & Orchestration DAGs (Days 81-90)
+    if ((day >= 81 && day <= 90) || title.includes('airflow') || title.includes('dag') || title.includes('orchestrat')) {
+      return <PipelineDAGVisualizer />;
+    }
+
+    // 16. Data Engineering: Cloud Lakehouse (Days 91-100)
+    if (day >= 91 && day <= 100) {
+      return <DataModelingVisualizer />;
+    }
+
+    // Fallbacks
     if (day >= 101) {
       return <BinarySearchVisualizer />;
     }
     return <ETLPipelineVisualizer />;
   };
 
-  // Section A: The idea in 30 seconds
-  const ideaIn30Sec = lesson.beginnerExplanation || lesson.description || (
-    `${lesson.title} is a core computer science and engineering concept designed to solve critical efficiency, scalability, and correctness challenges in modern applications.`
-  );
-
-  // Section B: Real-Life Analogy
-  const analogyObj = lesson.realLifeAnalogy || {
-    title: 'Real-World Concept Analogy',
-    analogy: 'Imagine a physical library where books are organized systematically. Rather than checking every shelf from front to back, structured indexes let you jump straight to the exact section in seconds.',
-    realWorldExample: 'Enterprise systems apply this technique to process millions of requests per second with predictable latency and minimal resource overhead.'
-  };
-
   // Section D: Code Walkthrough
   const primaryExample = lesson.examples?.[0] || {
     title: `${lesson.title} Standard Implementation`,
-    explanation: 'Idiomatic production implementation with clean complexity guarantees.',
+    explanation: 'Idiomatic production implementation with clean complexity guarantees and edge-case resilience.',
     code: `# Standard Implementation for ${lesson.title}\ndef solve():\n    pass`
   };
 
   // Section E: Interactive Code Runner starter code
   const exercise = lesson.practiceExercise || {
     id: `ex_${lesson.dayNumber}`,
-    title: `${lesson.title} Hands-On Coding`,
+    title: `${lesson.title} Hands-On Coding Lab`,
     language: 'python',
     starterCode: primaryExample.code || 'def solution():\n    return True\n\nprint(solution())',
     solutionCode: primaryExample.code || 'def solution():\n    return True',
@@ -143,13 +171,13 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
       'Check boundary edge cases: empty collections, single elements, and out-of-range keys.'
     ],
     testCases: [
-      { input: 'Standard Test Case', expected_output: 'Passed' }
+      { input: 'arr = [10, 20, 30, 40, 50], target = 50', expectedOutput: '4' }
     ]
   };
 
   const mappedTestCases = (exercise.testCases || []).map(tc => ({
     input: tc.input,
-    expectedOutput: (tc as any).expectedOutput || (tc as any).expected_output || ''
+    expectedOutput: (tc as any).expectedOutput || (tc as any).expected_output || 'Passed'
   }));
 
   // Section H: Quick Knowledge Check Questions
@@ -172,11 +200,17 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
     if (onSaveNote) {
       onSaveNote(
         `${lesson.title} - Academy Key Takeaways`,
-        `### Concept: ${lesson.title}\n\n**The 30-Second Idea:**\n${ideaIn30Sec}\n\n**Analogy:**\n${analogyObj.analogy}\n\n**Production Scenario:**\n${analogyObj.realWorldExample}\n\n**Optimal Complexity:**\n- Time: O(log N) / O(N)\n- Space: O(1)`
+        `### Concept: ${lesson.title}\n\n**What Is It:**\n${topicInfo.whatIsIt}\n\n**Why We Need It:**\n${topicInfo.whyWeNeedIt}\n\n**How It Works:**\n${topicInfo.howItWorks}\n\n**Analogy:**\n${topicInfo.analogy}\n\n**Production Scenario:**\n${topicInfo.realWorld}`
       );
       setNoteSaved(true);
       setTimeout(() => setNoteSaved(false), 2500);
     }
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(primaryExample.code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   return (
@@ -189,40 +223,85 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
       <div className={`p-5 rounded-2xl border transition-all shadow-md ${
         isDark ? 'bg-[#0d121c] border-sky-900/40' : 'bg-white border-slate-200'
       }`}>
-        <div className="flex items-center justify-between border-b pb-3 mb-3 border-stone-800/60">
+        <div className="flex items-center justify-between border-b pb-3 mb-4 border-stone-800/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+              isDark ? 'bg-sky-500/20 text-sky-400' : 'bg-sky-100 text-sky-800 border border-sky-200'
+            }`}>
               A
             </div>
             <div>
               <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block ${
-                isDark ? 'text-sky-400' : 'text-sky-600'
+                isDark ? 'text-sky-400' : 'text-sky-700'
               }`}>
                 Core Learning Foundation
               </span>
-              <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <h3 className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 The Idea in 30 Seconds
               </h3>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSaveTakeaways}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
-                isDark ? 'bg-[#161f30] hover:bg-[#202b42] text-sky-300 border-sky-800/50' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>{noteSaved ? 'Saved to Notes! ✓' : 'Save Takeaways'}</span>
-            </button>
+          <button
+            onClick={handleSaveTakeaways}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              isDark 
+                ? 'bg-[#161f30] hover:bg-[#202b42] text-sky-300 border-sky-800/50' 
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 font-bold'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>{noteSaved ? 'Saved to Notes! ✓' : 'Save Takeaways'}</span>
+          </button>
+        </div>
+
+        {/* 3 Clear Pillars: What It Is, Why We Need It, How It Works */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-3">
+          <div className={`p-3.5 rounded-xl border ${
+            isDark ? 'bg-[#111726] border-stone-800' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block mb-1 ${
+              isDark ? 'text-sky-400' : 'text-sky-700 font-extrabold'
+            }`}>
+              ⚡ What is it?
+            </span>
+            <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-stone-200' : 'text-slate-800 font-medium'}`}>
+              {topicInfo.whatIsIt}
+            </p>
+          </div>
+
+          <div className={`p-3.5 rounded-xl border ${
+            isDark ? 'bg-[#111726] border-stone-800' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block mb-1 ${
+              isDark ? 'text-emerald-400' : 'text-emerald-700 font-extrabold'
+            }`}>
+              🎯 Why do we need it?
+            </span>
+            <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-stone-200' : 'text-slate-800 font-medium'}`}>
+              {topicInfo.whyWeNeedIt}
+            </p>
+          </div>
+
+          <div className={`p-3.5 rounded-xl border ${
+            isDark ? 'bg-[#111726] border-stone-800' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block mb-1 ${
+              isDark ? 'text-purple-400' : 'text-purple-700 font-extrabold'
+            }`}>
+              ⚙️ How does it work?
+            </span>
+            <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-stone-200' : 'text-slate-800 font-medium'}`}>
+              {topicInfo.howItWorks}
+            </p>
           </div>
         </div>
 
-        <div className={`text-sm sm:text-base leading-relaxed ${
-          isDark ? 'text-stone-200' : 'text-slate-800'
+        {/* Lesson Description Summary */}
+        <div className={`p-3 rounded-xl border text-xs sm:text-sm leading-relaxed ${
+          isDark ? 'bg-[#090d14] border-stone-800 text-stone-300' : 'bg-sky-50/60 border-sky-200 text-slate-800 font-medium'
         }`}>
-          {ideaIn30Sec}
+          <strong>Quick Summary:</strong> {lesson.description}
         </div>
       </div>
 
@@ -230,42 +309,46 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
       {/* SECTION B — REAL-LIFE ANALOGY                                             */}
       {/* ========================================================================= */}
       <div className={`p-5 rounded-2xl border transition-all shadow-md ${
-        isDark ? 'bg-gradient-to-r from-[#17130b] via-[#14121a] to-[#0e1420] border-amber-500/30' : 'bg-amber-50/80 border-amber-200'
+        isDark 
+          ? 'bg-gradient-to-r from-[#17130b] via-[#14121a] to-[#0e1420] border-amber-500/30' 
+          : 'bg-amber-50/80 border-amber-200'
       }`}>
         <div className="flex items-center gap-2.5 border-b pb-3 mb-3 border-amber-800/40">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+            isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-200 text-amber-900 border border-amber-300'
+          }`}>
             B
           </div>
           <div>
             <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block ${
-              isDark ? 'text-amber-400' : 'text-amber-700'
+              isDark ? 'text-amber-400' : 'text-amber-800 font-extrabold'
             }`}>
               First-Principles Intuition
             </span>
-            <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-amber-100' : 'text-amber-950'}`}>
-              Real-Life Analogy: {analogyObj.title}
+            <h3 className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-amber-100' : 'text-amber-950'}`}>
+              Real-Life Analogy
             </h3>
           </div>
         </div>
 
         <div className="space-y-3 text-xs sm:text-sm leading-relaxed">
-          <p className={`font-medium ${isDark ? 'text-amber-200' : 'text-amber-950'}`}>
-            💡 <strong>The Everyday Metaphor:</strong> {analogyObj.analogy}
+          <p className={`font-semibold ${isDark ? 'text-amber-200' : 'text-amber-950'}`}>
+            💡 <strong>The Everyday Metaphor:</strong> {topicInfo.analogy}
           </p>
 
           <div className={`p-3.5 rounded-xl border ${
-            isDark ? 'bg-[#080b12] border-amber-900/40 text-stone-300' : 'bg-white border-amber-200 text-slate-800'
+            isDark ? 'bg-[#080b12] border-amber-900/40 text-stone-300' : 'bg-white border-amber-200 text-slate-800 font-medium'
           }`}>
             <strong className={`block text-[11px] font-mono uppercase tracking-wider mb-1 ${
-              isDark ? 'text-amber-400' : 'text-amber-700'
+              isDark ? 'text-amber-400' : 'text-amber-800 font-extrabold'
             }`}>
               🏭 Where it connects to Real Engineering & Interviews:
             </strong>
-            <span>{analogyObj.realWorldExample}</span>
+            <span>{topicInfo.realWorld}</span>
           </div>
 
           <div className={`p-2.5 rounded-lg border text-xs font-mono ${
-            isDark ? 'bg-black/30 border-stone-800 text-stone-400' : 'bg-amber-100/60 border-amber-300/80 text-amber-900'
+            isDark ? 'bg-black/30 border-stone-800 text-stone-400' : 'bg-amber-100/60 border-amber-300 text-amber-950 font-medium'
           }`}>
             <strong>Where the analogy stops matching:</strong> Physical objects have physical boundaries and friction, whereas in software, variables and pointers are pure memory address references on heap/stack with zero travel friction.
           </div>
@@ -276,12 +359,12 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
       {/* SECTION C — INTERACTIVE DEMONSTRATION                                    */}
       {/* ========================================================================= */}
       <div>
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2.5">
           <span className="w-6 h-6 rounded-md bg-sky-500 text-white text-xs font-bold flex items-center justify-center">
             C
           </span>
           <span className={`text-xs font-mono font-bold uppercase tracking-wider ${
-            isDark ? 'text-sky-400' : 'text-sky-700'
+            isDark ? 'text-sky-400' : 'text-sky-800 font-extrabold'
           }`}>
             Interactive Demonstration & Live Simulation
           </span>
@@ -297,33 +380,42 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
       }`}>
         <div className="flex items-center justify-between border-b pb-3 mb-3 border-stone-800/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+              isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-900 border border-indigo-200'
+            }`}>
               D
             </div>
             <div>
               <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block ${
-                isDark ? 'text-indigo-400' : 'text-indigo-600'
+                isDark ? 'text-indigo-400' : 'text-indigo-800 font-extrabold'
               }`}>
                 Syntax & Implementation
               </span>
-              <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <h3 className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Code Walkthrough: {primaryExample.title}
               </h3>
             </div>
           </div>
-          <span className="text-xs font-mono opacity-75">Python 3.11</span>
+          
+          <button
+            onClick={handleCopyCode}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              isDark ? 'bg-[#161f30] text-stone-300 border-stone-700' : 'bg-slate-100 text-slate-800 border-slate-300 font-bold'
+            }`}
+          >
+            {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
+          </button>
         </div>
 
-        <p className={`text-xs mb-3 ${isDark ? 'text-stone-300' : 'text-slate-700'}`}>
+        <p className={`text-xs sm:text-sm mb-3 ${isDark ? 'text-stone-300' : 'text-slate-700 font-medium'}`}>
           {primaryExample.explanation}
         </p>
 
-        <div className={`rounded-xl border overflow-hidden font-mono text-xs ${
-          isDark ? 'bg-[#06090f] border-stone-800' : 'bg-slate-900 border-slate-800 text-emerald-300'
-        }`}>
+        <div className="rounded-xl border overflow-hidden font-mono text-xs bg-[#06090f] border-stone-800 text-emerald-300 shadow-inner">
           <div className="px-4 py-2 bg-[#121622] border-b border-stone-800 flex items-center justify-between text-stone-400 text-[11px]">
             <span>solution.py</span>
-            <span>Production Grade</span>
+            <span className="text-sky-400 font-bold">Production Grade</span>
           </div>
           <pre className="p-4 text-emerald-300 overflow-x-auto whitespace-pre leading-relaxed">
             {primaryExample.code}
@@ -335,12 +427,12 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
       {/* SECTION E — TRY IT YOURSELF (INTERACTIVE PLAYGROUND)                      */}
       {/* ========================================================================= */}
       <div>
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2.5">
           <span className="w-6 h-6 rounded-md bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">
             E
           </span>
           <span className={`text-xs font-mono font-bold uppercase tracking-wider ${
-            isDark ? 'text-emerald-400' : 'text-emerald-700'
+            isDark ? 'text-emerald-400' : 'text-emerald-800 font-extrabold'
           }`}>
             Try It Yourself: Hands-On Practice Lab
           </span>
@@ -357,7 +449,7 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
           <div className="flex justify-end pt-2">
             <button
               onClick={onNavigateToPractice}
-              className="text-xs text-sky-400 hover:underline font-semibold cursor-pointer"
+              className="text-xs text-sky-500 hover:underline font-bold cursor-pointer"
             >
               Open in Full Multi-File Practice Lab ➔
             </button>
@@ -372,16 +464,18 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
         isDark ? 'bg-[#0d111a] border-stone-800' : 'bg-white border-slate-200'
       }`}>
         <div className="flex items-center gap-2.5 border-b pb-3 mb-3 border-stone-800/60">
-          <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+            isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-900 border border-purple-200'
+          }`}>
             F
           </div>
           <div>
             <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block ${
-              isDark ? 'text-purple-400' : 'text-purple-600'
+              isDark ? 'text-purple-400' : 'text-purple-800 font-extrabold'
             }`}>
               Engineering Optimization
             </span>
-            <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h3 className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
               Complexity & Architectural Trade-Offs
             </h3>
           </div>
@@ -391,20 +485,20 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
           <div className={`p-4 rounded-xl border ${
             isDark ? 'bg-[#121826] border-stone-700 text-stone-200' : 'bg-slate-50 border-slate-200 text-slate-800'
           }`}>
-            <span className="font-bold text-sky-400 text-sm block mb-1">⏱ Time Complexity</span>
-            <ul className="space-y-1 opacity-90">
-              <li>• Best Case: <strong>O(1)</strong> (Instant lookup or boundary hit)</li>
-              <li>• Average Case: <strong>O(log N)</strong> or <strong>O(N)</strong></li>
-              <li>• Worst Case: Controlled logarithmic / linear bounds with zero runaway loops</li>
+            <span className="font-extrabold text-sky-500 text-sm block mb-1">⏱ Time Complexity</span>
+            <ul className="space-y-1 font-medium">
+              <li>• Best Case: <strong>O(1)</strong> (Immediate lookup or boundary condition hit)</li>
+              <li>• Average Case: <strong>O(log N)</strong> / <strong>O(N)</strong></li>
+              <li>• Worst Case: Controlled asymptotic bound with zero runaway loops</li>
             </ul>
           </div>
 
           <div className={`p-4 rounded-xl border ${
             isDark ? 'bg-[#121826] border-stone-700 text-stone-200' : 'bg-slate-50 border-slate-200 text-slate-800'
           }`}>
-            <span className="font-bold text-purple-400 text-sm block mb-1">🧠 Auxiliary Space Complexity</span>
-            <ul className="space-y-1 opacity-90">
-              <li>• Auxiliary Space: <strong>O(1)</strong> in-place pointers or bounded buffering</li>
+            <span className="font-extrabold text-purple-500 text-sm block mb-1">🧠 Auxiliary Space Complexity</span>
+            <ul className="space-y-1 font-medium">
+              <li>• Auxiliary Space: <strong>O(1)</strong> in-place pointers or bounded buffer</li>
               <li>• Heap Allocation: Controlled object lifetime with zero memory leaks</li>
               <li>• Garbage Collection: Generational GC sweeps unreachable objects cleanly</li>
             </ul>
@@ -412,7 +506,7 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
         </div>
 
         <div className={`mt-4 p-3 rounded-xl border text-xs ${
-          isDark ? 'bg-amber-950/20 border-amber-900/40 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-900'
+          isDark ? 'bg-amber-950/20 border-amber-900/40 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-950 font-medium'
         }`}>
           <strong>Common Engineering Trap:</strong> Premature optimization without profiling. Always start with the simplest correct implementation, benchmark with realistic production data loads, and optimize bottlenecks systematically.
         </div>
@@ -425,16 +519,18 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
         isDark ? 'bg-[#0d111a] border-stone-800' : 'bg-white border-slate-200'
       }`}>
         <div className="flex items-center gap-2.5 border-b pb-3 mb-3 border-stone-800/60">
-          <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+            isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-900 border border-rose-200'
+          }`}>
             G
           </div>
           <div>
             <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block ${
-              isDark ? 'text-rose-400' : 'text-rose-600'
+              isDark ? 'text-rose-400' : 'text-rose-800 font-extrabold'
             }`}>
               Placement & Real-World Impact
             </span>
-            <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h3 className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
               Interview & Industry Applications
             </h3>
           </div>
@@ -444,19 +540,19 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
           <div className={`p-3.5 rounded-xl border ${
             isDark ? 'bg-[#121826] border-stone-700 text-stone-200' : 'bg-slate-50 border-slate-200 text-slate-800'
           }`}>
-            <strong className="block text-sky-400 mb-1 text-xs uppercase font-mono">
+            <strong className="block text-sky-500 mb-1 text-xs uppercase font-mono font-bold">
               Top Interview Question:
             </strong>
-            <p className="leading-relaxed">
+            <p className="leading-relaxed font-semibold">
               "How would you optimize this algorithm when input data exceeds physical RAM (e.g. 100 GB on an 8 GB machine)?"
             </p>
-            <p className={`mt-2 text-xs leading-relaxed ${isDark ? 'text-stone-400' : 'text-slate-600'}`}>
+            <p className={`mt-2 text-xs leading-relaxed ${isDark ? 'text-stone-300' : 'text-slate-700'}`}>
               <strong>Model Answer:</strong> Use external merge sort, chunked stream processing, or disk-backed B-Tree indexing. Partition data into bounded chunks that fit comfortably into worker memory.
             </p>
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs opacity-75 font-mono">
+            <span className={`text-xs font-mono ${isDark ? 'text-stone-400' : 'text-slate-600'}`}>
               {lesson.interviewQuestions?.length || 1} Full Interview Questions Available
             </span>
             {onNavigateToInterview && (
@@ -478,16 +574,18 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
         isDark ? 'bg-[#0d111a] border-stone-800' : 'bg-white border-slate-200'
       }`}>
         <div className="flex items-center gap-2.5 border-b pb-3 mb-4 border-stone-800/60">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+            isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+          }`}>
             H
           </div>
           <div>
             <span className={`text-[11px] font-mono font-bold uppercase tracking-wider block ${
-              isDark ? 'text-emerald-400' : 'text-emerald-600'
+              isDark ? 'text-emerald-400' : 'text-emerald-800 font-extrabold'
             }`}>
               Verify Understanding
             </span>
-            <h3 className={`text-base sm:text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <h3 className={`text-base sm:text-lg font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
               Quick Knowledge Check
             </h3>
           </div>
@@ -517,8 +615,8 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
 
                     if (!isAnswered) {
                       optStyle = isDark 
-                        ? 'bg-[#161f30] hover:bg-[#202c42] text-stone-300 border-stone-700' 
-                        : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300';
+                        ? 'bg-[#161f30] hover:bg-[#202c42] text-stone-200 border-stone-700' 
+                        : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 font-medium';
                     } else if (oIdx === qc.correctIndex) {
                       optStyle = 'bg-emerald-600 text-white border-emerald-400 font-bold';
                     } else if (isOptionSelected && !isCorrect) {
@@ -563,7 +661,7 @@ export const InteractiveLessonAcademy: React.FC<InteractiveLessonAcademyProps> =
             <div className="flex justify-end pt-3">
               <button
                 onClick={onNavigateToMCQ}
-                className="text-xs text-purple-400 hover:underline font-semibold cursor-pointer"
+                className="text-xs text-purple-500 hover:underline font-bold cursor-pointer"
               >
                 Take Full Quiz & Assess Progress ➔
               </button>

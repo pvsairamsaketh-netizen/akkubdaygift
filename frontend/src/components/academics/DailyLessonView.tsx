@@ -282,10 +282,10 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
           </div>
 
           <div>
-            <h2 className="text-lg sm:text-xl font-bold font-sans">
+            <h2 className={`text-lg sm:text-xl font-extrabold font-sans ${isDark ? 'text-white' : 'text-slate-900'}`}>
               {lesson.title}
             </h2>
-            <p className="text-xs sm:text-sm opacity-80 font-sans mt-1 leading-relaxed">
+            <p className={`text-xs sm:text-sm font-sans mt-1 leading-relaxed ${isDark ? 'text-stone-300' : 'text-slate-700 font-medium'}`}>
               {lesson.description}
             </p>
           </div>
@@ -298,7 +298,11 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
             </div>
             <span>•</span>
             <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-              lesson.difficulty === 'Advanced' ? 'text-rose-300 bg-rose-950/40' : lesson.difficulty === 'Intermediate' ? 'text-amber-300 bg-amber-950/40' : 'text-emerald-300 bg-emerald-950/40'
+              lesson.difficulty === 'Advanced' 
+                ? isDark ? 'text-rose-300 bg-rose-950/40' : 'text-rose-800 bg-rose-100 border border-rose-300'
+                : lesson.difficulty === 'Intermediate' 
+                ? isDark ? 'text-amber-300 bg-amber-950/40' : 'text-amber-800 bg-amber-100 border border-amber-300'
+                : isDark ? 'text-emerald-300 bg-emerald-950/40' : 'text-emerald-800 bg-emerald-100 border border-emerald-300'
             }`}>
               {lesson.difficulty}
             </span>
@@ -316,7 +320,9 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
           <button
             onClick={() => setActiveTab('learn')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'learn' ? 'bg-sky-600 text-white shadow-sm' : 'opacity-70 hover:opacity-100 hover:bg-stone-800/40'
+              activeTab === 'learn' 
+                ? 'bg-sky-600 text-white shadow-sm' 
+                : isDark ? 'text-stone-400 hover:text-white hover:bg-stone-800/40' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -326,7 +332,9 @@ export const DailyLessonView: React.FC<DailyLessonViewProps> = ({
           <button
             onClick={() => setActiveTab('examples')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'examples' ? 'bg-sky-600 text-white shadow-sm' : 'opacity-70 hover:opacity-100 hover:bg-stone-800/40'
+              activeTab === 'examples' 
+                ? 'bg-sky-600 text-white shadow-sm' 
+                : isDark ? 'text-stone-400 hover:text-white hover:bg-stone-800/40' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200'
             }`}
           >
             <Code className="w-3.5 h-3.5" />

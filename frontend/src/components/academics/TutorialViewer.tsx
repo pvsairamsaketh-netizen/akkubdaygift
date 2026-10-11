@@ -92,7 +92,9 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
                   </span>
                 )}
               </div>
-              <h3 className="text-base sm:text-xl font-bold leading-tight mt-0.5">
+              <h3 className={`text-base sm:text-xl font-extrabold leading-tight mt-0.5 ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}>
                 {lesson.title}
               </h3>
             </div>
@@ -100,14 +102,14 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
 
           {/* Mode Switcher: Standard vs Beginner vs Deep Dive */}
           <div className={`flex items-center gap-1 p-1 rounded-xl border ${
-            isDark ? 'bg-[#090d14] border-stone-800' : 'bg-slate-100 border-slate-200'
+            isDark ? 'bg-[#090d14] border-stone-800' : 'bg-slate-100 border-slate-300'
           }`}>
             <button
               onClick={() => setLearningMode('standard')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 learningMode === 'standard'
-                  ? 'bg-sky-600 text-white shadow-sm'
-                  : 'text-stone-400 hover:text-stone-200'
+                  ? 'bg-sky-600 text-white shadow-sm font-bold'
+                  : isDark ? 'text-stone-400 hover:text-stone-200' : 'text-slate-700 hover:text-slate-950 font-medium'
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
@@ -118,8 +120,8 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
               onClick={() => setLearningMode('beginner')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 learningMode === 'beginner'
-                  ? 'bg-rose-600 text-white shadow-sm'
-                  : 'text-stone-400 hover:text-stone-200'
+                  ? 'bg-rose-600 text-white shadow-sm font-bold'
+                  : isDark ? 'text-stone-400 hover:text-stone-200' : 'text-slate-700 hover:text-slate-950 font-medium'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -130,8 +132,8 @@ export const TutorialViewer: React.FC<TutorialViewerProps> = ({
               onClick={() => setLearningMode('deep_dive')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 learningMode === 'deep_dive'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-stone-400 hover:text-stone-200'
+                  ? 'bg-indigo-600 text-white shadow-sm font-bold'
+                  : isDark ? 'text-stone-400 hover:text-stone-200' : 'text-slate-700 hover:text-slate-950 font-medium'
               }`}
             >
               <Cpu className="w-3.5 h-3.5" />
