@@ -12,7 +12,6 @@ import {
   X,
   RefreshCw,
   Gift,
-  Smile,
   Mail,
   Compass,
   Award,
@@ -179,73 +178,6 @@ const LOVE_MILESTONES = [
   }
 ];
 
-interface FlowerItem {
-  id: string;
-  name: string;
-  symbol: string;
-  meaning: string;
-  description: string;
-  color: string;
-  bloomEmoji: string;
-}
-
-const FLOWER_BOUQUET: FlowerItem[] = [
-  {
-    id: 'rose',
-    name: 'Eternal Crimson Rose',
-    symbol: '🌹',
-    meaning: 'Unconditional Love & Forever Promise',
-    description: 'For the day you chose to walk by my side. My love for you is as deep, vibrant, and unwavering as this crimson bloom.',
-    color: 'from-rose-500 to-red-600',
-    bloomEmoji: '🌹'
-  },
-  {
-    id: 'sakura',
-    name: 'Cherry Blossom (Sakura)',
-    symbol: '🌸',
-    meaning: 'Gentle Grace & Sweetness',
-    description: 'For your gentle voice, the kindness in your eyes, and the peace that fills my heart whenever I am near you.',
-    color: 'from-pink-400 to-rose-400',
-    bloomEmoji: '🌸'
-  },
-  {
-    id: 'sunflower',
-    name: 'Sunlit Golden Sunflower',
-    symbol: '🌻',
-    meaning: 'Warmth, Laughter & Pure Joy',
-    description: 'Because your smile brings warmth into my days. You are my sunshine, Akku, turning even the gloomy days bright.',
-    color: 'from-amber-400 to-yellow-500',
-    bloomEmoji: '🌻'
-  },
-  {
-    id: 'tulip',
-    name: 'Blushing Pink Tulip',
-    symbol: '🌷',
-    meaning: 'Affection & Shared Dreams',
-    description: 'For all our campus canteen walks, inside jokes, and the quiet dreams of the beautiful life we are building together.',
-    color: 'from-rose-400 to-pink-500',
-    bloomEmoji: '🌷'
-  },
-  {
-    id: 'lavender',
-    name: 'Velvet Calm Lavender',
-    symbol: '🪻',
-    meaning: 'Peace, Healing & Safe Haven',
-    description: 'For being my safe sanctuary. When the world gets noisy and exhausting, holding your hand brings pure peace.',
-    color: 'from-purple-400 to-indigo-400',
-    bloomEmoji: '🪻'
-  },
-  {
-    id: 'jasmine',
-    name: 'Star White Jasmine',
-    symbol: '🌼',
-    meaning: 'Brilliance, Hope & Strength',
-    description: 'For your brilliant mind, your dedication to your goals, and how proud I am to watch you shine every single day.',
-    color: 'from-amber-300 to-yellow-400',
-    bloomEmoji: '🌼'
-  }
-];
-
 export const HomePage: React.FC<HomePageProps> = ({ 
   onNavigate, 
   birthdayConfig, 
@@ -256,11 +188,6 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [docCount, setDocCount] = useState<number>(1);
   const [selectedPhoto, setSelectedPhoto] = useState<typeof POLAROID_MEMORIES[0] | null>(null);
   const [selectedLetter, setSelectedLetter] = useState<OpenWhenLetter | null>(null);
-  const [isFlowerSurpriseOpen, setIsFlowerSurpriseOpen] = useState<boolean>(false);
-  const [bloomedFlowers, setBloomedFlowers] = useState<Record<string, boolean>>({
-    rose: true,
-    sakura: true
-  });
   
   // Interactive Love Reason State
   const [reasonIdx, setReasonIdx] = useState<number>(0);
@@ -283,6 +210,73 @@ export const HomePage: React.FC<HomePageProps> = ({
       return {};
     }
   });
+
+  // Flower & Memory Lane Surprise State
+  const [isMemoryLaneRevealed, setIsMemoryLaneRevealed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('akku_memory_lane_revealed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isFlowerRaining, setIsFlowerRaining] = useState<boolean>(false);
+
+  const triggerFlowerShower = () => {
+    setIsFlowerRaining(true);
+    setTimeout(() => setIsFlowerRaining(false), 5500);
+
+    // Multi-stage floral confetti cannon bursts
+    confetti({
+      particleCount: 80,
+      spread: 90,
+      origin: { y: 0.35 },
+      colors: ['#fda4af', '#f43f5e', '#fb7185', '#ffe4e6', '#fde047', '#ffffff']
+    });
+
+    setTimeout(() => {
+      confetti({
+        particleCount: 60,
+        angle: 60,
+        spread: 75,
+        origin: { x: 0.05, y: 0.45 },
+        colors: ['#f43f5e', '#fb7185', '#fda4af', '#f472b6', '#fef08a']
+      });
+    }, 250);
+
+    setTimeout(() => {
+      confetti({
+        particleCount: 60,
+        angle: 120,
+        spread: 75,
+        origin: { x: 0.95, y: 0.45 },
+        colors: ['#f43f5e', '#fb7185', '#fda4af', '#f472b6', '#fef08a']
+      });
+    }, 450);
+
+    setTimeout(() => {
+      confetti({
+        particleCount: 75,
+        spread: 120,
+        origin: { y: 0.55 },
+        colors: ['#e11d48', '#f43f5e', '#fb7185', '#ffffff']
+      });
+    }, 700);
+  };
+
+  const handleRevealSurprise = () => {
+    setIsMemoryLaneRevealed(true);
+    try {
+      localStorage.setItem('akku_memory_lane_revealed', 'true');
+    } catch {}
+    triggerFlowerShower();
+  };
+
+  const handleHideSurprise = () => {
+    setIsMemoryLaneRevealed(false);
+    try {
+      localStorage.removeItem('akku_memory_lane_revealed');
+    } catch {}
+  };
 
   // Love Milestone Live Counter (from May 4, 2022 proposal date)
   const proposalDate = useMemo(() => new Date('2022-05-04T13:00:00'), []);
@@ -385,68 +379,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       spread: 80,
       origin: { y: 0.5 },
       colors: ['#fda4af', '#f43f5e', '#fde047', '#ffffff']
-    });
-  };
-
-  const handleTriggerFlowerSurprise = () => {
-    setIsFlowerSurpriseOpen(true);
-    // Grand celebratory floral explosion
-    confetti({
-      particleCount: 75,
-      spread: 90,
-      origin: { y: 0.5 },
-      colors: ['#fda4af', '#f43f5e', '#fb7185', '#fde047', '#f472b6', '#ffffff']
-    });
-
-    setTimeout(() => {
-      confetti({
-        particleCount: 50,
-        angle: 60,
-        spread: 65,
-        origin: { x: 0 },
-        colors: ['#f43f5e', '#fda4af', '#fb7185', '#ffe4e6']
-      });
-      confetti({
-        particleCount: 50,
-        angle: 120,
-        spread: 65,
-        origin: { x: 1 },
-        colors: ['#f43f5e', '#fda4af', '#fb7185', '#ffe4e6']
-      });
-    }, 220);
-  };
-
-  const handleToggleBloom = (id: string) => {
-    const nextState = !bloomedFlowers[id];
-    setBloomedFlowers(prev => ({ ...prev, [id]: nextState }));
-    if (nextState) {
-      confetti({
-        particleCount: 25,
-        spread: 50,
-        origin: { y: 0.6 },
-        colors: ['#fda4af', '#f43f5e', '#fde047']
-      });
-    }
-  };
-
-  const handleBloomAll = () => {
-    const all: Record<string, boolean> = {};
-    FLOWER_BOUQUET.forEach(f => { all[f.id] = true; });
-    setBloomedFlowers(all);
-    confetti({
-      particleCount: 90,
-      spread: 100,
-      origin: { y: 0.4 },
-      colors: ['#fda4af', '#f43f5e', '#fde047', '#f472b6', '#ffffff']
-    });
-  };
-
-  const handleShowerPetals = () => {
-    confetti({
-      particleCount: 80,
-      spread: 110,
-      origin: { y: 0.3 },
-      colors: ['#fda4af', '#f43f5e', '#fb7185', '#ffe4e6']
     });
   };
 
@@ -598,94 +530,168 @@ export const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. OUR MEMORY LANE — WITH SURPRISE FLOWER BOUQUET BUTTON                  */}
       {/* ========================================================================= */}
-      <div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 px-1">
+      {/* 4. OUR MEMORY LANE — LUXURY FLOWER SURPRISE & BLOOMING POLAROIDS         */}
+      {/* ========================================================================= */}
+      <div className="relative">
+        {/* Floating Flower Petal Rain Overlay when active */}
+        {isFlowerRaining && (
+          <div className="fixed inset-0 pointer-events-none z-[9990] overflow-hidden">
+            {['🌸', '🌹', '🌺', '🌷', '💐', '🌸', '✨', '🌹', '💖', '🌷', '🌸', '🌺'].map((flower, i) => (
+              <span
+                key={i}
+                className="absolute text-2xl sm:text-3xl animate-fade-in"
+                style={{
+                  top: '-10%',
+                  left: `${(i * 8.3) + 2}%`,
+                  animation: `flowerShowerFall ${3 + (i % 3)}s linear forwards`,
+                  animationDelay: `${i * 0.18}s`
+                }}
+              >
+                {flower}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 px-1">
           <div>
             <h3 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 flex items-center gap-2">
               <span>Our Memory Lane</span>
-              <Smile className="w-6 h-6 text-rose-500" />
+              <span className="text-xl animate-bounce">🌸</span>
             </h3>
             <p className="text-stone-600 text-xs sm:text-sm font-light mt-1">
               Snapshots of laughter, ocean waves, and unforgettable memories with you.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
-            {/* The Grand Surprise Flower Button! */}
-            <button
-              onClick={handleTriggerFlowerSurprise}
-              className="group relative flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 hover:from-rose-600 hover:via-pink-600 hover:to-amber-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-rose-200/80 hover:shadow-xl hover:shadow-rose-300/80 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/30"
-              title="Open Secret Flower Surprise for Akku"
-            >
-              <span className="text-base animate-bounce" style={{ animationDuration: '1.8s' }}>🌸</span>
-              <span className="font-serif tracking-wide">Flower Surprise for Akku 💐</span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-spin" style={{ animationDuration: '4s' }} />
-            </button>
-
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {isMemoryLaneRevealed && (
+              <>
+                <button
+                  onClick={triggerFlowerShower}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-semibold shadow-2xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  title="Shower more flowers"
+                >
+                  <span>🌸 Shower Flowers</span>
+                  <span>💐</span>
+                </button>
+                <button
+                  onClick={handleHideSurprise}
+                  className="text-xs text-stone-400 hover:text-stone-600 px-2.5 py-1.5 rounded-full hover:bg-stone-100 transition-colors cursor-pointer"
+                  title="Hide surprise to reveal again"
+                >
+                  Hide Surprise 🎁
+                </button>
+              </>
+            )}
             <button
               onClick={() => onNavigate('memories')}
-              className="text-xs sm:text-sm text-rose-700 font-semibold hover:text-rose-900 flex items-center gap-1 cursor-pointer bg-rose-50/90 hover:bg-rose-100/90 px-3.5 py-2 rounded-full border border-rose-200/80 shadow-2xs transition-colors"
+              className="text-xs sm:text-sm text-rose-600 font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200/70"
             >
-              <span>View All Memories</span>
+              <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Polaroid Strip Grid with Washi Tape & Full Titles */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 pt-3">
-          {POLAROID_MEMORIES.map((photo, idx) => {
-            const likes = photoLikes[photo.id] || 0;
-            return (
-              <div
-                key={photo.id}
-                onClick={() => setSelectedPhoto(photo)}
-                className="group relative bg-white p-3 pt-4 pb-5 rounded-2xl border border-rose-100 shadow-md hover:shadow-2xl hover:shadow-rose-100/80 transition-all duration-300 hover:-translate-y-2 hover:rotate-0 cursor-pointer flex flex-col justify-between"
-                style={{
-                  transform: `rotate(${idx % 2 === 0 ? '-1.5deg' : '1.5deg'})`
-                }}
-              >
-                {/* Washi Tape Ribbon Accent */}
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-4 bg-gradient-to-r from-amber-100/90 via-rose-100/90 to-amber-100/90 border border-amber-200/50 shadow-2xs rounded-xs transform -rotate-1 pointer-events-none z-10" />
+        {!isMemoryLaneRevealed ? (
+          /* Mystical Floral Surprise Invitation Card */
+          <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-rose-100/90 via-pink-50/95 to-rose-100/90 border-2 border-dashed border-rose-300 shadow-xl shadow-rose-200/60 backdrop-blur-xl text-center relative overflow-hidden flex flex-col items-center">
+            {/* Ambient decorative glowing spots */}
+            <div className="absolute -top-12 -left-12 w-48 h-48 bg-rose-300/30 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-pink-300/30 rounded-full blur-3xl pointer-events-none" />
 
-                <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-stone-100 mb-2.5 shadow-inner">
-                  <img
-                    src={photo.src}
-                    alt={photo.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
-                    <span className="text-[10px] text-white font-medium">Zoom Photo</span>
-                  </div>
-                </div>
-
-                {/* Polaroid Text (Guaranteed No Ellipsis / No Truncation) */}
-                <div className="text-center px-0.5 flex flex-col justify-between flex-1">
-                  <h4 className="font-serif text-xs font-bold text-stone-900 leading-snug min-h-[32px] flex items-center justify-center text-center">
-                    {photo.title}
-                  </h4>
-                  <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-rose-50">
-                    <span className="text-[10px] text-rose-600 font-semibold font-mono">
-                      {photo.date}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => handleLikePhoto(e, photo.id)}
-                      className="p-1 rounded-full hover:bg-rose-50 text-rose-400 hover:text-rose-600 transition-colors flex items-center gap-0.5"
-                      title="Send love to this memory"
-                    >
-                      <Heart className={`w-3.5 h-3.5 ${likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
-                      {likes > 0 && <span className="text-[9px] font-bold text-rose-600">{likes}</span>}
-                    </button>
-                  </div>
-                </div>
+            <div className="relative mb-4">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 via-pink-400 to-rose-400 flex items-center justify-center text-4xl shadow-xl shadow-rose-300/80 animate-flower-sway">
+                💐
               </div>
-            );
-          })}
-        </div>
+              <span className="absolute -bottom-1 -right-1 text-2xl animate-bounce">
+                🌸
+              </span>
+              <span className="absolute -top-1 -left-1 text-2xl animate-pulse">
+                ✨
+              </span>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/95 border border-rose-200 text-rose-800 text-xs font-semibold shadow-2xs mb-2.5">
+              <span>Secret Surprise for My Dearest Akku</span>
+              <span>🌸</span>
+            </div>
+
+            <h4 className="font-serif text-2xl sm:text-4xl font-bold text-rose-950 mb-2">
+              A Garden of Flowers & Secret Memories
+            </h4>
+
+            <p className="text-stone-600 text-xs sm:text-sm max-w-md mx-auto font-light leading-relaxed mb-6">
+              Saki has hidden 6 of our most unforgettable memories behind a secret floral veil. Tap the button below to shower fresh blossoms and reveal our photos!
+            </p>
+
+            <button
+              onClick={handleRevealSurprise}
+              className="group relative px-8 py-4 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-bold text-sm sm:text-base shadow-xl shadow-rose-300 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-3 animate-romantic-glow"
+            >
+              <span className="text-xl group-hover:rotate-12 transition-transform">🌸</span>
+              <span>Reveal Flower Surprise & Memories</span>
+              <span className="text-xl group-hover:-rotate-12 transition-transform">💐</span>
+            </button>
+          </div>
+        ) : (
+          /* Staggered Blooming Polaroid Strip Grid with Washi Tape & Full Titles */
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 pt-3">
+            {POLAROID_MEMORIES.map((photo, idx) => {
+              const likes = photoLikes[photo.id] || 0;
+              return (
+                <div
+                  key={photo.id}
+                  onClick={() => setSelectedPhoto(photo)}
+                  className="group relative bg-white p-3 pt-4 pb-5 rounded-2xl border border-rose-100 shadow-md hover:shadow-2xl hover:shadow-rose-100/80 transition-all duration-300 hover:-translate-y-2 hover:rotate-0 cursor-pointer flex flex-col justify-between animate-flower-bloom"
+                  style={{
+                    animationDelay: `${idx * 120}ms`,
+                    transform: `rotate(${idx % 2 === 0 ? '-1.5deg' : '1.5deg'})`
+                  }}
+                >
+                  {/* Washi Tape Ribbon Accent */}
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-4 bg-gradient-to-r from-amber-100/90 via-rose-100/90 to-amber-100/90 border border-amber-200/50 shadow-2xs rounded-xs transform -rotate-1 pointer-events-none z-10" />
+
+                  <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-stone-100 mb-2.5 shadow-inner">
+                    <img
+                      src={photo.src}
+                      alt={photo.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
+                      <span className="text-[10px] text-white font-medium">Zoom Photo</span>
+                      <span className="text-[10px] text-rose-200">🌸</span>
+                    </div>
+                  </div>
+
+                  {/* Polaroid Text (Guaranteed No Ellipsis / No Truncation) */}
+                  <div className="text-center px-0.5 flex flex-col justify-between flex-1">
+                    <h4 className="font-serif text-xs font-bold text-stone-900 leading-snug min-h-[32px] flex items-center justify-center text-center">
+                      {photo.title}
+                    </h4>
+                    <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-rose-50">
+                      <span className="text-[10px] text-rose-600 font-semibold font-mono">
+                        {photo.date}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleLikePhoto(e, photo.id)}
+                        className="p-1 rounded-full hover:bg-rose-50 text-rose-400 hover:text-rose-600 transition-colors flex items-center gap-0.5"
+                        title="Send love to this memory"
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
+                        {likes > 0 && <span className="text-[9px] font-bold text-rose-600">{likes}</span>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ========================================================================= */}
@@ -980,130 +986,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold shadow-xs cursor-pointer hover:brightness-105"
               >
                 Keep In My Heart ❤️
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 10. AKKU'S SECRET FLOWER GARDEN SURPRISE MODAL                            */}
-      {/* ========================================================================= */}
-      {isFlowerSurpriseOpen && (
-        <div
-          onClick={() => setIsFlowerSurpriseOpen(false)}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl bg-gradient-to-b from-rose-50 via-white to-pink-50/70 p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col gap-5 my-auto border border-rose-200 relative overflow-hidden animate-scale-up"
-          >
-            {/* Soft background petal particle floating effect */}
-            <div className="absolute -top-10 -right-10 w-44 h-44 bg-rose-200/30 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-pink-300/30 rounded-full blur-2xl pointer-events-none" />
-
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-rose-200/70 pb-4 relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white text-2xl shadow-md animate-floral-sway">
-                  💐
-                </div>
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold font-mono tracking-wider uppercase mb-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" />
-                    <span>Saki's Eternal Floral Sanctuary</span>
-                  </div>
-                  <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
-                    A Bouquet That Will Never Wither 🌸
-                  </h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsFlowerSurpriseOpen(false)}
-                className="p-2 rounded-full hover:bg-rose-100 text-stone-400 hover:text-stone-800 cursor-pointer transition-colors"
-                title="Close bouquet"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Emotional Lead Note */}
-            <div className="bg-white/80 p-4 rounded-2xl border border-rose-100 shadow-2xs relative z-10 text-center">
-              <p className="font-serif italic text-stone-800 text-xs sm:text-sm leading-relaxed">
-                "Real flowers fade in a few days, but these digital blooms carry my love that will stay fresh, fragrant, and vibrant forever. Tap each flower below to watch it bloom!"
-              </p>
-            </div>
-
-            {/* 6 Interactive Blooming Flowers Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5 relative z-10 max-h-[48vh] overflow-y-auto pr-1">
-              {FLOWER_BOUQUET.map((flower) => {
-                const isBloomed = !!bloomedFlowers[flower.id];
-                return (
-                  <div
-                    key={flower.id}
-                    onClick={() => handleToggleBloom(flower.id)}
-                    className={`p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col justify-between ${
-                      isBloomed
-                        ? 'bg-white shadow-md border-rose-200/90 hover:shadow-lg'
-                        : 'bg-white/60 border-stone-200/60 opacity-85 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-2xl transition-transform duration-300 ${
-                          isBloomed ? 'animate-flower-bloom scale-110' : 'scale-90 opacity-70'
-                        }`}>
-                          {flower.symbol}
-                        </span>
-                        <div>
-                          <h4 className="font-serif text-xs sm:text-sm font-bold text-stone-900">
-                            {flower.name}
-                          </h4>
-                          <span className="text-[10px] font-semibold text-rose-600 font-mono">
-                            {flower.meaning}
-                          </span>
-                        </div>
-                      </div>
-
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold transition-colors ${
-                        isBloomed
-                          ? 'bg-rose-100 text-rose-700'
-                          : 'bg-stone-100 text-stone-500'
-                      }`}>
-                        {isBloomed ? 'Bloomed 🌸' : 'Tap to Bloom'}
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] text-stone-600 font-light leading-relaxed mt-1">
-                      {flower.description}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Modal Bottom Actions */}
-            <div className="pt-3 border-t border-rose-200/70 flex flex-col sm:flex-row items-center justify-between gap-3 relative z-10">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleBloomAll}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 text-white font-semibold text-xs shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                >
-                  Bloom Entire Garden 🌺✨
-                </button>
-                <button
-                  onClick={handleShowerPetals}
-                  className="px-3 py-2 rounded-xl bg-rose-100/80 hover:bg-rose-200 text-rose-800 font-medium text-xs transition-colors cursor-pointer"
-                >
-                  Shower Petals 🌹🌧️
-                </button>
-              </div>
-
-              <button
-                onClick={() => setIsFlowerSurpriseOpen(false)}
-                className="text-xs text-rose-600 font-semibold hover:underline cursor-pointer"
-              >
-                Keep in My Heart ❤️
               </button>
             </div>
           </div>
