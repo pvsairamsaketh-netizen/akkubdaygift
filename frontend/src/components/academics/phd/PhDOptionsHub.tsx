@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   GraduationCap, 
   Globe, 
@@ -108,6 +109,11 @@ export const PhDOptionsHub: React.FC<PhDOptionsHubProps> = ({
   const [isEvaluatingEligibility, setIsEvaluatingEligibility] = useState<boolean>(false);
   const [showProfileEditModal, setShowProfileEditModal] = useState<boolean>(false);
 
+  // University Tab Search & Filter State
+  const [uniSearchQuery, setUniSearchQuery] = useState<string>('');
+  const [uniRegionFilter, setUniRegionFilter] = useState<'all' | 'india' | 'abroad'>('all');
+  const [uniTypeFilter, setUniTypeFilter] = useState<string>('all');
+
   // AI Advisor State
   const [aiQuery, setAiQuery] = useState<string>('');
   const [aiResponse, setAiResponse] = useState<string | null>(null);
@@ -196,6 +202,33 @@ export const PhDOptionsHub: React.FC<PhDOptionsHubProps> = ({
     universities.forEach(u => set.add(u.country));
     return Array.from(set).sort();
   }, [universities]);
+
+  // Filtered Universities for Explore Universities Tab
+  const filteredUniversities = useMemo(() => {
+    return universities.filter((u) => {
+      if (uniSearchQuery) {
+        const q = uniSearchQuery.toLowerCase();
+        const matches = 
+          u.name.toLowerCase().includes(q) ||
+          (u.short_name && u.short_name.toLowerCase().includes(q)) ||
+          u.city.toLowerCase().includes(q) ||
+          u.country.toLowerCase().includes(q) ||
+          (u.state_region && u.state_region.toLowerCase().includes(q)) ||
+          u.departments.some(d => d.toLowerCase().includes(q));
+        if (!matches) return false;
+      }
+      if (uniRegionFilter === 'india' && u.country_code !== 'IN') return false;
+      if (uniRegionFilter === 'abroad' && u.country_code === 'IN') return false;
+      if (uniTypeFilter !== 'all') {
+        if (uniTypeFilter === 'iit' && !u.name.includes('Indian Institute of Technology')) return false;
+        if (uniTypeFilter === 'iiit' && !u.name.includes('Information Technology') && !u.name.includes('IIIT')) return false;
+        if (uniTypeFilter === 'nit' && !u.name.includes('National Institute of Technology')) return false;
+        if (uniTypeFilter === 'research' && !u.name.includes('Science') && !u.name.includes('Statistical') && !u.name.includes('Fundamental')) return false;
+        if (uniTypeFilter === 'global_top' && u.country_code === 'IN') return false;
+      }
+      return true;
+    });
+  }, [universities, uniSearchQuery, uniRegionFilter, uniTypeFilter]);
 
   // Shortlist Toggle
   const handleToggleShortlist = async (programmeId: string) => {
@@ -866,72 +899,225 @@ export const PhDOptionsHub: React.FC<PhDOptionsHubProps> = ({
       {/* TAB B: EXPLORE UNIVERSITIES (PHASE 5)                                     */}
       {/* ------------------------------------------------------------------------- */}
       {activeTab === 'universities' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {universities.map((u) => (
-            <div
-              key={u.id}
-              className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between gap-4 transition-all hover:shadow-md ${
-                isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-bold ${
-                    u.country_code === 'IN'
-                      ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                      : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                  }`}>
-                    {u.country_code === 'IN' ? '🇮🇳 India' : `🌍 ${u.country}`}
-                  </span>
-                  <span className="text-[10px] text-emerald-500 font-mono flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" />
-                    <span>Verified</span>
-                  </span>
-                </div>
-
-                <h3 className="font-bold text-base leading-snug">{u.name}</h3>
-                <p className="text-xs opacity-75 mt-0.5">{u.city}, {u.state_region || u.country}</p>
-                <p className="text-[11px] opacity-60 mt-1">{u.university_type}</p>
-
-                {u.ranking_note && (
-                  <p className="text-[11px] text-amber-500/90 font-medium mt-2 bg-amber-500/10 p-2 rounded-lg">
-                    {u.ranking_note}
-                  </p>
+        <div className="flex flex-col gap-5">
+          {/* Colleges Search & Category Filter Bar */}
+          <div className={`p-4 rounded-2xl border shadow-sm flex flex-col gap-3 transition-colors ${
+            isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+          }`}>
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+              {/* College Search Input */}
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 opacity-50" />
+                <input
+                  type="text"
+                  placeholder="Search colleges by name, city, NIRF rank, departments (e.g. IIT Madras, IISc, Stanford, TUM)..."
+                  value={uniSearchQuery}
+                  onChange={(e) => setUniSearchQuery(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs focus:outline-hidden focus:ring-2 focus:ring-sky-500/50 ${
+                    isDark 
+                      ? 'bg-[#161b22] border-stone-800 text-stone-100 placeholder:text-stone-500' 
+                      : 'bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400'
+                  }`}
+                />
+                {uniSearchQuery && (
+                  <button
+                    onClick={() => setUniSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 )}
-
-                <div className="mt-3 flex flex-col gap-1 text-xs opacity-80">
-                  <span className="font-semibold text-[11px]">Departments &amp; Schools:</span>
-                  <ul className="list-disc list-inside text-[11px] opacity-75 space-y-0.5">
-                    {u.departments.slice(0, 3).map((d, i) => (
-                      <li key={i}>{d}</li>
-                    ))}
-                  </ul>
-                </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-3 border-t border-stone-800/20 text-xs">
-                <a
-                  href={u.website_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-sky-400 hover:underline flex items-center gap-1"
+              {/* Quick Region Selector */}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl border self-start md:self-auto shrink-0 text-xs font-semibold">
+                <button
+                  onClick={() => setUniRegionFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                    uniRegionFilter === 'all'
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : isDark ? 'text-stone-400 hover:text-stone-200' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  <ExternalLink className="w-3 h-3" />
-                  <span>Official Website</span>
-                </a>
-
-                <a
-                  href={u.admissions_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex items-center gap-1"
+                  All ({universities.length})
+                </button>
+                <button
+                  onClick={() => setUniRegionFilter('india')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                    uniRegionFilter === 'india'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : isDark ? 'text-stone-400 hover:text-stone-200' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  <span>Admissions Portal</span>
-                  <ArrowRight className="w-3 h-3" />
-                </a>
+                  India 🇮🇳 ({universities.filter(u => u.country_code === 'IN').length})
+                </button>
+                <button
+                  onClick={() => setUniRegionFilter('abroad')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                    uniRegionFilter === 'abroad'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : isDark ? 'text-stone-400 hover:text-stone-200' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Abroad 🌍 ({universities.filter(u => u.country_code !== 'IN').length})
+                </button>
               </div>
             </div>
-          ))}
+
+            {/* Sub-Filters: Institute Types */}
+            <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
+              <span className="opacity-60 text-[11px] font-semibold">Filter by Category:</span>
+              {[
+                { id: 'all', label: 'All Institutions' },
+                { id: 'iit', label: 'IITs (Indian Institutes of Technology)' },
+                { id: 'research', label: 'IISc & National Research Institutes' },
+                { id: 'iiit', label: 'IIITs (Information Technology)' },
+                { id: 'nit', label: 'NITs (National Institutes of Technology)' },
+                { id: 'global_top', label: 'Global Ivy & Top Tech Abroad' }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setUniTypeFilter(cat.id)}
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-colors cursor-pointer ${
+                    uniTypeFilter === cat.id
+                      ? 'bg-teal-600 text-white border-teal-500'
+                      : isDark ? 'bg-[#161b22] border-stone-800 text-stone-300 hover:border-stone-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+
+              {(uniSearchQuery || uniRegionFilter !== 'all' || uniTypeFilter !== 'all') && (
+                <button
+                  onClick={() => {
+                    setUniSearchQuery('');
+                    setUniRegionFilter('all');
+                    setUniTypeFilter('all');
+                  }}
+                  className="text-xs text-rose-500 hover:underline ml-auto cursor-pointer"
+                >
+                  Reset filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Counter Banner */}
+          <div className="flex items-center justify-between text-xs px-1 font-medium">
+            <span className="opacity-75">
+              Showing <strong>{filteredUniversities.length}</strong> of <strong>{universities.length}</strong> premier institutions
+            </span>
+          </div>
+
+          {/* Grid of Colleges */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredUniversities.map((u) => (
+              <div
+                key={u.id}
+                className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between gap-4 transition-all hover:shadow-md ${
+                  isDark ? 'bg-[#0d1117] border-stone-800' : 'bg-white border-slate-200'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-bold ${
+                      u.country_code === 'IN'
+                        ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                        : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                    }`}>
+                      {u.country_code === 'IN' ? '🇮🇳 India' : `🌍 ${u.country}`}
+                    </span>
+                    <span className="text-[10px] text-emerald-500 font-mono flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      <span>Verified</span>
+                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-base leading-snug">{u.name}</h3>
+                  <p className="text-xs opacity-75 mt-0.5">{u.city}, {u.state_region || u.country}</p>
+                  <p className="text-[11px] opacity-60 mt-1">{u.university_type}</p>
+
+                  {u.ranking_note && (
+                    <p className="text-[11px] text-amber-500/90 font-medium mt-2 bg-amber-500/10 p-2 rounded-lg">
+                      {u.ranking_note}
+                    </p>
+                  )}
+
+                  <div className="mt-3 flex flex-col gap-1 text-xs opacity-80">
+                    <span className="font-semibold text-[11px]">Departments &amp; Schools:</span>
+                    <ul className="list-disc list-inside text-[11px] opacity-75 space-y-0.5">
+                      {u.departments && u.departments.length > 0 ? (
+                        u.departments.slice(0, 3).map((d, i) => (
+                          <li key={i}>{d}</li>
+                        ))
+                      ) : (
+                        <li>Computer Science and Engineering / AI & Data Systems</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-3 border-t border-stone-800/20 text-xs">
+                  {/* View Programmes Button */}
+                  <button
+                    onClick={() => {
+                      setSearchQuery(u.short_name || u.name);
+                      setActiveTab('programmes');
+                    }}
+                    className="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>View Offered PhD Programmes</span>
+                  </button>
+
+                  <div className="flex items-center justify-between gap-2 pt-1 text-xs">
+                    <a
+                      href={u.website_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-sky-400 hover:underline flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Website</span>
+                    </a>
+
+                    <a
+                      href={u.admissions_url || u.website_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      <span>Admissions Portal</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredUniversities.length === 0 && (
+            <div className={`p-12 text-center rounded-2xl border flex flex-col items-center gap-3 ${
+              isDark ? 'bg-[#0d1117] border-stone-800 text-stone-400' : 'bg-white border-slate-200 text-slate-600'
+            }`}>
+              <AlertCircle className="w-10 h-10 opacity-40 text-amber-500" />
+              <h3 className="text-base font-bold">No colleges match your search criteria</h3>
+              <p className="text-xs max-w-md opacity-75">
+                Try searching by a broader keyword or reset the region and category filters to browse all verified colleges.
+              </p>
+              <button
+                onClick={() => {
+                  setUniSearchQuery('');
+                  setUniRegionFilter('all');
+                  setUniTypeFilter('all');
+                }}
+                className="mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-sky-600 text-white hover:bg-sky-500 cursor-pointer"
+              >
+                Reset College Filters
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1563,11 +1749,17 @@ export const PhDOptionsHub: React.FC<PhDOptionsHubProps> = ({
       {/* ========================================================================= */}
 
       {/* Programme Detail Modal */}
-      {selectedProgramme && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
-          <div className={`w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border p-6 flex flex-col gap-5 shadow-2xl ${
-            isDark ? 'bg-[#0d1117] border-stone-800 text-stone-100' : 'bg-white border-slate-200 text-slate-800'
-          }`}>
+      {selectedProgramme && typeof document !== 'undefined' && createPortal(
+        <div 
+          onClick={() => setSelectedProgramme(null)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`w-full max-w-3xl my-auto max-h-[90vh] overflow-y-auto rounded-2xl border p-6 flex flex-col gap-5 shadow-2xl ${
+              isDark ? 'bg-[#0d1117] border-stone-800 text-stone-100' : 'bg-white border-slate-200 text-slate-800'
+            }`}
+          >
             <div className="flex items-start justify-between gap-3 border-b border-stone-800/20 pb-3">
               <div>
                 <span className="text-[10px] px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 font-bold font-mono">
@@ -1663,15 +1855,22 @@ export const PhDOptionsHub: React.FC<PhDOptionsHubProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Comparison Modal */}
-      {isComparingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
-          <div className={`w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border p-6 flex flex-col gap-5 shadow-2xl ${
-            isDark ? 'bg-[#0d1117] border-stone-800 text-stone-100' : 'bg-white border-slate-200 text-slate-800'
-          }`}>
+      {isComparingModalOpen && typeof document !== 'undefined' && createPortal(
+        <div 
+          onClick={() => setIsComparingModalOpen(false)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`w-full max-w-5xl my-auto max-h-[90vh] overflow-y-auto rounded-2xl border p-6 flex flex-col gap-5 shadow-2xl ${
+              isDark ? 'bg-[#0d1117] border-stone-800 text-stone-100' : 'bg-white border-slate-200 text-slate-800'
+            }`}
+          >
             <div className="flex items-center justify-between border-b border-stone-800/20 pb-3">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-sky-400" />
@@ -1739,15 +1938,22 @@ export const PhDOptionsHub: React.FC<PhDOptionsHubProps> = ({
               </table>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Profile Edit Modal */}
-      {showProfileEditModal && profile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
-          <div className={`w-full max-w-lg rounded-2xl border p-6 flex flex-col gap-4 shadow-2xl text-xs ${
-            isDark ? 'bg-[#0d1117] border-stone-800 text-stone-100' : 'bg-white border-slate-200 text-slate-800'
-          }`}>
+      {showProfileEditModal && profile && typeof document !== 'undefined' && createPortal(
+        <div 
+          onClick={() => setShowProfileEditModal(false)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className={`w-full max-w-lg my-auto rounded-2xl border p-6 flex flex-col gap-4 shadow-2xl text-xs ${
+              isDark ? 'bg-[#0d1117] border-stone-800 text-stone-100' : 'bg-white border-slate-200 text-slate-800'
+            }`}
+          >
             <div className="flex items-center justify-between border-b border-stone-800/20 pb-3">
               <h3 className="font-bold text-sm">Update Academic Credentials</h3>
               <button onClick={() => setShowProfileEditModal(false)} className="text-stone-400 hover:text-white">
@@ -1820,7 +2026,8 @@ export const PhDOptionsHub: React.FC<PhDOptionsHubProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
