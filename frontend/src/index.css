@@ -353,58 +353,47 @@
   animation: romanticGlowPulse 3s ease-in-out infinite;
 }
 
-@keyframes flowerPetalBloom {
+@keyframes flowerBloomPop {
   0% {
+    transform: scale(0.3) rotate(-12deg);
     opacity: 0;
-    transform: scale(0.7) translateY(30px) rotate(-6deg);
-    filter: blur(4px);
+    filter: blur(6px);
   }
-  65% {
+  70% {
+    transform: scale(1.06) rotate(2deg);
     opacity: 1;
-    transform: scale(1.03) translateY(-4px) rotate(1deg);
     filter: blur(0px);
   }
   100% {
+    transform: scale(1) rotate(0deg);
     opacity: 1;
-    transform: scale(1) translateY(0) rotate(0deg);
     filter: blur(0px);
   }
 }
 
-@keyframes flowerFloatSway {
-  0%, 100% {
-    transform: translateY(0px) rotate(-3deg) scale(1);
+@keyframes flowerPetalDrift {
+  0% {
+    transform: translateY(-10px) translateX(0) rotate(0deg);
+    opacity: 0;
   }
-  50% {
-    transform: translateY(-8px) rotate(3deg) scale(1.04);
+  20% {
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(90px) translateX(25px) rotate(180deg);
+    opacity: 0;
   }
 }
 
 .animate-flower-bloom {
-  animation: flowerPetalBloom 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: flowerBloomPop 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.animate-flower-sway {
-  animation: flowerFloatSway 4s ease-in-out infinite;
-}
-
-@keyframes flowerShowerFall {
-  0% {
-    opacity: 0;
-    transform: translateY(0) rotate(0deg) scale(0.6);
-  }
-  15% {
-    opacity: 1;
-    transform: translateY(15vh) rotate(45deg) scale(1);
-  }
-  85% {
-    opacity: 0.85;
-    transform: translateY(85vh) rotate(220deg) scale(1.1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(105vh) rotate(360deg) scale(0.8);
-  }
+.animate-petal-drift {
+  animation: flowerPetalDrift 5s ease-in-out infinite;
 }
 
 /* Accessibility: Reduced Motion Override */

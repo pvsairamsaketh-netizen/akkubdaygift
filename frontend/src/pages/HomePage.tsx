@@ -12,6 +12,7 @@ import {
   X,
   RefreshCw,
   Gift,
+  Smile,
   Mail,
   Compass,
   Award,
@@ -211,71 +212,48 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   });
 
-  // Flower & Memory Lane Surprise State
-  const [isMemoryLaneRevealed, setIsMemoryLaneRevealed] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('akku_memory_lane_revealed') === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [isFlowerRaining, setIsFlowerRaining] = useState<boolean>(false);
+  // Flower Surprise Reveal State for Memory Lane
+  const [isMemoriesRevealed, setIsMemoriesRevealed] = useState<boolean>(false);
 
-  const triggerFlowerShower = () => {
-    setIsFlowerRaining(true);
-    setTimeout(() => setIsFlowerRaining(false), 5500);
+  const triggerFlowerBloomSurprise = () => {
+    setIsMemoriesRevealed(true);
 
-    // Multi-stage floral confetti cannon bursts
+    // Multi-stage blooming petal explosion
+    // Stage 1: Central flower petal burst
     confetti({
-      particleCount: 80,
-      spread: 90,
-      origin: { y: 0.35 },
-      colors: ['#fda4af', '#f43f5e', '#fb7185', '#ffe4e6', '#fde047', '#ffffff']
+      particleCount: 85,
+      spread: 100,
+      origin: { y: 0.6 },
+      colors: ['#f43f5e', '#fb7185', '#fda4af', '#f472b6', '#fbcfe8', '#ffffff']
     });
 
+    // Stage 2: Left and right flower fountains fluttering inward
     setTimeout(() => {
       confetti({
-        particleCount: 60,
+        particleCount: 55,
         angle: 60,
-        spread: 75,
-        origin: { x: 0.05, y: 0.45 },
-        colors: ['#f43f5e', '#fb7185', '#fda4af', '#f472b6', '#fef08a']
+        spread: 65,
+        origin: { x: 0.05, y: 0.65 },
+        colors: ['#fda4af', '#f43f5e', '#fbbf24', '#fbcfe8']
+      });
+      confetti({
+        particleCount: 55,
+        angle: 120,
+        spread: 65,
+        origin: { x: 0.95, y: 0.65 },
+        colors: ['#fda4af', '#f43f5e', '#fbbf24', '#fbcfe8']
       });
     }, 250);
 
+    // Stage 3: Gentle golden star sparkle shower
     setTimeout(() => {
       confetti({
-        particleCount: 60,
-        angle: 120,
-        spread: 75,
-        origin: { x: 0.95, y: 0.45 },
-        colors: ['#f43f5e', '#fb7185', '#fda4af', '#f472b6', '#fef08a']
-      });
-    }, 450);
-
-    setTimeout(() => {
-      confetti({
-        particleCount: 75,
+        particleCount: 45,
         spread: 120,
-        origin: { y: 0.55 },
-        colors: ['#e11d48', '#f43f5e', '#fb7185', '#ffffff']
+        origin: { y: 0.5 },
+        colors: ['#fbbf24', '#fef08a', '#fda4af', '#ffffff']
       });
-    }, 700);
-  };
-
-  const handleRevealSurprise = () => {
-    setIsMemoryLaneRevealed(true);
-    try {
-      localStorage.setItem('akku_memory_lane_revealed', 'true');
-    } catch {}
-    triggerFlowerShower();
-  };
-
-  const handleHideSurprise = () => {
-    setIsMemoryLaneRevealed(false);
-    try {
-      localStorage.removeItem('akku_memory_lane_revealed');
-    } catch {}
+    }, 550);
   };
 
   // Love Milestone Live Counter (from May 4, 2022 proposal date)
@@ -530,166 +508,155 @@ export const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* ========================================================================= */}
+      {/* 4. OUR MEMORY LANE — LUXURY FLOATING POLAROID CARDS (NO TRUNCATION!)      */}
       {/* ========================================================================= */}
-      {/* 4. OUR MEMORY LANE — LUXURY FLOWER SURPRISE & BLOOMING POLAROIDS         */}
-      {/* ========================================================================= */}
-      <div className="relative">
-        {/* Floating Flower Petal Rain Overlay when active */}
-        {isFlowerRaining && (
-          <div className="fixed inset-0 pointer-events-none z-[9990] overflow-hidden">
-            {['🌸', '🌹', '🌺', '🌷', '💐', '🌸', '✨', '🌹', '💖', '🌷', '🌸', '🌺'].map((flower, i) => (
-              <span
-                key={i}
-                className="absolute text-2xl sm:text-3xl animate-fade-in"
-                style={{
-                  top: '-10%',
-                  left: `${(i * 8.3) + 2}%`,
-                  animation: `flowerShowerFall ${3 + (i % 3)}s linear forwards`,
-                  animationDelay: `${i * 0.18}s`
-                }}
-              >
-                {flower}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 px-1">
+      <div>
+        <div className="flex items-center justify-between mb-6 px-1">
           <div>
             <h3 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 flex items-center gap-2">
               <span>Our Memory Lane</span>
-              <span className="text-xl animate-bounce">🌸</span>
+              <Smile className="w-6 h-6 text-rose-500" />
             </h3>
             <p className="text-stone-600 text-xs sm:text-sm font-light mt-1">
               Snapshots of laughter, ocean waves, and unforgettable memories with you.
             </p>
           </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            {isMemoryLaneRevealed && (
-              <>
-                <button
-                  onClick={triggerFlowerShower}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-semibold shadow-2xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                  title="Shower more flowers"
-                >
-                  <span>🌸 Shower Flowers</span>
-                  <span>💐</span>
-                </button>
-                <button
-                  onClick={handleHideSurprise}
-                  className="text-xs text-stone-400 hover:text-stone-600 px-2.5 py-1.5 rounded-full hover:bg-stone-100 transition-colors cursor-pointer"
-                  title="Hide surprise to reveal again"
-                >
-                  Hide Surprise 🎁
-                </button>
-              </>
-            )}
-            <button
-              onClick={() => onNavigate('memories')}
-              className="text-xs sm:text-sm text-rose-600 font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200/70"
-            >
-              <span>View All</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            onClick={() => onNavigate('memories')}
+            className="text-xs sm:text-sm text-rose-600 font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200/70"
+          >
+            <span>View All Memories</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        {!isMemoryLaneRevealed ? (
-          /* Mystical Floral Surprise Invitation Card */
-          <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-rose-100/90 via-pink-50/95 to-rose-100/90 border-2 border-dashed border-rose-300 shadow-xl shadow-rose-200/60 backdrop-blur-xl text-center relative overflow-hidden flex flex-col items-center">
-            {/* Ambient decorative glowing spots */}
-            <div className="absolute -top-12 -left-12 w-48 h-48 bg-rose-300/30 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-pink-300/30 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative mb-4">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 via-pink-400 to-rose-400 flex items-center justify-center text-4xl shadow-xl shadow-rose-300/80 animate-flower-sway">
-                💐
+        {/* Blooming Flower Surprise or Revealed Polaroid Strip */}
+        {!isMemoriesRevealed ? (
+          <div className="relative rounded-3xl p-8 sm:p-12 bg-gradient-to-br from-rose-100/90 via-pink-50/80 to-rose-100/90 border-2 border-dashed border-rose-300/80 shadow-xl shadow-rose-200/50 backdrop-blur-xl text-center overflow-hidden flex flex-col items-center justify-center">
+            {/* Soft floating decorative flower petal emojis */}
+            <div className="absolute -top-4 -left-4 text-4xl animate-petal-drift pointer-events-none select-none">🌸</div>
+            <div className="absolute top-8 right-6 text-3xl animate-petal-drift pointer-events-none select-none" style={{ animationDelay: '1.5s' }}>🌹</div>
+            <div className="absolute bottom-6 left-12 text-3xl animate-petal-drift pointer-events-none select-none" style={{ animationDelay: '2.5s' }}>🌷</div>
+            <div className="absolute -bottom-3 -right-3 text-4xl animate-petal-drift pointer-events-none select-none" style={{ animationDelay: '3.5s' }}>🌺</div>
+            
+            <div className="relative z-10 max-w-lg space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 border border-rose-200 text-rose-800 text-xs sm:text-sm font-semibold shadow-xs">
+                <span className="text-base">💐</span>
+                <span>Secret Memory Garden For Akku</span>
+                <span className="text-base">🌸</span>
               </div>
-              <span className="absolute -bottom-1 -right-1 text-2xl animate-bounce">
-                🌸
-              </span>
-              <span className="absolute -top-1 -left-1 text-2xl animate-pulse">
-                ✨
-              </span>
+
+              <h4 className="font-serif text-2xl sm:text-4xl font-bold text-stone-900 leading-tight">
+                A Blooming Surprise Awaits You 🌸
+              </h4>
+
+              <p className="text-stone-600 text-xs sm:text-sm leading-relaxed font-light">
+                Saki has planted our sweetest memories inside a garden of blooming flowers. Tap below to unveil our photos with a shower of blossoms and love!
+              </p>
+
+              <div className="pt-2">
+                <button
+                  onClick={triggerFlowerBloomSurprise}
+                  className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:via-pink-600 hover:to-rose-700 text-white font-bold text-sm sm:text-base shadow-xl shadow-rose-300/60 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer animate-romantic-glow"
+                >
+                  <span className="text-xl group-hover:rotate-12 transition-transform">💐</span>
+                  <span>Reveal Flower Surprise & Memories ✨</span>
+                  <span className="text-xl group-hover:-rotate-12 transition-transform">🌸</span>
+                </button>
+              </div>
+
+              <div className="text-[11px] text-rose-500 font-mono tracking-wider pt-1 flex items-center justify-center gap-1.5">
+                <span>✨ Made with love for Akku's eyes only ✨</span>
+              </div>
             </div>
-
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/95 border border-rose-200 text-rose-800 text-xs font-semibold shadow-2xs mb-2.5">
-              <span>Secret Surprise for My Dearest Akku</span>
-              <span>🌸</span>
-            </div>
-
-            <h4 className="font-serif text-2xl sm:text-4xl font-bold text-rose-950 mb-2">
-              A Garden of Flowers & Secret Memories
-            </h4>
-
-            <p className="text-stone-600 text-xs sm:text-sm max-w-md mx-auto font-light leading-relaxed mb-6">
-              Saki has hidden 6 of our most unforgettable memories behind a secret floral veil. Tap the button below to shower fresh blossoms and reveal our photos!
-            </p>
-
-            <button
-              onClick={handleRevealSurprise}
-              className="group relative px-8 py-4 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-bold text-sm sm:text-base shadow-xl shadow-rose-300 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-3 animate-romantic-glow"
-            >
-              <span className="text-xl group-hover:rotate-12 transition-transform">🌸</span>
-              <span>Reveal Flower Surprise & Memories</span>
-              <span className="text-xl group-hover:-rotate-12 transition-transform">💐</span>
-            </button>
           </div>
         ) : (
-          /* Staggered Blooming Polaroid Strip Grid with Washi Tape & Full Titles */
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 pt-3">
-            {POLAROID_MEMORIES.map((photo, idx) => {
-              const likes = photoLikes[photo.id] || 0;
-              return (
-                <div
-                  key={photo.id}
-                  onClick={() => setSelectedPhoto(photo)}
-                  className="group relative bg-white p-3 pt-4 pb-5 rounded-2xl border border-rose-100 shadow-md hover:shadow-2xl hover:shadow-rose-100/80 transition-all duration-300 hover:-translate-y-2 hover:rotate-0 cursor-pointer flex flex-col justify-between animate-flower-bloom"
-                  style={{
-                    animationDelay: `${idx * 120}ms`,
-                    transform: `rotate(${idx % 2 === 0 ? '-1.5deg' : '1.5deg'})`
-                  }}
+          <div className="space-y-4 animate-fade-in">
+            {/* Top Celebratory Banner with Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 px-5 rounded-2xl bg-gradient-to-r from-rose-100/80 via-pink-50/70 to-rose-100/80 border border-rose-200/80 shadow-xs">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-rose-900 font-medium">
+                <span className="text-base">🌸</span>
+                <span>The garden has bloomed! Tap any photo to zoom and read its heartfelt story.</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={triggerFlowerBloomSurprise}
+                  className="px-3.5 py-1.5 rounded-full bg-white hover:bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200/80 shadow-2xs hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  {/* Washi Tape Ribbon Accent */}
-                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-4 bg-gradient-to-r from-amber-100/90 via-rose-100/90 to-amber-100/90 border border-amber-200/50 shadow-2xs rounded-xs transform -rotate-1 pointer-events-none z-10" />
+                  <span>Shower Flowers Again</span>
+                  <span>🌸</span>
+                </button>
+                <button
+                  onClick={() => setIsMemoriesRevealed(false)}
+                  className="px-3 py-1.5 rounded-full bg-white/70 hover:bg-white text-stone-500 hover:text-stone-700 text-xs font-medium border border-rose-100 transition-all cursor-pointer"
+                  title="Hide garden and re-experience surprise"
+                >
+                  Hide Garden 🔒
+                </button>
+              </div>
+            </div>
 
-                  <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-stone-100 mb-2.5 shadow-inner">
-                    <img
-                      src={photo.src}
-                      alt={photo.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
-                      <span className="text-[10px] text-white font-medium">Zoom Photo</span>
-                      <span className="text-[10px] text-rose-200">🌸</span>
+            {/* Polaroid Strip Grid with Washi Tape, Flower Badges & Staggered Animation */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 pt-2">
+              {POLAROID_MEMORIES.map((photo, idx) => {
+                const likes = photoLikes[photo.id] || 0;
+                const flowerIcons = ['🌸', '🌹', '🌷', '🌺', '🌻', '💐'];
+                const flowerIcon = flowerIcons[idx % flowerIcons.length];
+
+                return (
+                  <div
+                    key={photo.id}
+                    onClick={() => setSelectedPhoto(photo)}
+                    className="group relative bg-white p-3 pt-4 pb-5 rounded-2xl border border-rose-100 shadow-md hover:shadow-2xl hover:shadow-rose-100/80 transition-all duration-300 hover:-translate-y-2 hover:rotate-0 cursor-pointer flex flex-col justify-between animate-flower-bloom"
+                    style={{
+                      animationDelay: `${idx * 110}ms`,
+                      transform: `rotate(${idx % 2 === 0 ? '-1.5deg' : '1.5deg'})`
+                    }}
+                  >
+                    {/* Washi Tape Ribbon Accent */}
+                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-4 bg-gradient-to-r from-amber-100/90 via-rose-100/90 to-amber-100/90 border border-amber-200/50 shadow-2xs rounded-xs transform -rotate-1 pointer-events-none z-10" />
+
+                    {/* Flower Badge on Corner */}
+                    <span className="absolute -top-2 -right-1 text-base z-10 pointer-events-none drop-shadow-xs">
+                      {flowerIcon}
+                    </span>
+
+                    <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-stone-100 mb-2.5 shadow-inner">
+                      <img
+                        src={photo.src}
+                        alt={photo.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
+                        <span className="text-[10px] text-white font-medium">Zoom Photo</span>
+                      </div>
+                    </div>
+
+                    {/* Polaroid Text (Guaranteed No Ellipsis / No Truncation) */}
+                    <div className="text-center px-0.5 flex flex-col justify-between flex-1">
+                      <h4 className="font-serif text-xs font-bold text-stone-900 leading-snug min-h-[32px] flex items-center justify-center text-center">
+                        {photo.title}
+                      </h4>
+                      <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-rose-50">
+                        <span className="text-[10px] text-rose-600 font-semibold font-mono">
+                          {photo.date}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleLikePhoto(e, photo.id)}
+                          className="p-1 rounded-full hover:bg-rose-50 text-rose-400 hover:text-rose-600 transition-colors flex items-center gap-0.5"
+                          title="Send love to this memory"
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
+                          {likes > 0 && <span className="text-[9px] font-bold text-rose-600">{likes}</span>}
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Polaroid Text (Guaranteed No Ellipsis / No Truncation) */}
-                  <div className="text-center px-0.5 flex flex-col justify-between flex-1">
-                    <h4 className="font-serif text-xs font-bold text-stone-900 leading-snug min-h-[32px] flex items-center justify-center text-center">
-                      {photo.title}
-                    </h4>
-                    <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-rose-50">
-                      <span className="text-[10px] text-rose-600 font-semibold font-mono">
-                        {photo.date}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => handleLikePhoto(e, photo.id)}
-                        className="p-1 rounded-full hover:bg-rose-50 text-rose-400 hover:text-rose-600 transition-colors flex items-center gap-0.5"
-                        title="Send love to this memory"
-                      >
-                        <Heart className={`w-3.5 h-3.5 ${likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
-                        {likes > 0 && <span className="text-[9px] font-bold text-rose-600">{likes}</span>}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
