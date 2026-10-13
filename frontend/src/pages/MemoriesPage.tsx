@@ -272,30 +272,32 @@ export const MemoriesPage: React.FC = () => {
           </p>
         </div>
 
-        {/* View Mode Toggle Buttons */}
-        <div className="flex items-center gap-2 bg-rose-50/80 p-1.5 rounded-2xl border border-rose-200/60 shadow-inner self-stretch md:self-auto">
+        {/* View Mode Toggle Buttons (Uniform Segmented Pill) */}
+        <div className="inline-flex items-center p-1 rounded-full bg-rose-50/90 border border-rose-200/80 shadow-2xs self-stretch md:self-auto">
           <button
             onClick={() => setViewMode('scrapbook')}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+            className={`flex-1 md:flex-none h-9 px-4 sm:px-5 rounded-full flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer select-none whitespace-nowrap border ${
               viewMode === 'scrapbook'
-                ? 'bg-white text-rose-700 shadow-sm shadow-rose-200/50 scale-[1.02]'
-                : 'text-stone-600 hover:text-rose-600'
+                ? 'bg-white text-rose-700 shadow-xs border-rose-200/60'
+                : 'text-stone-600 hover:text-rose-700 hover:bg-white/50 border-transparent'
             }`}
           >
-            <ImageIcon className="w-4 h-4 text-rose-500" />
+            <ImageIcon className="w-4 h-4 text-rose-500 shrink-0" />
             <span>Our Photo Scrapbook 📸</span>
           </button>
           <button
             onClick={() => setViewMode('databank')}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+            className={`flex-1 md:flex-none h-9 px-4 sm:px-5 rounded-full flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer select-none whitespace-nowrap border ${
               viewMode === 'databank'
-                ? 'bg-white text-rose-700 shadow-sm shadow-rose-200/50 scale-[1.02]'
-                : 'text-stone-600 hover:text-rose-600'
+                ? 'bg-white text-rose-700 shadow-xs border-rose-200/60'
+                : 'text-stone-600 hover:text-rose-700 hover:bg-white/50 border-transparent'
             }`}
           >
-            <BookOpen className="w-4 h-4 text-rose-500" />
+            <BookOpen className="w-4 h-4 text-rose-500 shrink-0" />
             <span>Love Notes & AI Memory Bank 💌</span>
-            <span className="ml-1 text-[11px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold">
+            <span className={`ml-1 text-[11px] px-2 py-0.5 rounded-full font-bold ${
+              viewMode === 'databank' ? 'bg-rose-100 text-rose-800' : 'bg-rose-100/70 text-stone-600'
+            }`}>
               {total}
             </span>
           </button>

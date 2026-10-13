@@ -89,7 +89,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const secondaryTwo = [navItems[4], navItems[6]]; // Library, Settings
 
   const isSecondaryActive = secondaryTwo.some(item => item.id === activeTab);
-  const activeSecondaryItem = secondaryTwo.find(item => item.id === activeTab);
 
   const handleSelect = (tab: NavTab) => {
     onTabChange(tab);
@@ -98,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   // Fixed uniform bounding box classes for all navbar buttons
-  const navBtnBase = "w-[84px] h-8 rounded-full flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 select-none";
+  const navBtnBase = "w-[94px] h-[34px] rounded-full flex items-center justify-center gap-1.5 text-xs transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 select-none";
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-rose-100/90 shadow-xs transition-all w-full">
@@ -123,8 +122,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
 
-            {/* Desktop Left Navigation (>= 1440px: All 7 Items with Fixed Pink BBox Size) */}
-            <nav className="primary-navigation hidden min-[1440px]:flex items-center gap-1.5 justify-start shrink-0">
+            {/* Desktop Left Navigation (>= 1440px: All 7 Items with Fixed Pill BBox Size) */}
+            <nav className="primary-navigation hidden min-[1440px]:flex items-center gap-1 p-1 rounded-full bg-rose-50/60 border border-rose-100/70 shadow-2xs shrink-0">
               {navItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
@@ -133,8 +132,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => handleSelect(item.id)}
                     className={`${navBtnBase} ${
                       isActive
-                        ? 'bg-rose-500 text-white font-semibold shadow-xs shadow-rose-200'
-                        : 'text-stone-700 hover:text-rose-950 hover:bg-rose-50/80 font-medium'
+                        ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold shadow-xs shadow-rose-200/60'
+                        : 'text-stone-600 hover:text-rose-950 hover:bg-white/70 font-medium'
                     }`}
                   >
                     <span className={isActive ? 'text-white' : ''}>{item.icon}</span>
@@ -145,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </nav>
 
             {/* Medium Desktop Left Navigation (1000px - 1439px: Top 5 + More Dropdown, zero overlap) */}
-            <nav className="primary-navigation hidden min-[1000px]:flex min-[1440px]:hidden items-center gap-1.5 justify-start shrink-0">
+            <nav className="primary-navigation hidden min-[1000px]:flex min-[1440px]:hidden items-center gap-1 p-1 rounded-full bg-rose-50/60 border border-rose-100/70 shadow-2xs shrink-0">
               {primaryFive.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
@@ -154,8 +153,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => handleSelect(item.id)}
                     className={`${navBtnBase} ${
                       isActive
-                        ? 'bg-rose-500 text-white font-semibold shadow-xs shadow-rose-200'
-                        : 'text-stone-700 hover:text-rose-950 hover:bg-rose-50/80 font-medium'
+                        ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold shadow-xs shadow-rose-200/60'
+                        : 'text-stone-600 hover:text-rose-950 hover:bg-white/70 font-medium'
                     }`}
                   >
                     <span className={isActive ? 'text-white' : ''}>{item.icon}</span>
@@ -164,19 +163,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 );
               })}
 
-              {/* More ⋯ Dropdown */}
+              {/* More ⋯ Dropdown (Fixed Uniform Width and Design) */}
               <div className="relative shrink-0" ref={moreRef}>
                 <button
                   onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-                  className={`${navBtnBase} border ${
+                  className={`${navBtnBase} ${
                     isSecondaryActive
-                      ? 'bg-rose-500 text-white border-rose-500 font-semibold shadow-xs'
-                      : 'border-rose-100 text-stone-700 hover:text-rose-900 hover:bg-rose-50/80 bg-white font-medium'
+                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold shadow-xs shadow-rose-200/60'
+                      : 'text-stone-600 hover:text-rose-950 hover:bg-white/70 font-medium'
                   }`}
                   aria-label="More navigation links"
                 >
                   <MoreHorizontal className="w-3.5 h-3.5 shrink-0" />
-                  <span>{isSecondaryActive && activeSecondaryItem ? activeSecondaryItem.label : 'More'}</span>
+                  <span>More</span>
+                  {isSecondaryActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-200 shrink-0" />
+                  )}
                   <ChevronDown className={`w-3 h-3 transition-transform shrink-0 ${moreDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
