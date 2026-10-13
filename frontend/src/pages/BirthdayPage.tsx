@@ -30,6 +30,7 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
   const [isCandleBlown, setIsCandleBlown] = useState<boolean>(false);
   const [wishMade, setWishMade] = useState<boolean>(false);
+  const [isGiftUnwrapped, setIsGiftUnwrapped] = useState<boolean>(false);
 
   const handleBlowCandle = () => {
     setIsCandleBlown(true);
@@ -44,6 +45,16 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
 
   const handleRelightCandle = () => {
     setIsCandleBlown(false);
+  };
+
+  const handleUnwrapGift = () => {
+    setIsGiftUnwrapped(true);
+    confetti({
+      particleCount: 70,
+      spread: 90,
+      origin: { y: 0.5 },
+      colors: ['#f43f5e', '#fda4af', '#fde047', '#fb7185', '#ffffff']
+    });
   };
 
   const recipient = birthdayConfig?.recipient_name || 'Akku';
@@ -204,6 +215,101 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
             >
               Blow Out Candle & Make Wish ✨
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Interactive Birthday Gift Box Unwrap Section */}
+      <div className="w-full max-w-lg mb-8 p-6 rounded-3xl bg-gradient-to-br from-rose-50/80 via-white to-pink-50/80 border border-rose-200/80 shadow-lg shadow-rose-100/50 backdrop-blur-xl text-center">
+        {!isGiftUnwrapped ? (
+          <div 
+            onClick={handleUnwrapGift}
+            className="cursor-pointer group flex flex-col items-center gap-3 py-2"
+          >
+            <div className="relative">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-rose-500 via-pink-500 to-rose-600 shadow-xl flex items-center justify-center text-white transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                <Gift className="w-10 h-10 animate-bounce" style={{ animationDuration: '2s' }} />
+              </div>
+              <span className="absolute -top-2 -right-2 px-2.5 py-0.5 rounded-full bg-amber-300 text-amber-950 font-bold text-[10px] shadow-xs">
+                Tap to Unwrap
+              </span>
+            </div>
+            <div>
+              <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-rose-600 transition-colors">
+                Akku's Birthday Gift Box 🎁
+              </h3>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Wrapped with satin ribbon and eternal love from Saki. Tap to open!
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 animate-scale-up text-left">
+            <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📜</span>
+                <h3 className="font-serif text-base sm:text-lg font-bold text-rose-950">
+                  Certificate of Saki's Lifetime Promises to Akku
+                </h3>
+              </div>
+              <button 
+                onClick={() => setIsGiftUnwrapped(false)}
+                className="text-[11px] text-stone-400 hover:text-rose-600 cursor-pointer"
+              >
+                Wrap Back 🎁
+              </button>
+            </div>
+
+            <div className="space-y-2.5 text-xs sm:text-sm text-stone-700 font-serif">
+              <div className="p-2.5 rounded-xl bg-white border border-rose-100/80 shadow-2xs flex items-start gap-2.5">
+                <span className="text-base">🍨</span>
+                <div>
+                  <strong className="text-rose-900 block font-sans text-xs">The Ice Cream Promise</strong>
+                  <span>Whenever you are craving mango or vanilla ice cream, have a headache, or had a long day, I will get it for you without asking twice.</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white border border-rose-100/80 shadow-2xs flex items-start gap-2.5">
+                <span className="text-base">🤝</span>
+                <div>
+                  <strong className="text-rose-900 block font-sans text-xs">The Unwavering Support Promise</strong>
+                  <span>I will hold your hand through placements, exams, and celebrate your victories louder than anyone else in the room.</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white border border-rose-100/80 shadow-2xs flex items-start gap-2.5">
+                <span className="text-base">👂</span>
+                <div>
+                  <strong className="text-rose-900 block font-sans text-xs">The Safe Space Promise</strong>
+                  <span>I promise to always listen with my whole heart whenever you want to vent, talk, or just stay quiet together.</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white border border-rose-100/80 shadow-2xs flex items-start gap-2.5">
+                <span className="text-base">💖</span>
+                <div>
+                  <strong className="text-rose-900 block font-sans text-xs">The Forever Promise</strong>
+                  <span>I promise to love, protect, and choose you every single day of my life, from this birthday to eternity.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between">
+              <span className="text-[11px] text-rose-600 font-mono font-medium">Signed with love: Saki ❤️</span>
+              <button
+                onClick={() => {
+                  confetti({
+                    particleCount: 40,
+                    spread: 60,
+                    origin: { y: 0.6 },
+                    colors: ['#fda4af', '#f43f5e', '#ffffff']
+                  });
+                }}
+                className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              >
+                Seal with Love 💋
+              </button>
+            </div>
           </div>
         )}
       </div>

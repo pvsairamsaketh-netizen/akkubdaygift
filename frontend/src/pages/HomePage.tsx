@@ -12,7 +12,11 @@ import {
   X,
   RefreshCw,
   Gift,
-  Smile
+  Smile,
+  Mail,
+  Compass,
+  Award,
+  Clock
 } from 'lucide-react';
 import type { NavTab } from '../components/Navbar';
 import { api } from '../services/api';
@@ -28,13 +32,13 @@ interface HomePageProps {
 const REASONS_WHY_I_LOVE_YOU = [
   "The gentle warmth in your eyes when you look at me after a long day.",
   "How you stayed by my side through college, exams, and every uncertain moment.",
-  "Your pure, innocent excitement whenever you get your favorite mango ice cream.",
+  "Your pure, innocent excitement whenever you get your favorite mango or vanilla ice cream.",
   "The memories we made walking along Marina Beach with the sea breeze in our hair.",
-  "How deeply you care about the little things—my health, my meals, and my peace.",
+  "How deeply you care about the little things—my health, my meals, and my peace of mind.",
   "The unforgettable samosa conversation in the canteen on May 4, 2022, where our forever began.",
   "Your soft voice when you say 'Saki' that instantly makes all my stress disappear.",
   "How patient and understanding you are, forgiving my flaws and helping me become a better man.",
-  "The beautiful dreams we share of building a quiet, loving future together.",
+  "The beautiful dreams we share of building a quiet, loving, and successful future together.",
   "Your laugh—it is genuinely my favorite sound in the entire universe.",
   "How you believe in my dreams even before I believe in them myself.",
   "The way you scrunch your nose when you're teasing me or being playful.",
@@ -45,40 +49,133 @@ const REASONS_WHY_I_LOVE_YOU = [
 
 const POLAROID_MEMORIES = [
   {
+    id: 'img1',
     src: '/images/memories/img1.jpeg',
     title: 'Our Warmest Smile',
     date: 'College Days',
-    caption: 'Where two strangers became each other’s whole world.'
+    caption: 'Where two strangers met in mechanical class and became each other’s whole world.'
   },
   {
+    id: 'img2',
     src: '/images/memories/img2.jpeg',
     title: 'Every Glance Tells a Story',
     date: 'Sweet Moments',
-    caption: 'The quiet looks that spoke louder than any words.'
+    caption: 'The quiet looks that spoke louder than any words we could ever say.'
   },
   {
+    id: 'img3',
     src: '/images/memories/img3.jpeg',
     title: 'Marina Beach Breeze',
     date: 'Chennai Shore',
-    caption: 'Watching waves with you while time stood completely still.'
+    caption: 'Watching the rolling ocean waves with you while time stood completely still.'
   },
   {
+    id: 'img4',
     src: '/images/memories/img4.jpeg',
     title: 'Holding Hands Through Life',
     date: 'Unbreakable Bond',
-    caption: 'Promising to never let go, through every joy and storm.'
+    caption: 'Promising to never let go, through every joy, placement exam, and storm.'
   },
   {
+    id: 'img5',
     src: '/images/memories/img5.jpeg',
     title: 'My Favorite Person',
     date: 'Pure Joy',
-    caption: 'Your happiness is the only thing that truly matters to me.'
+    caption: 'Your bright, genuine happiness is the only thing that truly matters to me.'
   },
   {
+    id: 'img6',
     src: '/images/memories/img6.jpeg',
     title: 'Forever & Always',
     date: 'Our Love Story',
-    caption: 'Every yesterday with you was a gift, every tomorrow is a dream.'
+    caption: 'Every yesterday with you was a gift, every tomorrow with you is a dream come true.'
+  }
+];
+
+interface OpenWhenLetter {
+  id: string;
+  envelopeTitle: string;
+  badge: string;
+  icon: string;
+  letterTitle: string;
+  letterMessage: string;
+  color: string;
+}
+
+const OPEN_WHEN_LETTERS: OpenWhenLetter[] = [
+  {
+    id: 'miss_me',
+    envelopeTitle: 'Open when you miss me',
+    badge: 'Anytime • Distance',
+    icon: '💌',
+    letterTitle: 'For When Distance Feels Heavy...',
+    letterMessage: `Dearest Akku,\n\nClose your eyes for just ten seconds. Take a deep breath. Can you feel that quiet warmth in your chest? That is my heart beating right alongside yours.\n\nNo matter where we are, no matter how busy the days get, there is not a single hour where you aren't in my thoughts. Every kilometer between us is just temporary, but what we share is forever. You are holding my hand in spirit, and I will always, always come back to you.\n\nForever yours,\nSaki ❤️`,
+    color: 'from-rose-500 to-pink-500'
+  },
+  {
+    id: 'stressful_day',
+    envelopeTitle: "Open when you're stressed or tired",
+    badge: 'Comfort • Peace',
+    icon: '💖',
+    letterTitle: 'Take a Breath, My Brilliant Girl...',
+    letterMessage: `My sweet Akku,\n\nI know how hard you push yourself. I know how deeply you care about everything you do, and how exhausting some days can be.\n\nRight now, put all your worries on pause. You don't have to carry the whole world today. Go grab a cup of warm tea or your favorite vanilla ice cream. Remember how resilient and intelligent you are. I am so ridiculously proud of you, today and every single day.\n\nRest your mind, my love. Saki is always in your corner.\n❤️`,
+    color: 'from-pink-500 to-rose-400'
+  },
+  {
+    id: 'want_to_smile',
+    envelopeTitle: 'Open when you want to smile',
+    badge: 'Happiness • Joy',
+    icon: '🍦',
+    letterTitle: 'Here Is A Little Reason To Smile...',
+    letterMessage: `Hey you,\n\nDo you remember the day we ate ice cream together, and you laughed so hard your eyes completely crinkled up? That little crinkle in your eyes is hands down my favorite view in this entire universe.\n\nYour smile has an unfair amount of power over me—one look at you laughing, and whatever bad day I was having simply disappears. So please keep smiling, because the world is infinitely prettier when you do.\n\nSending you a million hugs,\nSaki ✨`,
+    color: 'from-amber-400 to-rose-400'
+  },
+  {
+    id: 'birthday_midnight',
+    envelopeTitle: 'Open on your birthday midnight',
+    badge: 'Birthday Special • 12:00 AM',
+    icon: '🎂',
+    letterTitle: 'Happy Birthday, The Love Of My Life!',
+    letterMessage: `Happy Birthday, my precious Akku! 🎂🎉\n\nAnother year of your existence, and another year that I get to love you. Thank you for being born. Thank you for walking into my life, for your patience, your warmth, and your endless sweetness.\n\nMay this coming year bring you placement triumphs, boundless laughter, and everything your gentle heart desires. I promise to stand by your side for every single milestone. Happy Birthday, my wife-to-be, my sanctuary, my everything.\n\nWith all my love to eternity,\nSaki ❤️🎂✨`,
+    color: 'from-rose-600 to-pink-600'
+  }
+];
+
+const LOVE_MILESTONES = [
+  {
+    year: 'College Days',
+    title: 'Where Two Worlds Collided',
+    subtitle: 'Mechanical B-Section Class',
+    desc: 'From quiet glances across the classroom to endless discussions, discovering a friend unlike anyone else.',
+    icon: '🎓'
+  },
+  {
+    year: 'May 4, 2022',
+    title: 'The Samosa Proposal',
+    subtitle: 'Campus Canteen & Walkways',
+    desc: 'Sharing warm samosas and honest feelings, taking the leap of faith that turned into our forever promise.',
+    icon: '💍'
+  },
+  {
+    year: 'Chennai Days',
+    title: 'Marina Beach Sunsets',
+    subtitle: 'Rolling Waves & Quiet Promises',
+    desc: 'Walking barefoot on the shore with the ocean breeze, realizing that home is standing next to each other.',
+    icon: '🌊'
+  },
+  {
+    year: 'Present Day',
+    title: 'Growing Together',
+    subtitle: 'Career & Placement Dreams',
+    desc: 'Cheering each other on through late-night coding, study calls, and supporting each other’s highest ambitions.',
+    icon: '🌟'
+  },
+  {
+    year: 'October 20 & Beyond',
+    title: 'To Eternity & Forever',
+    subtitle: 'Akku’s Birthday Sanctuary',
+    desc: 'Celebrating the incredible woman you are today, and looking forward to a lifetime of adventures together.',
+    icon: '🎂'
   }
 ];
 
@@ -91,6 +188,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [memoryCount, setMemoryCount] = useState<number>(0);
   const [docCount, setDocCount] = useState<number>(1);
   const [selectedPhoto, setSelectedPhoto] = useState<typeof POLAROID_MEMORIES[0] | null>(null);
+  const [selectedLetter, setSelectedLetter] = useState<OpenWhenLetter | null>(null);
   
   // Interactive Love Reason State
   const [reasonIdx, setReasonIdx] = useState<number>(0);
@@ -102,6 +200,15 @@ export const HomePage: React.FC<HomePageProps> = ({
       return parseInt(localStorage.getItem('akku_hearts_sent') || '0', 10);
     } catch {
       return 0;
+    }
+  });
+
+  // Photo Likes Persisted
+  const [photoLikes, setPhotoLikes] = useState<Record<string, number>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('akku_photo_likes') || '{}');
+    } catch {
+      return {};
     }
   });
 
@@ -163,6 +270,27 @@ export const HomePage: React.FC<HomePageProps> = ({
     });
   };
 
+  const handleLikePhoto = (e: React.MouseEvent, photoId: string) => {
+    e.stopPropagation();
+    const current = photoLikes[photoId] || 0;
+    const updated = { ...photoLikes, [photoId]: current + 1 };
+    setPhotoLikes(updated);
+    try {
+      localStorage.setItem('akku_photo_likes', JSON.stringify(updated));
+    } catch {}
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = (rect.left + rect.width / 2) / window.innerWidth;
+    const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+    confetti({
+      particleCount: 20,
+      spread: 45,
+      origin: { x, y },
+      colors: ['#fda4af', '#f43f5e', '#ffffff']
+    });
+  };
+
   const handleNextReason = () => {
     setIsReasonFlipping(true);
     setTimeout(() => {
@@ -178,12 +306,22 @@ export const HomePage: React.FC<HomePageProps> = ({
     });
   };
 
+  const handleOpenLetter = (letter: OpenWhenLetter) => {
+    setSelectedLetter(letter);
+    confetti({
+      particleCount: 60,
+      spread: 80,
+      origin: { y: 0.5 },
+      colors: ['#fda4af', '#f43f5e', '#fde047', '#ffffff']
+    });
+  };
+
   const recipient = birthdayConfig?.recipient_name || 'Akku';
   const creator = birthdayConfig?.creator_name || 'Saki';
   const greeting = birthdayConfig?.greeting_title || `Happy Birthday, ${recipient}! ❤️`;
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-between py-6 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto z-10 animate-fade-in">
+    <div className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-between py-6 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto z-10 animate-fade-in space-y-10 sm:space-y-12">
       {/* Cinematic Ambient Background Glow Orbs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-10 left-1/4 w-80 sm:w-96 h-80 sm:h-96 bg-rose-400/15 rounded-full blur-3xl animate-warm-breathe" />
@@ -192,117 +330,100 @@ export const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* Hero Welcome Banner */}
-      <div className="text-center space-y-6 max-w-3xl mx-auto pt-2 sm:pt-6">
+      <div className="text-center space-y-6 max-w-3xl mx-auto pt-2 sm:pt-4">
         {/* Subtle romantic pill badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-100/90 border border-rose-200/80 text-rose-800 text-xs sm:text-sm font-medium shadow-xs backdrop-blur-md animate-pulse-glow">
           <Sparkles className="w-4 h-4 text-rose-500 fill-rose-300" />
           <span>A Personalized Birthday World Created by {creator} for His Forever Love</span>
         </div>
 
-        <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold text-stone-900 tracking-tight leading-[1.15]">
+        {/* Romantic Main Heading */}
+        <h1 className="font-serif text-4xl sm:text-6xl font-bold text-stone-900 tracking-tight leading-tight">
           {greeting}
         </h1>
 
-        <p className="text-stone-600 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-light">
-          Welcome to your personal sanctuary. This digital home preserves every cherished memory we share—from our earliest emails and walk dates to your favorite ice creams and inside jokes.
+        <p className="text-stone-600 text-sm sm:text-base max-w-2xl mx-auto font-light leading-relaxed">
+          Welcome to your private memory sanctuary. Every laugh, message, promise, and cherished detail is remembered here forever.
         </p>
 
-        {/* Primary Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 max-w-md mx-auto sm:max-w-none">
-          {/* Main Cinematic Surprise Button */}
+        {/* Quick Action CTA Pill Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button
-            id="hero-open-surprise-btn"
-            onClick={onOpenSurprise}
-            className="group relative w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:via-pink-600 hover:to-rose-700 text-white font-medium text-base shadow-xl shadow-rose-200/90 hover:shadow-2xl hover:shadow-rose-400/50 hover:scale-105 active:scale-95 transition-all overflow-hidden cursor-pointer"
+            onClick={() => onOpenSurprise ? onOpenSurprise() : onNavigate('birthday')}
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold text-xs sm:text-sm shadow-md shadow-rose-200/60 hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
-            {/* Shimmer sweep effect */}
-            <div className="absolute inset-0 w-1/2 h-full bg-white/25 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000 ease-in-out pointer-events-none" />
-            
-            <Heart className="w-5 h-5 fill-white text-white group-hover:scale-110 transition-transform animate-heart-pulse" />
-            
-            <span className="font-semibold tracking-wide">
-              Open My Surprise ❤️
-            </span>
-
-            <Sparkles className="w-4 h-4 text-amber-200 animate-spin" style={{ animationDuration: '6s' }} />
+            <Gift className="w-4 h-4 animate-bounce" />
+            <span>Open Birthday Surprise</span>
           </button>
 
-          {/* Talk to Akku AI Button */}
           <button
             onClick={() => onNavigate('chat')}
-            className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-4 rounded-full bg-white/95 hover:bg-white backdrop-blur-md border border-rose-200/90 text-stone-800 font-medium text-base shadow-sm hover:shadow-md hover:border-rose-300 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/90 hover:bg-white text-stone-700 hover:text-rose-900 font-semibold text-xs sm:text-sm shadow-xs border border-rose-200/80 hover:border-rose-300 hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
-            <MessageCircleHeart className="w-5 h-5 text-rose-600" />
+            <MessageCircleHeart className="w-4 h-4 text-rose-500" />
             <span>Talk to Akku AI</span>
-            <ArrowRight className="w-4 h-4 text-rose-400" />
           </button>
 
-          {/* Send Heart Interactive Button */}
           <button
             onClick={handleSendHeart}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-rose-50 hover:bg-rose-100/80 border border-rose-200/80 text-rose-700 text-sm font-semibold transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            className="flex items-center gap-1.5 px-4 py-3 rounded-full bg-rose-50 hover:bg-rose-100/80 text-rose-700 font-medium text-xs sm:text-sm border border-rose-200/60 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xs"
             title="Send love to Saki"
           >
-            <Flame className="w-4 h-4 text-rose-500 fill-rose-400" />
+            <Heart className="w-4 h-4 fill-rose-500 text-rose-500 animate-heart-pulse" />
             <span>Send Love ({heartsSent})</span>
           </button>
-        </div>
-
-        {/* Romantic Proposal Memory Quote Ribbon */}
-        <div className="pt-1">
-          <p className="font-serif italic text-xs sm:text-sm text-rose-800/90 bg-rose-50/80 border border-rose-200/60 rounded-full px-5 py-1.5 inline-block backdrop-blur-xs shadow-2xs">
-            "Marina Beach shore facing the Bay of Bengal, our favorite songs & every shared smile ✨"
-          </p>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. LOVE MILESTONE COUNTER — DAYS WE'VE LOVED EACH OTHER                   */}
+      {/* 2. LIVE RELATIONSHIP MILESTONE COUNTER                                     */}
       {/* ========================================================================= */}
-      <div className="my-8 sm:my-10 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-rose-500/10 via-pink-500/5 to-rose-500/10 border border-rose-200/80 backdrop-blur-xl shadow-lg shadow-rose-100/50 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="text-center md:text-left space-y-1">
-          <div className="flex items-center justify-center md:justify-start gap-2 text-rose-600 text-xs font-bold uppercase tracking-wider">
-            <Calendar className="w-4 h-4" />
-            <span>Our Love Milestone Since May 4, 2022</span>
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-rose-50/90 via-pink-50/80 to-rose-50/90 border border-rose-200/80 shadow-lg shadow-rose-100/50 backdrop-blur-xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-rose-200/60 pb-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-rose-200/80 text-rose-700">
+                <Calendar className="w-4 h-4" />
+              </span>
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
+                Days We've Loved Each Other
+              </h2>
+            </div>
+            <p className="text-stone-600 text-xs sm:text-sm font-light mt-1">
+              Counting every heartbeat since our proposal on May 4, 2022
+            </p>
           </div>
-          <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
-            Loving You Every Single Second
-          </h3>
-          <p className="text-stone-600 text-xs sm:text-sm font-light">
-            From the canteen samosa proposal to today, every breath is for you.
-          </p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 border border-rose-200 text-rose-700 text-xs font-semibold shadow-2xs">
+            <Flame className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+            <span>May 4, 2022 • The Samosa Walk Proposal</span>
+          </div>
         </div>
 
-        {/* Milestone Digit Boxes */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 shrink-0">
-          {[
-            { label: 'Days', value: elapsed.days },
-            { label: 'Hours', value: elapsed.hours },
-            { label: 'Mins', value: elapsed.minutes },
-            { label: 'Secs', value: elapsed.seconds }
-          ].map((item, idx) => (
-            <div 
-              key={idx} 
-              className="flex flex-col items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl bg-white/95 border border-rose-100/90 shadow-xs min-w-[62px] sm:min-w-[76px]"
-            >
-              <span className="font-mono text-xl sm:text-2xl font-bold text-rose-600 tracking-tight">
-                {item.value}
-              </span>
-              <span className="text-[10px] sm:text-xs text-stone-500 font-medium uppercase mt-0.5">
-                {item.label}
-              </span>
-            </div>
-          ))}
+        {/* Live Milestone Time Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center">
+          <div className="p-4 rounded-2xl bg-white/95 border border-rose-100 shadow-xs">
+            <div className="font-serif text-3xl sm:text-4xl font-bold text-rose-600">{elapsed.days}</div>
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-stone-500 mt-1 block">Days Together</span>
+          </div>
+          <div className="p-4 rounded-2xl bg-white/95 border border-rose-100 shadow-xs">
+            <div className="font-serif text-3xl sm:text-4xl font-bold text-stone-800">{elapsed.hours}</div>
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-stone-500 mt-1 block">Hours</span>
+          </div>
+          <div className="p-4 rounded-2xl bg-white/95 border border-rose-100 shadow-xs">
+            <div className="font-serif text-3xl sm:text-4xl font-bold text-stone-800">{elapsed.minutes}</div>
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-stone-500 mt-1 block">Minutes</span>
+          </div>
+          <div className="p-4 rounded-2xl bg-white/95 border border-rose-100 shadow-xs">
+            <div className="font-serif text-3xl sm:text-4xl font-bold text-rose-600 font-mono animate-pulse">{elapsed.seconds}</div>
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-stone-500 mt-1 block">Seconds</span>
+          </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
       {/* 3. INTERACTIVE MAGIC CARD: "REASONS WHY SAKI LOVES AKKU"                  */}
       {/* ========================================================================= */}
-      <div className="mb-10 sm:mb-12 p-6 sm:p-8 rounded-3xl bg-white/90 border border-rose-200/80 shadow-xl shadow-rose-100/60 backdrop-blur-xl relative overflow-hidden">
-        {/* Soft decorative background glows */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-rose-200/20 rounded-full blur-2xl pointer-events-none" />
-        
+      <div className="p-6 sm:p-8 rounded-3xl bg-white/90 border border-rose-200/80 shadow-xl shadow-rose-100/60 backdrop-blur-xl relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-rose-100 pb-4 mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white shadow-md">
@@ -343,57 +464,131 @@ export const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. OUR MEMORY LANE — FLOATING POLAROID PHOTO CAROUSEL                     */}
+      {/* 4. OUR MEMORY LANE — LUXURY FLOATING POLAROID CARDS (NO TRUNCATION!)      */}
       {/* ========================================================================= */}
-      <div className="mb-10 sm:mb-12">
-        <div className="flex items-center justify-between mb-5 px-1">
+      <div>
+        <div className="flex items-center justify-between mb-6 px-1">
           <div>
-            <h3 className="font-serif text-2xl font-bold text-stone-900 flex items-center gap-2">
+            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 flex items-center gap-2">
               <span>Our Memory Lane</span>
-              <Smile className="w-5 h-5 text-rose-500" />
+              <Smile className="w-6 h-6 text-rose-500" />
             </h3>
-            <p className="text-stone-600 text-xs sm:text-sm font-light mt-0.5">
-              Snapshots of laughter, ocean waves, and unforgettable memories.
+            <p className="text-stone-600 text-xs sm:text-sm font-light mt-1">
+              Snapshots of laughter, ocean waves, and unforgettable memories with you.
             </p>
           </div>
           <button
             onClick={() => onNavigate('memories')}
-            className="text-xs text-rose-600 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+            className="text-xs sm:text-sm text-rose-600 font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200/70"
           >
             <span>View All Memories</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Polaroid Strip Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {POLAROID_MEMORIES.map((photo, idx) => (
-            <div
-              key={idx}
-              onClick={() => setSelectedPhoto(photo)}
-              className="group bg-white p-2.5 pb-4 rounded-xl border border-rose-100 shadow-sm hover:shadow-xl hover:shadow-rose-100/70 transition-all duration-300 hover:-translate-y-2 cursor-pointer flex flex-col justify-between"
-              style={{
-                transform: `rotate(${idx % 2 === 0 ? '-1.5deg' : '1.5deg'})`
-              }}
-            >
-              <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-stone-100 mb-2">
-                <img
-                  src={photo.src}
-                  alt={photo.title}
-                  className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
-                  <span className="text-[10px] text-white font-medium">Tap to view</span>
+        {/* Polaroid Strip Grid with Washi Tape & Full Titles */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5 pt-3">
+          {POLAROID_MEMORIES.map((photo, idx) => {
+            const likes = photoLikes[photo.id] || 0;
+            return (
+              <div
+                key={photo.id}
+                onClick={() => setSelectedPhoto(photo)}
+                className="group relative bg-white p-3 pt-4 pb-5 rounded-2xl border border-rose-100 shadow-md hover:shadow-2xl hover:shadow-rose-100/80 transition-all duration-300 hover:-translate-y-2 hover:rotate-0 cursor-pointer flex flex-col justify-between"
+                style={{
+                  transform: `rotate(${idx % 2 === 0 ? '-1.5deg' : '1.5deg'})`
+                }}
+              >
+                {/* Washi Tape Ribbon Accent */}
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-4 bg-gradient-to-r from-amber-100/90 via-rose-100/90 to-amber-100/90 border border-amber-200/50 shadow-2xs rounded-xs transform -rotate-1 pointer-events-none z-10" />
+
+                <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-stone-100 mb-2.5 shadow-inner">
+                  <img
+                    src={photo.src}
+                    alt={photo.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-2">
+                    <span className="text-[10px] text-white font-medium">Zoom Photo</span>
+                  </div>
+                </div>
+
+                {/* Polaroid Text (Guaranteed No Ellipsis / No Truncation) */}
+                <div className="text-center px-0.5 flex flex-col justify-between flex-1">
+                  <h4 className="font-serif text-xs font-bold text-stone-900 leading-snug min-h-[32px] flex items-center justify-center text-center">
+                    {photo.title}
+                  </h4>
+                  <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-rose-50">
+                    <span className="text-[10px] text-rose-600 font-semibold font-mono">
+                      {photo.date}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleLikePhoto(e, photo.id)}
+                      className="p-1 rounded-full hover:bg-rose-50 text-rose-400 hover:text-rose-600 transition-colors flex items-center gap-0.5"
+                      title="Send love to this memory"
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
+                      {likes > 0 && <span className="text-[9px] font-bold text-rose-600">{likes}</span>}
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="text-center px-1">
-                <h4 className="font-serif text-xs font-bold text-stone-800 truncate">
-                  {photo.title}
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 5. "OPEN WHEN..." DIGITAL LOVE LETTERS (SURPRISE FOR AKKU)                */}
+      {/* ========================================================================= */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-rose-50/70 via-cream-50/60 to-pink-50/70 border border-rose-200/80 shadow-lg shadow-rose-100/50 backdrop-blur-xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-2 rounded-2xl bg-rose-100 text-rose-600 shadow-sm">
+                <Mail className="w-5 h-5" />
+              </span>
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">
+                "Open When..." Love Envelopes 💌
+              </h3>
+            </div>
+            <p className="text-stone-600 text-xs sm:text-sm font-light mt-1">
+              Four digital letters sealed with love. Tap an envelope whenever you need comfort or a reminder of my love.
+            </p>
+          </div>
+          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-white border border-rose-200 text-rose-700 shadow-2xs">
+            Handwritten by Saki ❤️
+          </span>
+        </div>
+
+        {/* 4 Envelopes Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {OPEN_WHEN_LETTERS.map((letter) => (
+            <div
+              key={letter.id}
+              onClick={() => handleOpenLetter(letter)}
+              className="group relative bg-white/95 rounded-2xl p-5 border border-rose-200/80 shadow-sm hover:shadow-xl hover:border-rose-300 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-2xl">{letter.icon}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-mono">
+                    {letter.badge}
+                  </span>
+                </div>
+                <h4 className="font-serif text-base font-bold text-stone-900 group-hover:text-rose-600 transition-colors mb-1.5">
+                  {letter.envelopeTitle}
                 </h4>
-                <p className="text-[10px] text-rose-600 font-medium font-mono mt-0.5">
-                  {photo.date}
+                <p className="text-stone-500 text-xs leading-relaxed line-clamp-2">
+                  A personal message waiting just for you. Tap to break wax seal and read.
                 </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-rose-100 flex items-center justify-between text-xs font-semibold text-rose-600">
+                <span>Break Seal & Read</span>
+                <span className="group-hover:translate-x-1 transition-transform">💌 →</span>
               </div>
             </div>
           ))}
@@ -401,7 +596,57 @@ export const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. FEATURE NAVIGATION GLASSMORPHIC CARDS                                  */}
+      {/* 6. OUR LOVE STORY JOURNEY — INTERACTIVE MILESTONES ROADMAP                 */}
+      {/* ========================================================================= */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-white/90 border border-rose-200/80 shadow-lg shadow-rose-100/50 backdrop-blur-xl">
+        <div className="text-center max-w-xl mx-auto mb-8">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100/90 text-rose-800 text-xs font-semibold mb-2">
+            <Compass className="w-3.5 h-3.5 text-rose-500" />
+            <span>Our Journey Together</span>
+          </div>
+          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">
+            How Two Strangers Became Everything
+          </h3>
+          <p className="text-stone-600 text-xs sm:text-sm font-light mt-1">
+            Every step, every year, every quiet promise that brought us to today.
+          </p>
+        </div>
+
+        {/* Milestones Road */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+          {LOVE_MILESTONES.map((m, idx) => (
+            <div 
+              key={idx}
+              className="bg-rose-50/50 rounded-2xl p-4 border border-rose-100 shadow-2xs hover:shadow-md hover:bg-white transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">{m.icon}</span>
+                  <span className="text-[10px] font-mono font-bold text-rose-700 bg-white px-2 py-0.5 rounded-full border border-rose-100">
+                    {m.year}
+                  </span>
+                </div>
+                <h4 className="font-serif text-sm font-bold text-stone-900 mb-0.5">
+                  {m.title}
+                </h4>
+                <p className="text-[11px] font-semibold text-rose-600 mb-2">
+                  {m.subtitle}
+                </p>
+                <p className="text-[11px] text-stone-600 leading-relaxed font-light">
+                  {m.desc}
+                </p>
+              </div>
+              <div className="mt-3 pt-2 border-t border-rose-100/60 flex items-center gap-1 text-[10px] text-stone-400">
+                <Clock className="w-3 h-3 text-rose-400" />
+                <span>Chapter 0{idx + 1}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 7. FEATURE NAVIGATION GLASSMORPHIC CARDS                                  */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 my-6 sm:my-8">
         {/* Card 1: Chat with Akku AI */}
@@ -495,7 +740,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 6. LIGHTBOX PHOTO MODAL                                                   */}
+      {/* 8. LIGHTBOX PHOTO MODAL                                                   */}
       {/* ========================================================================= */}
       {selectedPhoto && (
         <div 
@@ -504,7 +749,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-white p-4 rounded-3xl shadow-2xl flex flex-col gap-3 my-auto border border-rose-200"
+            className="w-full max-w-md bg-white p-5 rounded-3xl shadow-2xl flex flex-col gap-3.5 my-auto border border-rose-200"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -523,16 +768,72 @@ export const HomePage: React.FC<HomePageProps> = ({
               <img src={selectedPhoto.src} alt={selectedPhoto.title} className="w-full h-full object-cover" />
             </div>
 
-            <p className="text-stone-700 text-sm font-light text-center italic px-2 pt-1">
+            <p className="text-stone-700 text-sm font-light text-center italic px-2 pt-1 leading-relaxed">
               "{selectedPhoto.caption}"
             </p>
 
             <button
               onClick={() => setSelectedPhoto(null)}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-md cursor-pointer"
+              className="mt-1 w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-md cursor-pointer hover:brightness-105"
             >
               Close Memory ❤️
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 9. "OPEN WHEN..." LETTER REVEAL MODAL                                     */}
+      {/* ========================================================================= */}
+      {selectedLetter && (
+        <div
+          onClick={() => setSelectedLetter(null)}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-[#fffdfb] p-6 sm:p-8 rounded-3xl shadow-2xl flex flex-col gap-4 my-auto border border-rose-200 relative overflow-hidden animate-scale-up"
+          >
+            {/* Wax Seal Stamp Accent */}
+            <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{selectedLetter.icon}</span>
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-rose-950">
+                    {selectedLetter.letterTitle}
+                  </h3>
+                  <span className="text-[10px] text-stone-400 font-mono">
+                    {selectedLetter.envelopeTitle}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedLetter(null)}
+                className="p-1.5 rounded-full hover:bg-rose-50 text-stone-400 hover:text-stone-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Letter Content */}
+            <div className="max-h-[60vh] overflow-y-auto pr-1">
+              <p className="font-serif italic text-sm sm:text-base text-stone-800 whitespace-pre-line leading-relaxed">
+                {selectedLetter.letterMessage}
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-rose-100 flex items-center justify-between text-xs">
+              <span className="text-rose-600 font-semibold flex items-center gap-1">
+                <Award className="w-4 h-4" />
+                <span>Written with Saki's Whole Heart</span>
+              </span>
+              <button
+                onClick={() => setSelectedLetter(null)}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold shadow-xs cursor-pointer hover:brightness-105"
+              >
+                Keep In My Heart ❤️
+              </button>
+            </div>
           </div>
         </div>
       )}
