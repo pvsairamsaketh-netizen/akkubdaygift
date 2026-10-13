@@ -19,6 +19,7 @@ import { DSAPatternTree } from '../components/academics/dsa/DSAPatternTree';
 import { DSAMistakeNotebook } from '../components/academics/dsa/DSAMistakeNotebook';
 import { FinalDSASimulation } from '../components/academics/dsa/FinalDSASimulation';
 import { DSAResourcesKnowledgeHub } from '../components/academics/dsa/DSAResourcesKnowledgeHub';
+import { PhDOptionsHub } from '../components/academics/phd/PhDOptionsHub';
 import { api } from '../services/api';
 import type { AcademicProgressData, InterviewQuestionItem } from '../types/academics';
 import { AcademicsThemeProvider, useAcademicsTheme } from '../context/AcademicsThemeContext';
@@ -56,7 +57,15 @@ const INITIAL_PROGRESS: AcademicProgressData = {
 
 const AcademicsPageInner: React.FC = () => {
   const { isDark } = useAcademicsTheme();
-  const [activeTrack, setActiveTrack] = useState<AcademicTrack>('de');
+  const [activeTrack, setActiveTrack] = useState<AcademicTrack>(() => {
+    try {
+      const hash = window.location.hash.toLowerCase();
+      const path = window.location.pathname.toLowerCase();
+      if (hash.includes('phd') || path.includes('phd')) return 'phd';
+      if (hash.includes('dsa') || path.includes('dsa')) return 'dsa';
+    } catch {}
+    return 'de';
+  });
   const [currentView, setCurrentView] = useState<AcademicsViewMode>('dashboard');
   const [currentDayNumber, setCurrentDayNumber] = useState<number>(1);
   const [progress, setProgress] = useState<AcademicProgressData>(() => {
@@ -67,6 +76,24 @@ const AcademicsPageInner: React.FC = () => {
     return INITIAL_PROGRESS;
   });
   const [notesCount, setNotesCount] = useState<number>(0);
+
+  // Sync track on hashchange
+  useEffect(() => {
+    const handleHash = () => {
+      try {
+        const hash = window.location.hash.toLowerCase();
+        if (hash.includes('phd')) {
+          setActiveTrack('phd');
+        } else if (hash.includes('dsa')) {
+          setActiveTrack('dsa');
+        } else if (hash === '#academics' || hash === '') {
+          setActiveTrack('de');
+        }
+      } catch {}
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
 
   // Fetch progress from backend on mount
   useEffect(() => {
@@ -197,24 +224,38 @@ const AcademicsPageInner: React.FC = () => {
           activeTrack={activeTrack}
           onTrackChange={(track) => {
             setActiveTrack(track);
-            if (track === 'dsa') {
+            if (track === 'phd') {
+              try {
+                history.replaceState(null, '', '#academics/phd-options');
+              } catch {}
+            } else if (track === 'dsa') {
               if (!currentView.startsWith('dsa_')) {
                 setCurrentView('dsa_roadmap');
               }
+              try {
+                history.replaceState(null, '', '#academics/dsa');
+              } catch {}
             } else {
               if (currentView.startsWith('dsa_')) {
                 setCurrentView('dashboard');
               }
+              try {
+                history.replaceState(null, '', '#academics');
+              } catch {}
             }
           }}
         />
 
         {/* Dynamic View Content */}
         <main className="flex-1 pb-16">
-          {/* ========================================================================= */}
-          {/* DATA ENGINEERING (DAYS 1-100) - UNTOUCHED & FULLY PRESERVED               */}
-          {/* ========================================================================= */}
-          {currentView === 'dashboard' && (
+          {activeTrack === 'phd' ? (
+            <PhDOptionsHub />
+          ) : (
+            <>
+              {/* ========================================================================= */}
+              {/* DATA ENGINEERING (DAYS 1-100) - UNTOUCHED & FULLY PRESERVED               */}
+              {/* ========================================================================= */}
+              {currentView === 'dashboard' && (
             <AcademicsDashboard
               progress={progress}
               onNavigate={setCurrentView}
@@ -358,13 +399,15 @@ const AcademicsPageInner: React.FC = () => {
             <FinalDSASimulation />
           )}
 
-          {(currentView === 'resources' || currentView === 'dsa_resources') && (
-            <DSAResourcesKnowledgeHub 
-              onSelectDay={(day) => {
-                setCurrentDayNumber(day);
-                setCurrentView(day >= 101 ? 'dsa_lesson' : 'lesson');
-              }}
-            />
+              {(currentView === 'resources' || currentView === 'dsa_resources') && (
+                <DSAResourcesKnowledgeHub 
+                  onSelectDay={(day) => {
+                    setCurrentDayNumber(day);
+                    setCurrentView(day >= 101 ? 'dsa_lesson' : 'lesson');
+                  }}
+                />
+              )}
+            </>
           )}
         </main>
       </div>

@@ -477,5 +477,270 @@ export const api = {
       }
       return res.json();
     }
+  },
+
+  // =========================================================================
+  // PHD OPTIONS IN INDIA & ABROAD CLIENT API
+  // =========================================================================
+  phd: {
+    async getStats() {
+      const res = await fetch(`${API_BASE}/academics/phd/stats/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load PhD dashboard stats");
+      return res.json();
+    },
+
+    async getUniversities(params?: { search?: string; location?: string; country?: string; verification_status?: string }) {
+      const sp = new URLSearchParams();
+      if (params?.search) sp.set('search', params.search);
+      if (params?.location) sp.set('location', params.location);
+      if (params?.country) sp.set('country', params.country);
+      if (params?.verification_status) sp.set('verification_status', params.verification_status);
+
+      const res = await fetch(`${API_BASE}/academics/phd/universities/?${sp.toString()}`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load universities");
+      return res.json();
+    },
+
+    async getUniversity(id: string) {
+      const res = await fetch(`${API_BASE}/academics/phd/universities/${id}/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load university details");
+      return res.json();
+    },
+
+    async getProgrammes(params?: {
+      search?: string;
+      location?: string;
+      country?: string;
+      research_area?: string;
+      degree_type?: string;
+      funding_status?: string;
+      mtech_accepted?: string;
+      verification_status?: string;
+      upcoming_deadlines?: boolean;
+      sort?: string;
+    }) {
+      const sp = new URLSearchParams();
+      if (params?.search) sp.set('search', params.search);
+      if (params?.location) sp.set('location', params.location);
+      if (params?.country) sp.set('country', params.country);
+      if (params?.research_area) sp.set('research_area', params.research_area);
+      if (params?.degree_type) sp.set('degree_type', params.degree_type);
+      if (params?.funding_status) sp.set('funding_status', params.funding_status);
+      if (params?.mtech_accepted) sp.set('mtech_accepted', params.mtech_accepted);
+      if (params?.verification_status) sp.set('verification_status', params.verification_status);
+      if (params?.upcoming_deadlines) sp.set('upcoming_deadlines', 'true');
+      if (params?.sort) sp.set('sort', params.sort);
+
+      const res = await fetch(`${API_BASE}/academics/phd/programmes/?${sp.toString()}`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load PhD programmes");
+      return res.json();
+    },
+
+    async getProgramme(id: string) {
+      const res = await fetch(`${API_BASE}/academics/phd/programmes/${id}/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load programme details");
+      return res.json();
+    },
+
+    async getResearchAreas() {
+      const res = await fetch(`${API_BASE}/academics/phd/research-areas/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load research areas");
+      return res.json();
+    },
+
+    async getSupervisors(params?: { search?: string; country?: string; recruitment_status?: string; topic?: string }) {
+      const sp = new URLSearchParams();
+      if (params?.search) sp.set('search', params.search);
+      if (params?.country) sp.set('country', params.country);
+      if (params?.recruitment_status) sp.set('recruitment_status', params.recruitment_status);
+      if (params?.topic) sp.set('topic', params.topic);
+
+      const res = await fetch(`${API_BASE}/academics/phd/supervisors/?${sp.toString()}`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load supervisors");
+      return res.json();
+    },
+
+    async getFundingOpportunities(params?: { search?: string; type?: string; guaranteed?: string }) {
+      const sp = new URLSearchParams();
+      if (params?.search) sp.set('search', params.search);
+      if (params?.type) sp.set('type', params.type);
+      if (params?.guaranteed) sp.set('guaranteed', params.guaranteed);
+
+      const res = await fetch(`${API_BASE}/academics/phd/funding/?${sp.toString()}`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load funding opportunities");
+      return res.json();
+    },
+
+    async getDeadlines(country?: string) {
+      const sp = country ? `?country=${encodeURIComponent(country)}` : '';
+      const res = await fetch(`${API_BASE}/academics/phd/deadlines/${sp}`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load deadlines");
+      return res.json();
+    },
+
+    async compare(ids: string[]) {
+      const res = await fetch(`${API_BASE}/academics/phd/compare/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ids })
+      });
+      if (!res.ok) throw new Error("Failed to compare universities");
+      return res.json();
+    },
+
+    async assessEligibility(profile?: any) {
+      const res = await fetch(`${API_BASE}/academics/phd/eligibility/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ profile, user_id: getUserId() })
+      });
+      if (!res.ok) throw new Error("Failed to assess eligibility");
+      return res.json();
+    },
+
+    async getShortlist() {
+      const res = await fetch(`${API_BASE}/academics/phd/shortlist/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load shortlist");
+      return res.json();
+    },
+
+    async addToShortlist(payload: {
+      programme_id?: string;
+      university_id?: string;
+      priority?: 'high' | 'medium' | 'low';
+      preferred_intake?: string;
+      notes?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/academics/phd/shortlist/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ...payload, user_id: getUserId() })
+      });
+      if (!res.ok) throw new Error("Failed to add to shortlist");
+      return res.json();
+    },
+
+    async updateShortlist(id: string, delta: any) {
+      const res = await fetch(`${API_BASE}/academics/phd/shortlist/${id}/`, {
+        method: 'PATCH',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(delta)
+      });
+      if (!res.ok) throw new Error("Failed to update shortlist item");
+      return res.json();
+    },
+
+    async removeFromShortlist(id: string) {
+      const res = await fetch(`${API_BASE}/academics/phd/shortlist/${id}/`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to remove from shortlist");
+      return res.json();
+    },
+
+    getShortlistExportUrl() {
+      return `${API_BASE}/academics/phd/shortlist/export/`;
+    },
+
+    async getApplications() {
+      const res = await fetch(`${API_BASE}/academics/phd/applications/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load applications");
+      return res.json();
+    },
+
+    async createApplication(payload: {
+      programme_id: string;
+      stage?: string;
+      notes?: string;
+      potential_supervisor?: string;
+    }) {
+      const res = await fetch(`${API_BASE}/academics/phd/applications/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ ...payload, user_id: getUserId() })
+      });
+      if (!res.ok) throw new Error("Failed to create application tracker item");
+      return res.json();
+    },
+
+    async updateApplication(id: string, delta: any) {
+      const res = await fetch(`${API_BASE}/academics/phd/applications/${id}/`, {
+        method: 'PATCH',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(delta)
+      });
+      if (!res.ok) throw new Error("Failed to update application");
+      return res.json();
+    },
+
+    async deleteApplication(id: string) {
+      const res = await fetch(`${API_BASE}/academics/phd/applications/${id}/`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to delete application");
+      return res.json();
+    },
+
+    async updateDocumentStatus(docId: string, status: string, notes?: string) {
+      const res = await fetch(`${API_BASE}/academics/phd/documents/${docId}/`, {
+        method: 'PATCH',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ status, notes })
+      });
+      if (!res.ok) throw new Error("Failed to update document status");
+      return res.json();
+    },
+
+    async getProfile() {
+      const res = await fetch(`${API_BASE}/academics/phd/profile/`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to load user PhD profile");
+      return res.json();
+    },
+
+    async updateProfile(profile: any) {
+      const res = await fetch(`${API_BASE}/academics/phd/profile/`, {
+        method: 'PATCH',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(profile)
+      });
+      if (!res.ok) throw new Error("Failed to update PhD profile");
+      return res.json();
+    },
+
+    async askAISearch(query: string) {
+      const res = await fetch(`${API_BASE}/academics/phd/ai-search/`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ query, user_id: getUserId() })
+      });
+      if (!res.ok) throw new Error("Failed to get AI search response");
+      return res.json();
+    }
   }
 };

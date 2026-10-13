@@ -20,7 +20,7 @@ const getInitialTab = (): NavTab => {
   try {
     const hash = window.location.hash.toLowerCase().replace('#', '');
     const path = window.location.pathname.toLowerCase();
-    if (hash === 'academics' || path.startsWith('/academics')) return 'academics';
+    if (hash.startsWith('academic') || path.startsWith('/academic') || hash.includes('phd') || path.includes('phd')) return 'academics';
     if (hash === 'chat' || path.startsWith('/chat') || hash === 'voice' || path.startsWith('/voice')) return 'chat';
     if (hash === 'birthday' || path.startsWith('/birthday')) return 'birthday';
     if (hash === 'memories' || path.startsWith('/memories')) return 'memories';
@@ -62,7 +62,10 @@ export function App() {
           history.replaceState(null, '', window.location.pathname);
         }
       } else {
-        history.replaceState(null, '', `#${activeTab}`);
+        // If hash already has sub-path for this tab (like #academics/phd-options), preserve it!
+        if (!window.location.hash.toLowerCase().startsWith(`#${activeTab}`)) {
+          history.replaceState(null, '', `#${activeTab}`);
+        }
       }
     } catch {}
   }, [activeTab]);

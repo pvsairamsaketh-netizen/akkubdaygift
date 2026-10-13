@@ -22,12 +22,13 @@ import {
   Bot,
   Sun,
   Moon,
-  Laptop
+  Laptop,
+  Globe
 } from 'lucide-react';
 import type { AcademicProgressData } from '../../types/academics';
 import { useAcademicsTheme } from '../../context/AcademicsThemeContext';
 
-export type AcademicTrack = 'de' | 'dsa';
+export type AcademicTrack = 'de' | 'dsa' | 'phd';
 
 export type AcademicsViewMode = 
   | 'dashboard'
@@ -238,8 +239,8 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. DUAL-TRACK SELECTOR: DATA ENGINEERING vs DSA */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 rounded-2xl border shadow-inner ${
+      {/* 2. TRACK SELECTOR: DATA ENGINEERING vs DSA vs PHD */}
+      <div className={`grid grid-cols-1 md:grid-cols-3 gap-2 p-1.5 rounded-2xl border shadow-inner ${
         isDark ? 'bg-[#090d14] border-stone-800' : 'bg-slate-100 border-slate-200'
       }`}>
         <button
@@ -291,11 +292,32 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
             NEW
           </span>
         </button>
+
+        <button
+          id="phd-options-academic-nav"
+          onClick={() => {
+            onTrackChange('phd');
+          }}
+          className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            activeTrack === 'phd'
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-900/40 ring-1 ring-teal-400/50'
+              : isDark
+              ? 'text-stone-400 hover:text-stone-200 hover:bg-[#141b28]/60'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/80'
+          }`}
+        >
+          <Globe className={`w-4 h-4 ${activeTrack === 'phd' ? 'text-teal-200' : isDark ? 'text-teal-400' : 'text-teal-600'}`} />
+          <span>PhD Options in India & Abroad</span>
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-400 text-emerald-950 font-extrabold uppercase shadow-xs">
+            VERIFIED
+          </span>
+        </button>
       </div>
 
-      {/* 3. TRACK-SPECIFIC SUB-NAVIGATION BAR */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {(activeTrack === 'de' ? deNavItems : dsaNavItems).map((item) => {
+      {/* 3. TRACK-SPECIFIC SUB-NAVIGATION BAR (DE & DSA only) */}
+      {activeTrack !== 'phd' && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {(activeTrack === 'de' ? deNavItems : dsaNavItems).map((item) => {
           const isActive = currentView === item.id;
           return (
             <button
@@ -325,7 +347,8 @@ export const AcademicsHeader: React.FC<AcademicsHeaderProps> = ({
             </button>
           );
         })}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
