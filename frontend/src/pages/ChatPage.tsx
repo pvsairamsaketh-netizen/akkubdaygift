@@ -61,7 +61,7 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-blush-50/70 via-cream-50/50 to-champagne-50/60 font-sans">
+    <div className="flex h-full w-full overflow-hidden bg-gradient-to-br from-rose-50/40 via-cream-50/50 to-pink-50/40 font-sans">
       {/* Sidebar */}
       <ConversationSidebar
         conversations={conversations}

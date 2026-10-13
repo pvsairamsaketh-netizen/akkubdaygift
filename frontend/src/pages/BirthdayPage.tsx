@@ -28,6 +28,23 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
 }) => {
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
+  const [isCandleBlown, setIsCandleBlown] = useState<boolean>(false);
+  const [wishMade, setWishMade] = useState<boolean>(false);
+
+  const handleBlowCandle = () => {
+    setIsCandleBlown(true);
+    setWishMade(true);
+    confetti({
+      particleCount: 80,
+      spread: 90,
+      origin: { y: 0.4 },
+      colors: ['#fda4af', '#f43f5e', '#fb7185', '#fde047', '#ffffff']
+    });
+  };
+
+  const handleRelightCandle = () => {
+    setIsCandleBlown(false);
+  };
 
   const recipient = birthdayConfig?.recipient_name || 'Akku';
   const creator = birthdayConfig?.creator_name || 'Saki';
@@ -130,6 +147,65 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
         <p className="text-stone-600 text-sm sm:text-base max-w-md mx-auto font-light leading-relaxed">
           Tap the card to read your handwritten love letter, and unlock the secret surprise below.
         </p>
+      </div>
+
+      {/* Interactive Birthday Candle & Wish Section */}
+      <div className="w-full max-w-lg mb-8 p-5 sm:p-6 rounded-3xl bg-white/90 border border-rose-200/80 shadow-lg shadow-rose-100/50 backdrop-blur-xl flex flex-col items-center text-center">
+        <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider font-mono mb-1">
+          Make a Birthday Wish
+        </span>
+
+        {/* Cake & Candle Visual */}
+        <div className="relative my-2 flex flex-col items-center">
+          {/* Candle Flame / Smoke */}
+          <div className="relative h-12 w-6 flex flex-col items-center justify-end">
+            {!isCandleBlown ? (
+              <div 
+                className="w-4 h-6 rounded-full bg-gradient-to-t from-amber-500 via-yellow-300 to-white animate-candle-flame cursor-pointer shadow-lg" 
+                onClick={handleBlowCandle} 
+                title="Click to blow out candle" 
+              />
+            ) : (
+              <div className="text-stone-400 text-xs font-mono animate-fade-in flex flex-col items-center">
+                <span className="text-stone-300 animate-pulse text-base">💨</span>
+                <span className="text-[10px] text-stone-400">wish made!</span>
+              </div>
+            )}
+            {/* Candle Stick */}
+            <div className="w-2 h-7 bg-gradient-to-b from-rose-300 to-rose-400 rounded-xs border border-rose-200 shadow-xs mt-0.5" />
+          </div>
+
+          {/* Birthday Cake Tier */}
+          <div className="w-28 sm:w-32 h-10 rounded-2xl bg-gradient-to-r from-pink-300 via-rose-300 to-pink-300 border-2 border-white shadow-md flex items-center justify-center text-white text-xs font-serif font-bold tracking-wider">
+            🎂 Akku 🎂
+          </div>
+        </div>
+
+        {wishMade ? (
+          <div className="space-y-2 mt-2 animate-fade-in">
+            <p className="font-serif italic text-rose-900 text-sm sm:text-base font-medium">
+              "Your wish has been whispered to the universe, my Akku! May every dream in your heart come true today & forever ❤️"
+            </p>
+            <button
+              onClick={handleRelightCandle}
+              className="text-[11px] text-rose-600 hover:text-rose-800 underline cursor-pointer"
+            >
+              Relight Candle 🕯️
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2 mt-2">
+            <p className="text-xs text-stone-600 font-light">
+              Close your eyes, think of your sweetest dream, and blow out the candle!
+            </p>
+            <button
+              onClick={handleBlowCandle}
+              className="px-5 py-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-semibold text-xs shadow-md shadow-rose-200 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              Blow Out Candle & Make Wish ✨
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 3D Flippable Birthday Card */}

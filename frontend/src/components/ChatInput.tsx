@@ -8,9 +8,11 @@ interface ChatInputProps {
 }
 
 const QUICK_PROMPT_SUGGESTIONS = [
-  "How did our story begin?",
-  "What is Akku's favorite ice cream?",
+  "Who is Akku's favourite heroine?",
   "When did Saki propose to Akku?",
+  "Tell me about our Marina Beach sunset",
+  "What is Akku's favorite ice cream?",
+  "Why does Saki love Akku so much?",
 ];
 
 export const ChatInput: React.FC<ChatInputProps> = ({
