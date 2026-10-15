@@ -18,6 +18,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectPrompt }) => {
       icon: Heart
     },
     {
+      title: "Who is Akku's favourite heroine?",
+      subtitle: "Sai Pallavi ❤️ & our favorite cinema moments",
+      icon: Heart
+    },
+    {
       title: "What is Akku's favorite ice cream?",
       subtitle: "Vanilla flavor & favorite food treats",
       icon: Sparkles
