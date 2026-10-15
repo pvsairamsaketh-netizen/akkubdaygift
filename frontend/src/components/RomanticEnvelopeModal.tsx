@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MEMORY_PHOTOS, type MemoryPhoto } from '../config/memoryPhotos';
+import { useRomanticMusic } from '../context/RomanticMusicContext';
 
 interface RomanticEnvelopeModalProps {
   isOpen: boolean;
@@ -97,25 +98,9 @@ export const RomanticEnvelopeModal: React.FC<RomanticEnvelopeModalProps> = ({
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [isPlayingSlideshow, setIsPlayingSlideshow] = useState(true);
   const [isFullscreenImage, setIsFullscreenImage] = useState(false);
-  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   
-  const backgroundAudioRef = useRef<HTMLAudioElement | null>(null);
+  const { isPlaying, togglePlay, startRomanticSequence, currentTrack } = useRomanticMusic();
   const slideshowTimerRef = useRef<any>(null);
-
-  // Initialize background romantic soundtrack Alaakaa-loova
-  useEffect(() => {
-    if (isOpen) {
-      const audio = new Audio('/audio/Alaakaa-loova.mp3');
-      audio.loop = true;
-      audio.volume = 0.65;
-      backgroundAudioRef.current = audio;
-
-      return () => {
-        audio.pause();
-        backgroundAudioRef.current = null;
-      };
-    }
-  }, [isOpen]);
 
   // Handle auto-slideshow
   useEffect(() => {
@@ -149,12 +134,8 @@ export const RomanticEnvelopeModal: React.FC<RomanticEnvelopeModalProps> = ({
 
     setIsOpenFlap(true);
 
-    // Play romantic soundtrack smoothly
-    if (backgroundAudioRef.current) {
-      backgroundAudioRef.current.play().then(() => {
-        setIsMusicPlaying(true);
-      }).catch(() => {});
-    }
+    // Ensure unified romantic music sequence starts (Song 1 first, then Song 2)
+    startRomanticSequence().catch(console.warn);
 
     setTimeout(() => {
       setIsLetterRevealed(true);
@@ -180,13 +161,7 @@ export const RomanticEnvelopeModal: React.FC<RomanticEnvelopeModalProps> = ({
   };
 
   const toggleMusic = () => {
-    if (!backgroundAudioRef.current) return;
-    if (isMusicPlaying) {
-      backgroundAudioRef.current.pause();
-      setIsMusicPlaying(false);
-    } else {
-      backgroundAudioRef.current.play().then(() => setIsMusicPlaying(true)).catch(() => {});
-    }
+    togglePlay().catch(console.warn);
   };
 
   const currentStory = PHOTO_STORIES[currentStoryIndex];
@@ -211,10 +186,7 @@ You are my greatest blessing, my favorite adventure, and my forever love.`;
         {/* Close Button on top right */}
         {isLetterRevealed && (
           <button
-            onClick={() => {
-              if (backgroundAudioRef.current) backgroundAudioRef.current.pause();
-              onClose();
-            }}
+            onClick={() => onClose()}
             className="absolute -top-11 right-0 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur transition-all active:scale-90 z-20 cursor-pointer"
             title="Close surprise"
           >
@@ -304,10 +276,12 @@ You are my greatest blessing, my favorite adventure, and my forever love.`;
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleMusic(); }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-100/90 text-rose-800 text-xs font-semibold shadow-2xs hover:bg-rose-200 transition-all cursor-pointer"
-                      title={isMusicPlaying ? "Pause romantic soundtrack" : "Play Alaakaa Loova soundtrack"}
+                      title={isPlaying ? `Pause (${currentTrack?.title || 'Love song'})` : "Play romantic soundtrack"}
                     >
-                      <Music className={`w-3.5 h-3.5 text-rose-600 ${isMusicPlaying ? 'animate-bounce' : ''}`} />
-                      <span className="hidden sm:inline">{isMusicPlaying ? "Song ON" : "Play Song"}</span>
+                      <Music className={`w-3.5 h-3.5 text-rose-600 ${isPlaying ? 'animate-bounce' : ''}`} />
+                      <span className="hidden sm:inline">
+                        {isPlaying ? (currentTrack?.order === 1 ? 'Song 1/2' : 'Song 2/2') : 'Play Song'}
+                      </span>
                     </button>
 
                     <div className="flex items-center p-1 rounded-full bg-rose-100/70 border border-rose-200/80 text-xs font-semibold">
@@ -456,10 +430,7 @@ You are my greatest blessing, my favorite adventure, and my forever love.`;
                   </span>
 
                   <button
-                    onClick={() => {
-                      if (backgroundAudioRef.current) backgroundAudioRef.current.pause();
-                      onClose();
-                    }}
+                    onClick={() => onClose()}
                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 text-white font-medium text-xs sm:text-sm shadow-md shadow-rose-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
                   >
                     <span>Enter Our World</span>
