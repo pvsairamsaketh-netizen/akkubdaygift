@@ -15,6 +15,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { RomanticAudioPlayer } from './RomanticAudioPlayer';
+import { useRomanticMusic } from '../context/RomanticMusicContext';
 
 export type NavTab = 'home' | 'chat' | 'birthday' | 'memories' | 'library' | 'academics' | 'settings';
 
@@ -48,6 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
+  const { startRomanticSequence } = useRomanticMusic();
 
   // Close "More" dropdown when clicking outside
   useEffect(() => {
@@ -65,6 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, [moreDropdownOpen]);
 
   const handleSurpriseClick = () => {
+    startRomanticSequence().catch(console.warn);
     if (onOpenSurprise) {
       onOpenSurprise();
     } else if (onOpenEnvelope) {
@@ -91,6 +94,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isSecondaryActive = secondaryTwo.some(item => item.id === activeTab);
 
   const handleSelect = (tab: NavTab) => {
+    if (tab === 'memories') {
+      startRomanticSequence().catch(console.warn);
+    }
     onTabChange(tab);
     setMobileMenuOpen(false);
     setMoreDropdownOpen(false);

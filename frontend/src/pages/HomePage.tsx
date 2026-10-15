@@ -21,6 +21,7 @@ import {
 import type { NavTab } from '../components/Navbar';
 import { api } from '../services/api';
 import confetti from 'canvas-confetti';
+import { useRomanticMusic } from '../context/RomanticMusicContext';
 
 interface HomePageProps {
   onNavigate: (tab: NavTab) => void;
@@ -212,11 +213,24 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   });
 
+  const { startRomanticSequence } = useRomanticMusic();
+
+  const handleNavigateToMemories = () => {
+    startRomanticSequence().catch(console.warn);
+    onNavigate('memories');
+  };
+
+  const handleOpenSurpriseWithMusic = () => {
+    startRomanticSequence().catch(console.warn);
+    onOpenSurprise();
+  };
+
   // Flower Surprise Reveal State for Memory Lane
   const [isMemoriesRevealed, setIsMemoriesRevealed] = useState<boolean>(false);
 
   const triggerFlowerBloomSurprise = () => {
     setIsMemoriesRevealed(true);
+    startRomanticSequence().catch(console.warn);
 
     // Multi-stage blooming petal explosion
     // Stage 1: Central flower petal burst
@@ -393,7 +407,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         {/* Quick Action CTA Pill Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button
-            onClick={() => onOpenSurprise ? onOpenSurprise() : onNavigate('birthday')}
+            onClick={() => handleOpenSurpriseWithMusic()}
             className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold text-xs sm:text-sm shadow-md shadow-rose-200/60 hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
             <Gift className="w-4 h-4 animate-bounce" />
@@ -522,7 +536,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </p>
           </div>
           <button
-            onClick={() => onNavigate('memories')}
+            onClick={handleNavigateToMemories}
             className="text-xs sm:text-sm text-rose-600 font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200/70"
           >
             <span>View All Memories</span>
@@ -792,7 +806,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         {/* Card 2: Personal Long-Term Memories */}
         <div 
-          onClick={() => onNavigate('memories')}
+          onClick={handleNavigateToMemories}
           className="group relative bg-white/85 hover:bg-white backdrop-blur-xl rounded-3xl p-6 sm:p-7 border border-rose-100/90 shadow-sm hover:shadow-xl hover:shadow-rose-100/60 hover:border-rose-200 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:-translate-y-1.5"
         >
           <div>

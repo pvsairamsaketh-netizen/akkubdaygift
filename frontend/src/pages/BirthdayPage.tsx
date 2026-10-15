@@ -12,6 +12,7 @@ import {
 import confetti from 'canvas-confetti';
 import type { NavTab } from '../components/Navbar';
 import { RomanticPhotoReveal } from '../components/RomanticPhotoReveal';
+import { useRomanticMusic } from '../context/RomanticMusicContext';
 
 interface BirthdayPageProps {
   onNavigate: (tab: NavTab) => void;
@@ -31,6 +32,7 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
   const [isCandleBlown, setIsCandleBlown] = useState<boolean>(false);
   const [wishMade, setWishMade] = useState<boolean>(false);
   const [isGiftUnwrapped, setIsGiftUnwrapped] = useState<boolean>(false);
+  const { startRomanticSequence } = useRomanticMusic();
 
   const handleBlowCandle = () => {
     setIsCandleBlown(true);
@@ -111,6 +113,7 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
       return;
     }
 
+    startRomanticSequence().catch(console.warn);
     setIsRevealed(true);
     // Burst of celebratory rose petals and golden sparkles
     confetti({
@@ -478,7 +481,10 @@ export const BirthdayPage: React.FC<BirthdayPageProps> = ({
           <span>Talk to Akku AI Now</span>
         </button>
         <button
-          onClick={() => onNavigate('memories')}
+          onClick={() => {
+            startRomanticSequence().catch(console.warn);
+            onNavigate('memories');
+          }}
           className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/90 hover:bg-white border border-rose-200 text-rose-900 font-medium shadow-sm hover:scale-105 active:scale-95 transition-all text-sm cursor-pointer"
         >
           <BookmarkCheck className="w-4 h-4 text-pink-500" />

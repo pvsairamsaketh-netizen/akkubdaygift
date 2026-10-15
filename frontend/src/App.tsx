@@ -15,6 +15,7 @@ import { AcademicsPage } from './pages/AcademicsPage';
 import { api } from './services/api';
 import type { BirthdayConfig } from './types/memories';
 import { MemoryPhotoProvider } from './context/MemoryPhotoContext';
+import { RomanticMusicProvider } from './context/RomanticMusicContext';
 
 const getInitialTab = (): NavTab => {
   try {
@@ -93,8 +94,9 @@ export function App() {
   };
 
   return (
-    <MemoryPhotoProvider>
-      <div className={`min-h-screen bg-gradient-to-br from-[#fff7f8] via-[#fefaf8] to-[#fff3f5] text-stone-800 flex flex-col font-sans relative overflow-x-hidden ${reduceMotion ? 'motion-reduce' : ''}`}>
+    <RomanticMusicProvider>
+      <MemoryPhotoProvider>
+        <div className={`min-h-screen bg-gradient-to-br from-[#fff7f8] via-[#fefaf8] to-[#fff3f5] text-stone-800 flex flex-col font-sans relative overflow-x-hidden ${reduceMotion ? 'motion-reduce' : ''}`}>
         {/* 1. LOCKED EXPERIENCE (Shown initially until 2022 is entered) */}
         {!isUnlocked && !isCinematicRevealing && (
           <LockedExperience
@@ -195,6 +197,7 @@ export function App() {
         )}
       </div>
     </MemoryPhotoProvider>
+  </RomanticMusicProvider>
   );
 }
 

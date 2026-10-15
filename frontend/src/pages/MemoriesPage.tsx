@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import type { PersonalMemory } from '../types/memories';
+import { useRomanticMusic } from '../context/RomanticMusicContext';
 
 interface ScrapbookPhoto {
   src: string;
@@ -89,6 +90,7 @@ export const MemoriesPage: React.FC = () => {
   const [search, setSearch] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedPhoto, setSelectedPhoto] = useState<ScrapbookPhoto | null>(null);
+  const { startRomanticSequence, isPlaying } = useRomanticMusic();
 
   // Cherished (Favorited) Memories persisted locally
   const [cherishedIds, setCherishedIds] = useState<string[]>(() => {
@@ -322,12 +324,22 @@ export const MemoriesPage: React.FC = () => {
                   Tap any polaroid below to step closer into the photograph and relive the warmth of that special day.
                 </p>
               </div>
-              <button
-                onClick={() => setViewMode('databank')}
-                className="shrink-0 px-4 py-2 rounded-xl bg-white border border-rose-200 text-rose-700 text-xs sm:text-sm font-medium hover:bg-rose-50 transition-colors shadow-2xs"
-              >
-                View Stored Facts & Notes →
-              </button>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  onClick={() => startRomanticSequence()}
+                  className="px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white border border-rose-200/90 text-rose-700 hover:text-rose-900 text-xs sm:text-sm font-semibold transition-all shadow-2xs hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                  title="Play romantic music sequence"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+                  <span>{isPlaying ? 'Music Playing 💖' : 'Play Love Songs 🎵'}</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('databank')}
+                  className="px-4 py-2 rounded-xl bg-white border border-rose-200 text-rose-700 text-xs sm:text-sm font-medium hover:bg-rose-50 transition-colors shadow-2xs cursor-pointer"
+                >
+                  View Stored Facts & Notes →
+                </button>
+              </div>
             </div>
           </div>
 
