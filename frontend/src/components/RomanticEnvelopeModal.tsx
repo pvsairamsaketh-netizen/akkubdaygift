@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Heart, 
   Sparkles, 
@@ -101,6 +102,21 @@ export const RomanticEnvelopeModal: React.FC<RomanticEnvelopeModalProps> = ({
   
   const { isPlaying, togglePlay, startRomanticSequence, currentTrack } = useRomanticMusic();
   const slideshowTimerRef = useRef<any>(null);
+  const modalScrollRef = useRef<HTMLDivElement>(null);
+
+  // Lock body scroll and ensure modal content starts at top
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      if (modalScrollRef.current) {
+        modalScrollRef.current.scrollTop = 0;
+      }
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen]);
 
   // Handle auto-slideshow
   useEffect(() => {
@@ -121,14 +137,14 @@ export const RomanticEnvelopeModal: React.FC<RomanticEnvelopeModalProps> = ({
     }
   }, [isOpen, autoOpenFlap]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const triggerFlapOpen = () => {
     // Grand romantic confetti burst
     confetti({
       particleCount: 90,
       spread: 90,
-      origin: { y: 0.55 },
+      origin: { y: 0.5 },
       colors: ['#f43f5e', '#fda4af', '#fde047', '#f472b6', '#ffffff']
     });
 
@@ -174,25 +190,27 @@ I built this entire assistant, our private memory archive, and this romantic wor
 
 You are my greatest blessing, my favorite adventure, and my forever love.`;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-stone-950/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+  return createPortal(
+    <div 
+      ref={modalScrollRef}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-stone-950/85 backdrop-blur-md animate-fade-in overflow-y-auto"
+      style={{ margin: 0 }}
+    >
       {/* Background ambient lighting */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-rose-500/25 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/3 w-96 h-96 bg-pink-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }} />
       </div>
 
-      <div className="relative w-full max-w-2xl flex flex-col items-center my-auto">
-        {/* Close Button on top right */}
-        {isLetterRevealed && (
-          <button
-            onClick={() => onClose()}
-            className="absolute -top-11 right-0 p-2 rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur transition-all active:scale-90 z-20 cursor-pointer"
-            title="Close surprise"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+      <div className="relative w-full max-w-xl sm:max-w-2xl flex flex-col items-center my-auto">
+        {/* Close Button on top right - always visible so she can dismiss anytime */}
+        <button
+          onClick={() => onClose()}
+          className="absolute -top-10 sm:-top-11 right-1 p-2 rounded-full bg-white/25 text-white hover:bg-white/40 backdrop-blur transition-all active:scale-90 z-20 cursor-pointer shadow-md"
+          title="Close surprise"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
         {/* Envelope Container */}
         <div 
@@ -202,7 +220,7 @@ You are my greatest blessing, my favorite adventure, and my forever love.`;
           }`}
         >
           {/* Main Envelope Body */}
-          <div className="relative w-full bg-[#fdf5ed] rounded-3xl p-5 sm:p-8 shadow-2xl border-2 border-rose-200/90 overflow-hidden min-h-[420px] sm:min-h-[480px] flex flex-col justify-between">
+          <div className="relative w-full bg-[#fdf5ed] rounded-3xl p-4 sm:p-7 shadow-2xl border-2 border-rose-200/90 overflow-hidden max-h-[85vh] sm:max-h-[88vh] overflow-y-auto flex flex-col justify-between">
             {/* Vintage Airmail Stripe Border */}
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-500 via-pink-300 via-red-400 to-rose-500 opacity-80" />
             <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-500 via-pink-300 via-red-400 to-rose-500 opacity-80" />
@@ -315,9 +333,9 @@ You are my greatest blessing, my favorite adventure, and my forever love.`;
                 {activeTab === 'journey' && (
                   <div className="space-y-4 animate-fade-in">
                     {/* Story Card with 3D Polaroid Presentation */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 bg-white/80 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-rose-200/80 shadow-md">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5 bg-white/85 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-rose-200/80 shadow-md">
                       {/* Photo Container with Face-Safe Display and Slow Ken Burns Drift */}
-                      <div className="relative w-48 sm:w-56 aspect-[4/5] rounded-xl overflow-hidden shadow-lg border-2 border-white shrink-0 group">
+                      <div className="relative w-36 sm:w-44 md:w-48 aspect-[4/5] rounded-xl overflow-hidden shadow-lg border-2 border-white shrink-0 group">
                         <img
                           src={currentStory.photo.src}
                           alt={currentStory.photo.alt}
@@ -462,6 +480,7 @@ You are my greatest blessing, my favorite adventure, and my forever love.`;
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
